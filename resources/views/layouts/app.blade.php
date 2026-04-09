@@ -80,9 +80,9 @@
 
                 <x-sidebar-dropdown label="Products" :active="request()->routeIs('products.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></x-slot>
-                    <x-sidebar-sub-link :href="route('dashboard')">All Products</x-sidebar-sub-link>
-                    <x-sidebar-sub-link :href="route('dashboard')">Categories</x-sidebar-sub-link>
-                    <x-sidebar-sub-link :href="route('dashboard')">Units</x-sidebar-sub-link>
+                    <x-sidebar-sub-link :href="route('products.index')">All Products</x-sidebar-sub-link>
+                    {{-- <x-sidebar-sub-link :href="route('dashboard')">Categories</x-sidebar-sub-link>
+                    <x-sidebar-sub-link :href="route('dashboard')">Units</x-sidebar-sub-link> --}}
                 </x-sidebar-dropdown>
 
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'"
@@ -248,5 +248,6 @@
         </div>
     </div>
 
+    @stack('scripts')
     </body>
 </html>
