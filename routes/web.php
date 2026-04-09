@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -15,7 +16,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
  
     Route::resource('/products', ProductController::class)->except(['show']);
- 
+    Route::resource('/customers', CustomerController::class);
+    Route::resource('/suppliers', CustomerController::class);
 });
 
 Route::middleware('auth')->group(function () {
