@@ -103,15 +103,21 @@
                     class="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-widest text-white/30">Purchasing
                 </p>
 
-                <x-sidebar-dropdown label="Purchase Management" :active="request()->routeIs('purchases.*')">
+                <x-sidebar-dropdown label="Purchase Management" :active="request()->routeIs('purchases.*') || request()->routeIs('purchase-returns.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="1.75">
                             <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
                             <line x1="3" y1="6" x2="21" y2="6" />
                             <path d="M16 10a4 4 0 01-8 0" />
                         </svg></x-slot>
-                    <x-sidebar-sub-link :href="route('dashboard')" :active="request()->routeIs('purchases.index')">Purchase</x-sidebar-sub-link>
-                    <x-sidebar-sub-link :href="route('dashboard')" :active="request()->routeIs('purchases.returns.*')">Return Purchase</x-sidebar-sub-link>
+
+                    <x-sidebar-sub-link :href="route('purchases.index')" :active="request()->routeIs('purchases.*')">
+                        Purchase List
+                    </x-sidebar-sub-link>
+
+                    <x-sidebar-sub-link :href="route('purchase-returns.index')" :active="request()->routeIs('purchase-returns.*')">
+                        Return Purchase
+                    </x-sidebar-sub-link>
                 </x-sidebar-dropdown>
 
                 <x-sidebar-dropdown label="Sales Management" :active="request()->routeIs('sales.*')">

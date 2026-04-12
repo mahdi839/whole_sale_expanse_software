@@ -3,6 +3,8 @@
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\PurchaseReturnController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
@@ -11,14 +13,19 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
- 
+
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
- 
+
     Route::resource('/products', ProductController::class)->except(['show']);
     Route::resource('/customers', CustomerController::class);
     Route::resource('/suppliers', SupplierController::class);
+
+    Route::get('/purchases/export/csv', [PurchaseController::class, 'exportCsv'])->name('purchases.export.csv');
+    Route::resource('/purchases', PurchaseController::class);
+
+    Route::resource('/purchase-returns', PurchaseReturnController::class)->except(['show']);
 });
 
 Route::middleware('auth')->group(function () {
