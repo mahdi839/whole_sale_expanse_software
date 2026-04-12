@@ -41,7 +41,12 @@ class ProductController extends Controller
             $validated['image'] = $request->file('image')->store('products', 'public');
         }
 
-        Product::create($validated);
+        $product = Product::create($validated);
+
+        // JSON response for AJAX (quick-add from purchase form)
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json($product, 201);
+        }
 
         return redirect()->route('products.index')
             ->with('success', 'Product created successfully.');
@@ -61,13 +66,12 @@ class ProductController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            // Delete old image if exists
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);
             }
             $validated['image'] = $request->file('image')->store('products', 'public');
         } else {
-            unset($validated['image']); // keep existing image
+            unset($validated['image']);
         }
 
         $product->update($validated);

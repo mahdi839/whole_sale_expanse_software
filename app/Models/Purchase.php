@@ -2,53 +2,62 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Purchase extends Model
 {
-     protected $fillable = [
+    use HasFactory;
+
+    protected $fillable = [
         'reference',
+        'supplier_id',
         'seller_store_name',
-        'purchased_by',
+        'product_id',
         'product_name',
         'product_code',
+        'purchased_by',
         'qty',
         'price',
+        'other_cost',
+        'subtotal',
+        'grand_total',
+        'due_amount',
+        'paid_amount',
         'cash_memo',
         'date',
         'payment_method',
-        'other_cost',
         'document',
+        'note',
         'purchase_status',
         'payment_status',
-        'note',
-        'subtotal',
-        'grand_total',
     ];
 
     protected $casts = [
         'date' => 'date',
-        'qty' => 'decimal:2',
-        'price' => 'decimal:2',
-        'other_cost' => 'decimal:2',
-        'subtotal' => 'decimal:2',
-        'grand_total' => 'decimal:2',
     ];
 
-    protected static function booted(): void
+    // ── Relationships ──────────────────────────────────────
+    public function supplier()
     {
-        static::creating(function ($purchase) {
-            if (empty($purchase->reference)) {
-                $purchase->reference = self::generateReference();
-            }
-        });
+        return $this->belongsTo(Supplier::class);
     }
 
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    // ── Auto-generate reference ────────────────────────────
     public static function generateReference(): string
     {
-        $lastId = static::max('id') ?? 0;
-        $next = $lastId + 1;
+        $prefix = 'PUR-' . date('Ymd') . '-';
+        $last   = static::where('reference', 'like', $prefix . '%')
+                        ->orderByDesc('id')
+                        ->value('reference');
 
-        return 'PUR-' . str_pad($next, 5, '0', STR_PAD_LEFT);
+        $next = $last ? ((int) substr($last, -4)) + 1 : 1;
+
+        return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 }
