@@ -17,11 +17,11 @@ return new class extends Migration
  
             // ── Supplier (nullable so walk-in / manual entry still works) ──
             $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
-            $table->string('seller_store_name');          // kept for display / fallback
+            $table->string('seller_store_name')->nullable();          // kept for display / fallback
  
             // ── Product (nullable so free-text entry still works) ──
             $table->foreignId('product_id')->nullable()->constrained('products')->nullOnDelete();
-            $table->string('product_name');               // kept for display / fallback
+            $table->string('product_name')->nullable();               // kept for display / fallback
             $table->string('product_code')->nullable();   // kept for display / fallback
  
             $table->string('purchased_by');
