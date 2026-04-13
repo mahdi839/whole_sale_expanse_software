@@ -5,6 +5,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\PurchaseReturnController;
+use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +27,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('/purchases', PurchaseController::class);
 
     Route::resource('/purchase-returns', PurchaseReturnController::class)->except(['show']);
+    Route::resource('stocks', StockController::class);
 });
 
 Route::middleware('auth')->group(function () {
