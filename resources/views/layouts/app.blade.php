@@ -130,7 +130,7 @@
                     <x-sidebar-sub-link :href="route('dashboard')">Return Sales</x-sidebar-sub-link>
                 </x-sidebar-dropdown>
 
-                 <x-sidebar-dropdown label="Stock Management" :active="request()->routeIs('stocks.*')">
+                 {{-- <x-sidebar-dropdown label="Stock Management" :active="request()->routeIs('stocks.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="1.75">
                             <path
@@ -142,7 +142,7 @@
                     <x-sidebar-sub-link :href="route('stocks.create')" :active="request()->routeIs('stocks.create')">
                         Add Stock
                     </x-sidebar-sub-link>
-                </x-sidebar-dropdown>
+                </x-sidebar-dropdown> --}}
 
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'"
                     class="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-widest text-white/30">Reports &

@@ -12,21 +12,6 @@
             </div>
         @endif
 
-        <div class="bg-white border border-gray-200 rounded-xl p-5">
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="flex-1"></span>
-
-                <a href="{{ route('stocks.create') }}"
-                   class="h-9 px-4 inline-flex items-center gap-2 text-sm font-medium text-white
-                          bg-blue-600 rounded-lg hover:bg-blue-700 transition">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    Add Stock
-                </a>
-            </div>
-        </div>
-
         <div class="grid grid-cols-2 sm:grid-cols-2 gap-3">
             <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
                 <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Total Items</p>
