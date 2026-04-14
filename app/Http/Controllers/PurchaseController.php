@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\Stock;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
@@ -24,11 +25,11 @@ class PurchaseController extends Controller
 
         $purchases = Purchase::query()
             ->with(['supplier', 'product'])
-            ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
-            ->when($filters['seller_store_name'], fn ($q) => $q->where('seller_store_name', 'like', '%'.$filters['seller_store_name'].'%'))
-            ->when($filters['purchased_by'], fn ($q) => $q->where('purchased_by', 'like', '%'.$filters['purchased_by'].'%'))
-            ->when($filters['purchase_status'], fn ($q) => $q->where('purchase_status', $filters['purchase_status']))
-            ->when($filters['payment_status'], fn ($q) => $q->where('payment_status', $filters['payment_status']))
+            ->when($filters['date'], fn($q) => $q->whereDate('date', $filters['date']))
+            ->when($filters['seller_store_name'], fn($q) => $q->where('seller_store_name', 'like', '%' . $filters['seller_store_name'] . '%'))
+            ->when($filters['purchased_by'], fn($q) => $q->where('purchased_by', 'like', '%' . $filters['purchased_by'] . '%'))
+            ->when($filters['purchase_status'], fn($q) => $q->where('purchase_status', $filters['purchase_status']))
+            ->when($filters['payment_status'], fn($q) => $q->where('payment_status', $filters['payment_status']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
                 $q->where(function ($sub) use ($s) {
@@ -80,6 +81,14 @@ class PurchaseController extends Controller
             $product = Product::find($validated['product_id']);
             $validated['product_name'] = $product?->product_name ?? $validated['product_name'];
             $validated['product_code'] = $product?->sku ?? $validated['product_code'];
+
+            if ($product) {
+                $stock = Stock::firstOrCreate(
+                    ['product_id' => $product->id],
+                    ['stock_qty' => 0],
+                );
+                $stock->increment('stock_qty', (float) $validated['qty']);
+            }
         }
 
         $validated['subtotal'] = (float) $validated['qty'] * (float) $validated['price'];
@@ -133,6 +142,24 @@ class PurchaseController extends Controller
             $validated['product_code'] = $product?->sku ?? $validated['product_code'];
         }
 
+        if ($purchase->product_id) {
+            $oldStock = Stock::where('product_id', $purchase->product_id)->first();
+            if ($oldStock) {
+                $oldStock->decrement('stock_qty', $purchase->qty);
+            }
+        }
+
+        // add new qty to new product stock
+        if (! empty($validated['product_id'])) {
+            $newStock = Stock::firstOrCreate(
+                ['product_id' => $validated['product_id']],
+                ['stock_qty' => 0]
+            );
+
+            $newStock->increment('stock_qty', (float) $validated['qty']);
+        }
+
+
         $validated['subtotal'] = (float) $validated['qty'] * (float) $validated['price'];
         $validated['grand_total'] = $validated['subtotal'] + (float) ($validated['other_cost'] ?? 0);
         $validated = $this->resolvePaymentAmounts($validated);
@@ -145,9 +172,17 @@ class PurchaseController extends Controller
 
     public function destroy(Purchase $purchase)
     {
+        if ($purchase->product_id) {
+            $stock = Stock::where('product_id', $purchase->product_id)->first();
+            if ($stock) {
+                $stock->decrement('stock_qty', (float) $purchase->qty);
+            }
+        }
+
         if ($purchase->document) {
             Storage::disk('public')->delete($purchase->document);
         }
+
         $purchase->delete();
 
         return redirect()->route('purchases.index')
@@ -156,14 +191,14 @@ class PurchaseController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $fileName = 'purchases-'.now()->format('Y-m-d-H-i-s').'.csv';
+        $fileName = 'purchases-' . now()->format('Y-m-d-H-i-s') . '.csv';
 
         $rows = Purchase::query()
-            ->when($request->date, fn ($q) => $q->whereDate('date', $request->date))
-            ->when($request->seller_store_name, fn ($q) => $q->where('seller_store_name', 'like', '%'.$request->seller_store_name.'%'))
-            ->when($request->purchased_by, fn ($q) => $q->where('purchased_by', 'like', '%'.$request->purchased_by.'%'))
-            ->when($request->purchase_status, fn ($q) => $q->where('purchase_status', $request->purchase_status))
-            ->when($request->payment_status, fn ($q) => $q->where('payment_status', $request->payment_status))
+            ->when($request->date, fn($q) => $q->whereDate('date', $request->date))
+            ->when($request->seller_store_name, fn($q) => $q->where('seller_store_name', 'like', '%' . $request->seller_store_name . '%'))
+            ->when($request->purchased_by, fn($q) => $q->where('purchased_by', 'like', '%' . $request->purchased_by . '%'))
+            ->when($request->purchase_status, fn($q) => $q->where('purchase_status', $request->purchase_status))
+            ->when($request->payment_status, fn($q) => $q->where('payment_status', $request->payment_status))
             ->when($request->search, function ($q) use ($request) {
                 $s = $request->search;
                 $q->where(function ($sub) use ($s) {
@@ -177,27 +212,52 @@ class PurchaseController extends Controller
 
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
         ];
 
         $callback = function () use ($rows) {
             $file = fopen('php://output', 'w');
             fputcsv($file, [
-                'Reference', 'Seller/Store', 'Purchased By', 'Product Name', 'Product Code',
-                'Qty', 'Price', 'Subtotal', 'Other Cost', 'Grand Total',
-                'Due Amount', 'Paid Amount',
-                'Cash Memo', 'Date', 'Payment Method',
-                'Purchase Status', 'Payment Status', 'Note',
+                'Reference',
+                'Seller/Store',
+                'Purchased By',
+                'Product Name',
+                'Product Code',
+                'Qty',
+                'Price',
+                'Subtotal',
+                'Other Cost',
+                'Grand Total',
+                'Due Amount',
+                'Paid Amount',
+                'Cash Memo',
+                'Date',
+                'Payment Method',
+                'Purchase Status',
+                'Payment Status',
+                'Note',
             ]);
 
             foreach ($rows as $row) {
                 fputcsv($file, [
-                    $row->reference, $row->seller_store_name, $row->purchased_by,
-                    $row->product_name, $row->product_code,
-                    $row->qty, $row->price, $row->subtotal, $row->other_cost, $row->grand_total,
-                    $row->due_amount, $row->paid_amount,
-                    $row->cash_memo, optional($row->date)->format('Y-m-d'),
-                    $row->payment_method, $row->purchase_status, $row->payment_status, $row->note,
+                    $row->reference,
+                    $row->seller_store_name,
+                    $row->purchased_by,
+                    $row->product_name,
+                    $row->product_code,
+                    $row->qty,
+                    $row->price,
+                    $row->subtotal,
+                    $row->other_cost,
+                    $row->grand_total,
+                    $row->due_amount,
+                    $row->paid_amount,
+                    $row->cash_memo,
+                    optional($row->date)->format('Y-m-d'),
+                    $row->payment_method,
+                    $row->purchase_status,
+                    $row->payment_status,
+                    $row->note,
                 ]);
             }
             fclose($file);
@@ -234,7 +294,7 @@ class PurchaseController extends Controller
     private function validatePurchase(Request $request, ?int $purchaseId = null): array
     {
         $rules = [
-            'reference' => 'nullable|string|max:50|unique:purchases,reference,'.$purchaseId,
+            'reference' => 'nullable|string|max:50|unique:purchases,reference,' . $purchaseId,
             'supplier_id' => 'nullable|exists:suppliers,id',
             'seller_store_name' => 'nullable|string|max:255',
             'product_id' => 'nullable|exists:products,id',
