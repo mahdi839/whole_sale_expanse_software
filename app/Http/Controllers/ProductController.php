@@ -10,12 +10,12 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::query();
+        $query = Product::with('stock');
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('product_name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -33,8 +33,9 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
-            'sku'          => 'required|string|max:100|unique:products,sku',
-            'image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'sku' => 'required|string|max:100|unique:products,sku',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'stock_qty' => 'required|integer|min:0',  // add this
         ]);
 
         if ($request->hasFile('image')) {
@@ -43,9 +44,13 @@ class ProductController extends Controller
 
         $product = Product::create($validated);
 
-        // JSON response for AJAX (quick-add from purchase form)
+        // Create the stock record
+        $product->stock()->create([
+            'stock_qty' => $validated['stock_qty'],
+        ]);
+
         if ($request->expectsJson() || $request->wantsJson()) {
-            return response()->json($product, 201);
+            return response()->json($product->load('stock'), 201);
         }
 
         return redirect()->route('products.index')
@@ -61,8 +66,9 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
-            'sku'          => 'required|string|max:100|unique:products,sku,' . $product->id,
-            'image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'sku' => 'required|string|max:100|unique:products,sku,'.$product->id,
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'stock_qty' => 'required|integer|min:0',  // add this
         ]);
 
         if ($request->hasFile('image')) {
@@ -75,6 +81,12 @@ class ProductController extends Controller
         }
 
         $product->update($validated);
+
+        // Update or create the stock record
+        $product->stock()->updateOrCreate(
+            ['product_id' => $product->id],
+            ['stock_qty' => $validated['stock_qty']]
+        );
 
         return redirect()->route('products.index')
             ->with('success', 'Product updated successfully.');

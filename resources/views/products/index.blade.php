@@ -61,6 +61,7 @@
                             <th class="text-left px-5 py-3 font-medium text-gray-500 w-16">Image</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Product Name</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">SKU</th>
+                            <th class="text-left px-5 py-3 font-medium text-gray-500">Stock</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden sm:table-cell">Added</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Actions</th>
                         </tr>
@@ -91,6 +92,12 @@
                                 <td class="px-5 py-3">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-xs font-mono font-medium">
                                         {{ $product->sku }}
+                                    </span>
+                                </td>
+                                {{-- stock --}}
+                                <td class="px-5 py-3">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-xs font-mono font-medium">
+                                        {{ $product->stock->stock_qty }}
                                     </span>
                                 </td>
 
