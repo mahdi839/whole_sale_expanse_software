@@ -201,7 +201,7 @@
                 </label>
                 <select id="return_type" name="return_type"
                         class="{{ $errors->has('return_type') ? $inputErrClass : $inputClass }}">
-                    @foreach(['refund'=>'Refund','exchange'=>'Exchange','credit'=>'Credit Note'] as $val=>$label)
+                    @foreach(['refund'=>'Refund','exchange'=>'Exchange'] as $val=>$label)
                         <option value="{{ $val }}"
                             {{ old('return_type', $saleReturn?->return_type ?? 'refund') == $val ? 'selected' : '' }}>
                             {{ $label }}
