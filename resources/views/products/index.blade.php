@@ -97,7 +97,7 @@
                                 {{-- stock --}}
                                 <td class="px-5 py-3">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-xs font-mono font-medium">
-                                        {{ $product->stock->stock_qty }}
+                                        {{ $product->stock?->stock_qty??0 }}
                                     </span>
                                 </td>
 

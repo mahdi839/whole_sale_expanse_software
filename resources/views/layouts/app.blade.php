@@ -126,8 +126,8 @@
                             <path
                                 d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg></x-slot>
-                    <x-sidebar-sub-link :href="route('dashboard')">Sales Orders</x-sidebar-sub-link>
-                    <x-sidebar-sub-link :href="route('dashboard')">Return Sales</x-sidebar-sub-link>
+                    <x-sidebar-sub-link :href="route('sales.index')">Sales Orders</x-sidebar-sub-link>
+                    <x-sidebar-sub-link :href="route('sales.index')">Return Sales</x-sidebar-sub-link>
                 </x-sidebar-dropdown>
 
                  {{-- <x-sidebar-dropdown label="Stock Management" :active="request()->routeIs('stocks.*')">

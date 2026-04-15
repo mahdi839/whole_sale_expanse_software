@@ -52,8 +52,20 @@ class CustomerController extends Controller
         $validated['total_paid'] = $validated['total_paid'] ?? 0;
         $validated['due']        = max(0, $validated['total_sale'] - $validated['total_paid']);
  
-        Customer::create($validated); // code is auto-generated in model boot
- 
+        $customer = Customer::create($validated);
+   // If request came from AJAX / fetch / modal
+        if ($request->expectsJson()) {
+            return response()->json([
+                'id'         => $customer->id,
+                'code'       => $customer->code,
+                'full_name'  => $customer->full_name,
+                'phone'      => $customer->phone,
+                'total_sale' => $customer->total_sale,
+                'total_paid' => $customer->total_paid,
+                'due'        => $customer->due,
+                'message'    => 'Customer created successfully.',
+            ], 201);
+        }
         return redirect()->route('customers.index')
             ->with('success', 'Customer created successfully.');
     }
