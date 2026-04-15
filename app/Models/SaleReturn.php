@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Sale extends Model
+class SaleReturn extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'reference',
+        'sale_id',
         'customer_id',
         'product_id',
         'product_name',
@@ -19,29 +20,30 @@ class Sale extends Model
         'price_on_sale',
         'discount',
         'subtotal',
-        'grand_total',
-        'paid',
-        'due',
-        'cash_memo',
+        'return_amount',
+        'return_type',
+        'return_status',
         'payment_method',
-        'purchase_status',
-        'payment_status',
-        'status',
+        'cash_memo',
         'document',
+        'reason',
         'note',
         'date',
     ];
 
     protected $casts = [
-        'date' => 'date',
-        'qty' => 'decimal:2',
+        'date'          => 'date',
+        'qty'           => 'decimal:2',
         'price_on_sale' => 'decimal:2',
-        'discount' => 'decimal:2',
-        'subtotal' => 'decimal:2',
-        'grand_total' => 'decimal:2',
-        'paid' => 'decimal:2',
-        'due' => 'decimal:2',
+        'discount'      => 'decimal:2',
+        'subtotal'      => 'decimal:2',
+        'return_amount' => 'decimal:2',
     ];
+
+    public function sale()
+    {
+        return $this->belongsTo(Sale::class);
+    }
 
     public function customer()
     {
@@ -53,20 +55,17 @@ class Sale extends Model
         return $this->belongsTo(Product::class);
     }
 
-    /**
-     * Auto-generate reference: SALE-000001, SALE-000002, …
-     */
     public static function generateReference(): string
     {
         $last = static::orderByDesc('id')->value('reference');
 
         if ($last) {
             $number = (int) preg_replace('/\D/', '', $last);
-            $next = $number + 1;
+            $next   = $number + 1;
         } else {
             $next = 1;
         }
 
-        return 'SALE-'.str_pad($next, 6, '0', STR_PAD_LEFT);
+        return 'RET-' . str_pad($next, 6, '0', STR_PAD_LEFT);
     }
 }

@@ -45,62 +45,6 @@
     @enderror
 </div>
 
-{{-- Financial fields --}}
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-    {{-- Total Sale --}}
-    <div class="space-y-1.5">
-        <label for="total_sale" class="block text-sm font-medium text-gray-700">Total Sale (৳)</label>
-        <input
-            type="number"
-            id="total_sale"
-            name="total_sale"
-            value="{{ old('total_sale', $customer?->total_sale ?? '0') }}"
-            min="0"
-            step="0.01"
-            class="w-full px-3.5 py-2.5 text-sm border rounded-lg transition
-                   @error('total_sale') border-red-400 bg-red-50 focus:ring-red-400
-                   @else border-gray-200 focus:ring-blue-500 @enderror
-                   focus:outline-none focus:ring-2 focus:border-transparent"
-            oninput="calcDue()"
-        />
-        @error('total_sale')
-            <p class="text-xs text-red-600">{{ $message }}</p>
-        @enderror
-    </div>
-
-    {{-- Total Paid --}}
-    <div class="space-y-1.5">
-        <label for="total_paid" class="block text-sm font-medium text-gray-700">Total Paid (৳)</label>
-        <input
-            type="number"
-            id="total_paid"
-            name="total_paid"
-            value="{{ old('total_paid', $customer?->total_paid ?? '0') }}"
-            min="0"
-            step="0.01"
-            class="w-full px-3.5 py-2.5 text-sm border rounded-lg transition
-                   @error('total_paid') border-red-400 bg-red-50 focus:ring-red-400
-                   @else border-gray-200 focus:ring-blue-500 @enderror
-                   focus:outline-none focus:ring-2 focus:border-transparent"
-            oninput="calcDue()"
-        />
-        @error('total_paid')
-            <p class="text-xs text-red-600">{{ $message }}</p>
-        @enderror
-    </div>
-</div>
-
-{{-- Due (read-only, auto calculated) --}}
-<div class="space-y-1.5">
-    <label class="block text-sm font-medium text-gray-700">Due (৳)
-        <span class="text-xs font-normal text-gray-400 ml-1">auto-calculated</span>
-    </label>
-    <div id="due-display"
-         class="w-full px-3.5 py-2.5 text-sm font-medium rounded-lg border bg-gray-50 border-gray-200 text-gray-500 select-none">
-        ৳{{ number_format(max(0, old('total_sale', $customer?->total_sale ?? 0) - old('total_paid', $customer?->total_paid ?? 0)), 2) }}
-    </div>
-    <p class="text-xs text-gray-400">Calculated as Total Sale − Total Paid</p>
 </div>
 
 @push('scripts')

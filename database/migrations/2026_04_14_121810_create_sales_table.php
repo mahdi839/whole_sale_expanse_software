@@ -28,7 +28,8 @@ return new class extends Migration
             $table->string('cash_memo')->nullable();
             $table->string('payment_method')->nullable();
             $table->string('purchase_status')->default('pending'); // received,partial,pending,ordered
-            $table->string('payment_status')->default('due');      // due,paid,partial
+            $table->string('payment_status')->default('due');
+            $table->string('status')->nullable();
             $table->string('document')->nullable();
             $table->text('note')->nullable();
             $table->date('date');

@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="header">Sales</x-slot>
+    <x-slot name="header">Sale Returns</x-slot>
 
     <div class="space-y-4">
 
@@ -12,11 +12,19 @@
                 {{ session('success') }}
             </div>
         @endif
+        @if(session('error'))
+            <div class="flex items-center gap-2.5 px-4 py-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl">
+                <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-9a1 1 0 012 0v4a1 1 0 01-2 0V9zm1-5a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd"/>
+                </svg>
+                {{ session('error') }}
+            </div>
+        @endif
 
         {{-- Filter card --}}
         <div class="bg-white border border-gray-200 rounded-xl p-5">
-            <form method="GET" action="{{ route('sales.index') }}">
-                <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5 mb-3.5">
+            <form method="GET" action="{{ route('sale-returns.index') }}">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3.5">
 
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -25,7 +33,7 @@
                             </svg>
                         </span>
                         <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
-                               placeholder="Product, ref, memo…"
+                               placeholder="Ref, product, memo…"
                                class="w-full pl-9 pr-3 h-9 text-sm bg-gray-50 border border-gray-200 rounded-lg
                                       placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition"/>
                     </div>
@@ -34,21 +42,21 @@
                            class="w-full px-3 h-9 text-sm bg-gray-50 border border-gray-200 rounded-lg
                                   text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition"/>
 
-                    <select name="purchase_status"
+                    <select name="return_status"
                             class="w-full px-3 h-9 text-sm bg-gray-50 border border-gray-200 rounded-lg
                                    text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition">
-                        <option value="">Sale status</option>
-                        @foreach(['received'=>'Received','partial'=>'Partial','pending'=>'Pending','ordered'=>'Ordered'] as $v=>$l)
-                            <option value="{{ $v }}" {{ ($filters['purchase_status'] ?? '') === $v ? 'selected' : '' }}>{{ $l }}</option>
+                        <option value="">Return status</option>
+                        @foreach(['pending'=>'Pending','approved'=>'Approved','rejected'=>'Rejected'] as $v=>$l)
+                            <option value="{{ $v }}" {{ ($filters['return_status'] ?? '') === $v ? 'selected' : '' }}>{{ $l }}</option>
                         @endforeach
                     </select>
 
-                    <select name="payment_status"
+                    <select name="return_type"
                             class="w-full px-3 h-9 text-sm bg-gray-50 border border-gray-200 rounded-lg
                                    text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition">
-                        <option value="">Payment status</option>
-                        @foreach(['due'=>'Due','paid'=>'Paid','partial'=>'Partial'] as $v=>$l)
-                            <option value="{{ $v }}" {{ ($filters['payment_status'] ?? '') === $v ? 'selected' : '' }}>{{ $l }}</option>
+                        <option value="">Return type</option>
+                        @foreach(['refund'=>'Refund','exchange'=>'Exchange','credit'=>'Credit'] as $v=>$l)
+                            <option value="{{ $v }}" {{ ($filters['return_type'] ?? '') === $v ? 'selected' : '' }}>{{ $l }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -58,12 +66,12 @@
                             class="h-9 px-4 text-sm font-medium text-white bg-gray-800 rounded-lg transition">
                         Filter
                     </button>
-                    <a href="{{ route('sales.index') }}"
+                    <a href="{{ route('sale-returns.index') }}"
                        class="h-9 px-4 inline-flex items-center text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition">
                         Reset
                     </a>
                     <span class="flex-1"></span>
-                    <a href="{{ route('sales.export', request()->query()) }}"
+                    <a href="{{ route('sale-returns.export', request()->query()) }}"
                        class="h-9 px-4 inline-flex items-center gap-2 text-sm font-medium text-green-700
                               bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -71,25 +79,23 @@
                         </svg>
                         Download CSV
                     </a>
-                    <a href="{{ route('sales.create') }}"
+                    <a href="{{ route('sale-returns.create') }}"
                        class="h-9 px-4 inline-flex items-center gap-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                         </svg>
-                        Add Sale
+                        Add Return
                     </a>
                 </div>
             </form>
         </div>
 
         {{-- Summary cards --}}
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div class="grid grid-cols-3 gap-3">
             @foreach([
-                ['label' => 'Total Sales',   'value' => number_format($totals->total_sales ?? 0),          'color' => 'text-gray-800'],
-                ['label' => 'Total Qty',     'value' => number_format($totals->total_qty ?? 0, 2),          'color' => 'text-gray-800'],
-                ['label' => 'Grand Total',   'value' => '৳'.number_format($totals->total_amount ?? 0, 2),  'color' => 'text-blue-600'],
-                ['label' => 'Total Paid',    'value' => '৳'.number_format($totals->total_paid ?? 0, 2),    'color' => 'text-green-600'],
-                ['label' => 'Total Due',     'value' => '৳'.number_format($totals->total_due ?? 0, 2),     'color' => 'text-red-600'],
+                ['label' => 'Total Returns',       'value' => number_format($totals->total_returns ?? 0),              'color' => 'text-gray-800'],
+                ['label' => 'Total Qty Returned',  'value' => number_format($totals->total_qty ?? 0, 2),               'color' => 'text-gray-800'],
+                ['label' => 'Total Return Amount', 'value' => '৳'.number_format($totals->total_return_amount ?? 0, 2), 'color' => 'text-red-600'],
             ] as $card)
             <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
                 <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">{{ $card['label'] }}</p>
@@ -104,90 +110,94 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-gray-100 bg-gray-50">
-                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide whitespace-nowrap">Reference</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Reference</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Original Sale</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Customer</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden lg:table-cell">Product</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Qty</th>
-                            <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Total</th>
-                            <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Paid</th>
-                            <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Due</th>
-                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Payment Status</th>
-                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Sale Status</th>
+                            <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Amount</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Status</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        @forelse($sales as $sale)
+                        @forelse($returns as $return)
                             <tr class="hover:bg-gray-50/60 transition-colors">
 
                                 <td class="px-5 py-3.5 align-top">
-                                    <a href="{{ route('sales.show', $sale) }}"
-                                       class="inline-block px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 text-xs font-mono font-medium hover:bg-violet-100 transition">
-                                        {{ $sale->reference }}
+                                    <a href="{{ route('sale-returns.show', $return) }}"
+                                       class="inline-block px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 text-xs font-mono font-medium hover:bg-orange-100 transition">
+                                        {{ $return->reference }}
                                     </a>
-                                    @if($sale->cash_memo)
-                                        <p class="text-xs text-gray-400 mt-1">{{ $sale->cash_memo }}</p>
+                                    <p class="text-xs text-gray-400 mt-1">{{ optional($return->date)->format('d M Y') }}</p>
+                                </td>
+
+                                <td class="px-5 py-3.5 align-top hidden md:table-cell">
+                                    @if($return->sale)
+                                        <a href="{{ route('sales.show', $return->sale) }}"
+                                           class="inline-block px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 text-xs font-mono font-medium hover:bg-violet-100 transition">
+                                            {{ $return->sale->reference }}
+                                        </a>
+                                    @else
+                                        <span class="text-gray-400">—</span>
                                     @endif
                                 </td>
 
                                 <td class="px-5 py-3.5 align-top">
-                                    <p class="font-medium text-gray-800">{{ $sale->customer?->full_name ?? '—' }}</p>
-                                    <p class="text-xs text-gray-400 mt-0.5">{{ optional($sale->date)->format('d M Y') }}</p>
+                                    <p class="font-medium text-gray-800">{{ $return->customer?->full_name ?? '—' }}</p>
                                 </td>
 
                                 <td class="px-5 py-3.5 align-top hidden lg:table-cell">
-                                    <p class="font-medium text-gray-800">{{ $sale->product_name ?? '—' }}</p>
-                                    <p class="text-xs text-gray-400 mt-0.5">{{ $sale->product_code ?: '—' }}</p>
+                                    <p class="font-medium text-gray-800">{{ $return->product_name ?? '—' }}</p>
+                                    <p class="text-xs text-gray-400 mt-0.5">{{ $return->product_code ?: '—' }}</p>
                                 </td>
 
                                 <td class="px-5 py-3.5 align-top text-right font-medium text-gray-700 tabular-nums">
-                                    {{ number_format($sale->qty, 2) }}
-                                </td>
-
-                                <td class="px-5 py-3.5 align-top text-right font-medium text-blue-600 tabular-nums hidden md:table-cell">
-                                    ৳{{ number_format($sale->grand_total, 2) }}
-                                </td>
-
-                                <td class="px-5 py-3.5 align-top text-right font-medium text-green-600 tabular-nums hidden md:table-cell">
-                                    ৳{{ number_format($sale->paid, 2) }}
+                                    {{ number_format($return->qty, 2) }}
                                 </td>
 
                                 <td class="px-5 py-3.5 align-top text-right font-medium text-red-600 tabular-nums hidden md:table-cell">
-                                    ৳{{ number_format($sale->due, 2) }}
+                                    ৳{{ number_format($return->return_amount, 2) }}
                                 </td>
 
                                 <td class="px-5 py-3.5 align-top">
                                     <div class="flex flex-col gap-1.5">
                                         <span @class([
                                             'inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium',
-                                            'bg-green-50 text-green-700' => $sale->purchase_status === 'received',
-                                            'bg-amber-50 text-amber-700' => $sale->purchase_status === 'partial',
-                                            'bg-gray-100 text-gray-600'  => $sale->purchase_status === 'pending',
-                                            'bg-blue-50 text-blue-700'   => $sale->purchase_status === 'ordered',
-                                        ])>{{ ucfirst($sale->purchase_status) }}</span>
+                                            'bg-green-50 text-green-700'  => $return->return_status === 'approved',
+                                            'bg-amber-50 text-amber-700'  => $return->return_status === 'pending',
+                                            'bg-red-50 text-red-700'      => $return->return_status === 'rejected',
+                                        ])>{{ ucfirst($return->return_status) }}</span>
 
                                         <span @class([
                                             'inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium',
-                                            'bg-green-50 text-green-700' => $sale->payment_status === 'paid',
-                                            'bg-amber-50 text-amber-700' => $sale->payment_status === 'partial',
-                                            'bg-red-50 text-red-700'     => $sale->payment_status === 'due',
-                                        ])>{{ ucfirst($sale->payment_status) }}</span>
-                                    </div>
-                                </td>
-
-                                <td class="px-5 py-3.5 align-top">
-                                    <div class="flex flex-col gap-1.5">
-                                        <span @class([
-                                            'inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium',
-                                            'bg-green-50 text-green-700' => $sale->status === 'success',
-                                            'bg-amber-50 text-amber-700' => $sale->status === 'returned',
-                                        ])>{{ ucfirst($sale->status) }}</span>
+                                            'bg-blue-50 text-blue-700'    => $return->return_type === 'refund',
+                                            'bg-purple-50 text-purple-700'=> $return->return_type === 'exchange',
+                                            'bg-gray-100 text-gray-600'   => $return->return_type === 'credit',
+                                        ])>{{ ucfirst($return->return_type) }}</span>
                                     </div>
                                 </td>
 
                                 <td class="px-5 py-3.5 align-top">
                                     <div class="flex items-center justify-end gap-1.5">
-                                        <a href="{{ route('sales.edit', $sale) }}"
+
+                                        {{-- Approve button (only for pending) --}}
+                                        @if($return->return_status === 'pending')
+                                            <form method="POST" action="{{ route('sale-returns.approve', $return) }}"
+                                                  onsubmit="return confirm('Approve this return? Stock and financials will be updated.')">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="inline-flex items-center gap-1 h-7 px-2.5 text-xs font-medium
+                                                               text-green-700 bg-green-50 border border-green-100 rounded-lg hover:bg-green-100 transition">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                        <path d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                    Approve
+                                                </button>
+                                            </form>
+                                        @endif
+
+                                        <a href="{{ route('sale-returns.edit', $return) }}"
                                            class="inline-flex items-center gap-1.5 h-7 px-2.5 text-xs font-medium
                                                   text-blue-700 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -195,8 +205,9 @@
                                             </svg>
                                             Edit
                                         </a>
-                                        <form method="POST" action="{{ route('sales.destroy', $sale) }}"
-                                              onsubmit="return confirm('Delete sale {{ addslashes($sale->reference) }}?')">
+
+                                        <form method="POST" action="{{ route('sale-returns.destroy', $return) }}"
+                                              onsubmit="return confirm('Delete return {{ addslashes($return->reference) }}?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"
@@ -213,13 +224,13 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-5 py-20 text-center">
+                                <td colspan="8" class="px-5 py-20 text-center">
                                     <div class="flex flex-col items-center gap-3 text-gray-400">
                                         <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                            <path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+                                            <path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
                                         </svg>
-                                        <p class="text-sm">No sales found.
-                                            <a href="{{ route('sales.create') }}" class="text-blue-600 hover:underline">Add your first sale.</a>
+                                        <p class="text-sm">No returns found.
+                                            <a href="{{ route('sale-returns.create') }}" class="text-blue-600 hover:underline">Add your first return.</a>
                                         </p>
                                     </div>
                                 </td>
@@ -229,17 +240,17 @@
                 </table>
             </div>
 
-            @if($sales->hasPages())
+            @if($returns->hasPages())
                 <div class="px-5 py-3.5 border-t border-gray-100 bg-gray-50/50">
-                    {{ $sales->links() }}
+                    {{ $returns->links() }}
                 </div>
             @endif
         </div>
 
-        @if($sales->total() > 0)
+        @if($returns->total() > 0)
             <p class="text-xs text-gray-400">
-                Showing {{ $sales->firstItem() }}–{{ $sales->lastItem() }}
-                of {{ number_format($sales->total()) }} sales
+                Showing {{ $returns->firstItem() }}–{{ $returns->lastItem() }}
+                of {{ number_format($returns->total()) }} returns
             </p>
         @endif
 

@@ -101,6 +101,7 @@ class SaleController extends Controller
                 $validated['reference'] = Sale::generateReference();
             }
 
+            $validated['status'] = 'success';
             $sale = Sale::create($validated);
 
             // Update customer financials
@@ -333,6 +334,7 @@ class SaleController extends Controller
             'payment_method' => 'nullable|string|max:100',
             'purchase_status' => 'required|in:received,partial,pending,ordered',
             'payment_status' => 'required|in:due,paid,partial',
+            'status'=>'nullable',
             'paid' => 'nullable|numeric|min:0',
             'due' => 'nullable|numeric|min:0',
             'document' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:4096',

@@ -6,6 +6,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\PurchaseReturnController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\SaleReturnController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('sales', SaleController::class);
     Route::get('sales-export', [SaleController::class, 'exportCsv'])->name('sales.export');
+
+    Route::resource('sale-returns', SaleReturnController::class);
+    Route::post('sale-returns/{saleReturn}/approve', [SaleReturnController::class, 'approve'])->name('sale-returns.approve');
+    Route::get('sale-returns-export', [SaleReturnController::class, 'exportCsv'])->name('sale-returns.export');
 });
 
 Route::middleware('auth')->group(function () {
