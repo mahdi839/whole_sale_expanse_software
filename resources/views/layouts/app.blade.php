@@ -9,9 +9,20 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>
+        .gradient-bg {
+            background-image:
+                radial-gradient(circle at 20% 80%, rgba(255, 220, 190, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 245, 238, 0.35) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 210, 180, 0.15) 0%, transparent 50%);
+            background-color: #f8fafc;
+            /* fallback base */
+        }
+    </style>
 </head>
 
-<body class="font-sans antialiased bg-gray-100">
+<body class="font-sans antialiased gradient-bg">
 
     {{--
         RESPONSIVE BEHAVIOUR:
@@ -130,7 +141,7 @@
                     <x-sidebar-sub-link :href="route('sale-returns.index')">Return Sales</x-sidebar-sub-link>
                 </x-sidebar-dropdown>
 
-                 {{-- <x-sidebar-dropdown label="Stock Management" :active="request()->routeIs('stocks.*')">
+                {{-- <x-sidebar-dropdown label="Stock Management" :active="request()->routeIs('stocks.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="1.75">
                             <path
