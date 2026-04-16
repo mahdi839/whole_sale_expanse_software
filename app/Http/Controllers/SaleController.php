@@ -17,12 +17,14 @@ class SaleController extends Controller
     {
         $filters = [
             'payment_status' => $request->input('payment_status'),
+            'status'         => $request->input('status'),
             'search'         => $request->input('search'),
         ];
 
         $sales = Sale::query()
             ->with(['customer', 'items.product'])
             ->when($filters['payment_status'], fn($q) => $q->where('payment_status', $filters['payment_status']))
+            ->when($filters['status'], fn($q) => $q->where('status', $filters['status']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
                 $q->where(function ($sub) use ($s) {
@@ -37,11 +39,11 @@ class SaleController extends Controller
             ->withQueryString();
 
         $totals = Sale::selectRaw('
-            count(*)         as total_sales,
-            sum(grand_total) as total_amount,
-            sum(paid)        as total_paid,
-            sum(due)         as total_due
-        ')->first();
+        count(*)         as total_sales,
+        sum(grand_total) as total_amount,
+        sum(paid)        as total_paid,
+        sum(due)         as total_due
+    ')->first();
 
         return view('sales.index', compact('sales', 'filters', 'totals'));
     }
@@ -269,13 +271,23 @@ class SaleController extends Controller
         $callback = function () use ($sales) {
             $file = fopen('php://output', 'w');
             fputcsv($file, [
-                'Reference', 'Customer', 'Products', 'Grand Total',
-                'Discount', 'Paid', 'Due', 'Cash Memo',
-                'Payment Method', 'Payment Status', 'Note', 'Date',
+                'Reference',
+                'Customer',
+                'Products',
+                'Grand Total',
+                'Discount',
+                'Paid',
+                'Due',
+                'Cash Memo',
+                'Payment Method',
+                'Payment Status',
+                'Note',
+                'Date',
             ]);
 
             foreach ($sales as $sale) {
-                $productsSummary = $sale->items->map(fn($i) =>
+                $productsSummary = $sale->items->map(
+                    fn($i) =>
                     $i->product->product_name . ' x' . $i->qty . ' @' . $i->price_on_sale
                 )->implode(' | ');
 
@@ -307,7 +319,7 @@ class SaleController extends Controller
 
     private function resolvePaymentAmounts(string $status, float $grandTotal, float $paidInput): array
     {
-        return match($status) {
+        return match ($status) {
             'paid'    => [$grandTotal, 0],
             'due'     => [0, $grandTotal],
             'partial' => [min($paidInput, $grandTotal), max(0, $grandTotal - $paidInput)],

@@ -2,502 +2,773 @@
     $purchaseReturn = $purchaseReturn ?? null;
     $prefillPurchase = $purchase ?? null;
 
-    $initialCart = [];
-    if ($purchaseReturn && $purchaseReturn->relationLoaded('items') && $purchaseReturn->items->count()) {
-        $initialCart = $purchaseReturn->items
-            ->map(fn($item) => [
-                'product_id'       => $item->product_id,
-                'purchase_item_id' => $item->purchase_item_id,
-                'product_name'     => $item->product->product_name ?? 'Unknown',
-                'sku'              => $item->product->sku ?? '',
-                'qty'              => (float) $item->qty,
-                'price'            => (float) $item->price,
-                'line_total'       => (float) $item->line_total,
-            ])
-            ->values()
-            ->toArray();
-    } elseif ($prefillPurchase && $prefillPurchase->relationLoaded('items') && $prefillPurchase->items->count()) {
-        $initialCart = $prefillPurchase->items
-            ->map(fn($item) => [
-                'product_id'       => $item->product_id,
-                'purchase_item_id' => $item->id,
-                'product_name'     => $item->product->product_name ?? 'Unknown',
-                'sku'              => $item->product->sku ?? '',
-                'qty'              => (float) $item->qty,
-                'price'            => (float) $item->price,
-                'line_total'       => (float) $item->line_total,
-            ])
-            ->values()
-            ->toArray();
-    }
+    $sectionClass  = 'bg-white border border-gray-200 rounded-xl overflow-hidden';
+    $headerClass   = 'flex items-center gap-2.5 px-5 py-3 border-b border-gray-100 bg-gray-50/60';
+    $bodyClass     = 'p-5';
+    $labelClass    = 'block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5';
+    $inputClass    = 'w-full h-9 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition';
+    $inputErrClass = 'w-full h-9 px-3 text-sm bg-red-50 border border-red-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-400/20 focus:border-red-400 transition';
+
+    $allPurchases = \App\Models\Purchase::with(['supplier', 'items.product'])->orderByDesc('id')->get();
 
     $selectedPurchaseId = old('purchase_id', $purchaseReturn?->purchase_id ?? $prefillPurchase?->id);
+    $selectedPurchase = $selectedPurchaseId
+        ? $allPurchases->firstWhere('id', (int) $selectedPurchaseId)
+        : $prefillPurchase;
+
+    if (old('items')) {
+        $items = collect(old('items'))->map(function ($item) {
+            return [
+                'purchase_item_id' => $item['purchase_item_id'] ?? '',
+                'product_id'       => $item['product_id'] ?? '',
+                'qty'              => $item['qty'] ?? 1,
+                'price'            => $item['price'] ?? 0,
+                'line_total'       => ((float) ($item['qty'] ?? 0)) * ((float) ($item['price'] ?? 0)),
+            ];
+        })->values()->all();
+    } elseif ($purchaseReturn) {
+        $items = $purchaseReturn->items->map(function ($item) {
+            return [
+                'purchase_item_id' => $item->purchase_item_id,
+                'product_id'       => $item->product_id,
+                'qty'              => $item->qty,
+                'price'            => $item->price,
+                'line_total'       => $item->line_total,
+            ];
+        })->values()->all();
+    } elseif ($selectedPurchase && $selectedPurchase->items->count()) {
+        $items = $selectedPurchase->items->map(function ($item) {
+            return [
+                'purchase_item_id' => $item->id,
+                'product_id'       => $item->product_id,
+                'qty'              => $item->qty,
+                'price'            => $item->price,
+                'line_total'       => $item->line_total,
+            ];
+        })->values()->all();
+    } else {
+        $items = [[
+            'purchase_item_id' => '',
+            'product_id'       => '',
+            'qty'              => 1,
+            'price'            => 0,
+            'line_total'       => 0,
+        ]];
+    }
+
+    $returnType = old('return_type', $purchaseReturn?->return_type ?? 'refund');
+    $returnStatus = old('return_status', $purchaseReturn?->return_status ?? 'pending');
+    $discount = old('discount', $purchaseReturn?->discount ?? 0);
+
+    $purchasesJson = $allPurchases->map(function ($purchase) {
+        return [
+            'id' => $purchase->id,
+            'reference' => $purchase->reference,
+            'supplier_id' => $purchase->supplier_id,
+            'items' => $purchase->items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product?->product_name,
+                    'sku' => $item->product?->sku,
+                    'qty' => (float) $item->qty,
+                    'price' => (float) $item->price,
+                    'line_total' => (float) $item->line_total,
+                ];
+            })->values(),
+        ];
+    })->values();
+
+    $productsJson = $products->map(function ($product) {
+        return [
+            'id' => $product->id,
+            'name' => $product->product_name,
+            'sku' => $product->sku,
+            'stock_qty' => (float) optional($product->stock)->stock_qty,
+        ];
+    })->values();
 @endphp
 
-<style>
-    .pos-wrap {
-        display: grid;
-        grid-template-columns: 1fr 380px;
-        gap: 0;
-        min-height: 600px;
-    }
-    @media (max-width: 900px) {
-        .pos-wrap { grid-template-columns: 1fr; }
-        .pos-sidebar { border-left: none !important; border-top: 1px solid #e5e7eb; }
-    }
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="xl:col-span-2 space-y-4">
 
-    .pos-left  { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
-    .pos-sidebar { padding: 24px; background: #f8fafc; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 18px; }
+        {{-- Purchase / Supplier --}}
+        <div class="{{ $sectionClass }}">
+            <div class="{{ $headerClass }}">
+                <span class="flex items-center justify-center w-6 h-6 rounded-md bg-violet-50 text-violet-700 shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+                    </svg>
+                </span>
+                <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Return Information</span>
+            </div>
 
-    .search-wrap { position: relative; }
-    .search-wrap input {
-        width: 100%;
-        height: 44px;
-        padding: 0 16px 0 42px;
-        font-size: 14px;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 10px;
-        background: #fff;
-        outline: none;
-        transition: border .15s, box-shadow .15s;
-    }
-    .search-wrap input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
-    .search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; }
-    .search-dropdown {
-        position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-        background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
-        box-shadow: 0 8px 24px rgba(0,0,0,.09);
-        max-height: 240px; overflow-y: auto; z-index: 50;
-        display: none;
-    }
-    .search-dropdown.open { display: block; }
-    .search-option {
-        display: flex; align-items: center; gap: 10px;
-        padding: 10px 14px; cursor: pointer; font-size: 13px;
-        border-bottom: 1px solid #f1f5f9;
-        transition: background .1s;
-    }
-    .search-option:last-child { border-bottom: none; }
-    .search-option:hover { background: #f0f9ff; }
-    .search-option .sku { font-size: 11px; color: #94a3b8; font-family: monospace; }
+            <div class="{{ $bodyClass }}">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="purchase_id" class="{{ $labelClass }}">Original Purchase</label>
+                        <select id="purchase_id" name="purchase_id"
+                                class="{{ $errors->has('purchase_id') ? $inputErrClass : $inputClass }}">
+                            <option value="">— No linked purchase —</option>
+                            @foreach($allPurchases as $p)
+                                <option value="{{ $p->id }}" {{ (string) $selectedPurchaseId === (string) $p->id ? 'selected' : '' }}>
+                                    {{ $p->reference }}
+                                    @if($p->supplier)
+                                        — {{ $p->supplier->name }}
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('purchase_id')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1.5 text-xs text-gray-400">
+                            Selecting a purchase auto-fills supplier and purchase items.
+                        </p>
+                    </div>
 
-    .cart-empty {
-        flex: 1; display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        color: #cbd5e1; gap: 10px; padding: 40px;
-        border: 2px dashed #e2e8f0; border-radius: 12px;
-        font-size: 13px; text-align: center;
-    }
-    .cart-list { display: flex; flex-direction: column; gap: 10px; }
-    .cart-card {
-        display: flex; align-items: center; gap: 12px;
-        background: #fff; border: 1px solid #e5e7eb;
-        border-radius: 10px; padding: 12px 14px;
-    }
-    .cart-card .prod-info { flex: 1; min-width: 0; }
-    .cart-card .prod-name { font-size: 13px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cart-card .prod-sku  { font-size: 11px; color: #94a3b8; font-family: monospace; }
-    .cart-card .price-col { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-    .cart-card .line-total { font-size: 13px; font-weight: 700; color: #dc2626; }
-    .price-edit { width: 90px; height: 32px; padding: 0 8px; font-size: 12px; border: 1px solid #e2e8f0; border-radius: 6px; text-align: right; }
-    .price-edit:focus { outline: none; border-color: #3b82f6; }
-
-    .qty-stepper { display: flex; align-items: center; gap: 0; border: 1px solid #e2e8f0; border-radius: 7px; overflow: hidden; }
-    .qty-stepper button {
-        width: 28px; height: 32px; font-size: 16px; font-weight: 600;
-        background: #f8fafc; border: none; cursor: pointer; color: #475569;
-    }
-    .qty-stepper input {
-        width: 40px; height: 32px; border: none; border-left: 1px solid #e2e8f0;
-        border-right: 1px solid #e2e8f0; text-align: center; font-size: 13px;
-        font-weight: 600; outline: none; background: #fff; color: #0f172a;
-    }
-
-    .btn-remove {
-        width: 28px; height: 28px; border-radius: 6px;
-        border: none; background: #fef2f2; color: #ef4444;
-        cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
-    }
-
-    .field-group { display: flex; flex-direction: column; gap: 6px; }
-    .field-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
-    .field-input {
-        width: 100%; height: 38px; padding: 0 12px;
-        border: 1.5px solid #e2e8f0; border-radius: 8px;
-        font-size: 13px; background: #fff; outline: none;
-    }
-    .field-input[readonly] { background: #f1f5f9; color: #64748b; }
-    select.field-input { cursor: pointer; }
-    textarea.field-input { height: auto; padding: 8px 12px; resize: vertical; }
-
-    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 0; }
-
-    .totals-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-    .totals-row.grand { font-size: 16px; font-weight: 700; margin-top: 4px; }
-    .totals-row .label { color: #64748b; }
-    .totals-row .val   { color: #1e293b; }
-    .totals-row.grand .val { color: #dc2626; font-size: 20px; }
-
-    .text-error { font-size: 12px; color: #dc2626; }
-</style>
-
-<div class="pos-wrap">
-    <div class="pos-left">
-        <div class="field-group">
-            <div class="field-label">Original Purchase</div>
-            <select name="purchase_id" id="purchase_id" class="field-input">
-                <option value="">— Select purchase —</option>
-                @foreach(\App\Models\Purchase::with(['supplier', 'items.product'])->latest()->get() as $p)
-                    <option value="{{ $p->id }}" @selected((string)$selectedPurchaseId === (string)$p->id)>
-                        {{ $p->reference }}{{ $p->supplier ? ' — '.$p->supplier->name : '' }}
-                    </option>
-                @endforeach
-            </select>
-            @error('purchase_id')
-                <p class="text-error">{{ $message }}</p>
-            @enderror
+                    <div>
+                        <label for="supplier_id" class="{{ $labelClass }}">Supplier</label>
+                        <select id="supplier_id" name="supplier_id"
+                                class="{{ $errors->has('supplier_id') ? $inputErrClass : $inputClass }}">
+                            <option value="">— No supplier —</option>
+                            @foreach($suppliers as $supplier)
+                                <option value="{{ $supplier->id }}"
+                                    {{ (string) old('supplier_id', $purchaseReturn?->supplier_id ?? $prefillPurchase?->supplier_id) === (string) $supplier->id ? 'selected' : '' }}>
+                                    {{ $supplier->name }}{{ $supplier->phone ? ' · '.$supplier->phone : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('supplier_id')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div>
-            <div class="field-label mb-2">Search Products</div>
-            <div class="search-wrap" id="search-wrap">
-                <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="m21 21-4.35-4.35"/>
-                </svg>
-                <input type="text" id="product-search" placeholder="Search by name or SKU…" autocomplete="off">
-                <div class="search-dropdown" id="search-dropdown">
-                    @foreach ($products as $product)
-                        <div class="search-option"
-                             data-id="{{ $product->id }}"
-                             data-name="{{ $product->product_name }}"
-                             data-sku="{{ $product->sku }}"
-                             data-price="{{ $product->buying_price ?? 0 }}">
-                            <div style="flex:1">
-                                <div style="font-weight:600;color:#1e293b">{{ $product->product_name }}</div>
-                                <div class="sku">{{ $product->sku }}</div>
+        {{-- Return Items --}}
+        <div class="{{ $sectionClass }}">
+            <div class="{{ $headerClass }}">
+                <span class="flex items-center justify-center w-6 h-6 rounded-md bg-blue-50 text-blue-700 shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
+                    </svg>
+                </span>
+                <div class="flex items-center justify-between w-full gap-3">
+                    <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Return Items</span>
+
+                    <button type="button"
+                            id="add-return-item"
+                            class="h-8 px-3 inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Item
+                    </button>
+                </div>
+            </div>
+
+            <div class="{{ $bodyClass }}">
+                @error('items')
+                    <p class="mb-3 text-xs text-red-500">{{ $message }}</p>
+                @enderror
+
+                <div id="return-items-wrapper" class="space-y-3">
+                    @foreach($items as $index => $item)
+                        <div class="return-item rounded-xl border border-gray-200 bg-gray-50/60 p-4" data-index="{{ $index }}">
+                            <div class="grid grid-cols-1 xl:grid-cols-12 gap-3">
+                                <div class="xl:col-span-4">
+                                    <label class="{{ $labelClass }}">Product</label>
+                                    <select name="items[{{ $index }}][product_id]"
+                                            class="return-product {{ $errors->has('items.'.$index.'.product_id') ? $inputErrClass : $inputClass }}">
+                                        <option value="">— Select product —</option>
+                                        @foreach($products as $product)
+                                            <option value="{{ $product->id }}"
+                                                    data-name="{{ $product->product_name }}"
+                                                    data-sku="{{ $product->sku }}"
+                                                    data-stock="{{ (float) optional($product->stock)->stock_qty }}"
+                                                {{ (string) ($item['product_id'] ?? '') === (string) $product->id ? 'selected' : '' }}>
+                                                {{ $product->product_name }}{{ $product->sku ? ' ['.$product->sku.']' : '' }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('items.'.$index.'.product_id')
+                                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="xl:col-span-2">
+                                    <label class="{{ $labelClass }}">Purchase Item</label>
+                                    <select name="items[{{ $index }}][purchase_item_id]"
+                                            class="return-purchase-item {{ $errors->has('items.'.$index.'.purchase_item_id') ? $inputErrClass : $inputClass }}">
+                                        <option value="">— Optional —</option>
+                                    </select>
+                                    @error('items.'.$index.'.purchase_item_id')
+                                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="xl:col-span-2">
+                                    <label class="{{ $labelClass }}">Qty</label>
+                                    <input type="number"
+                                           step="0.01"
+                                           min="0.01"
+                                           name="items[{{ $index }}][qty]"
+                                           value="{{ $item['qty'] }}"
+                                           class="return-qty {{ $errors->has('items.'.$index.'.qty') ? $inputErrClass : $inputClass }}">
+                                    @error('items.'.$index.'.qty')
+                                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="xl:col-span-2">
+                                    <label class="{{ $labelClass }}">Price</label>
+                                    <input type="number"
+                                           step="0.01"
+                                           min="0"
+                                           name="items[{{ $index }}][price]"
+                                           value="{{ $item['price'] }}"
+                                           class="return-price {{ $errors->has('items.'.$index.'.price') ? $inputErrClass : $inputClass }}">
+                                    @error('items.'.$index.'.price')
+                                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="xl:col-span-1">
+                                    <label class="{{ $labelClass }}">Total</label>
+                                    <div class="h-9 px-3 inline-flex items-center w-full text-sm bg-white border border-gray-200 rounded-lg text-gray-700">
+                                        <span class="return-line-total">৳{{ number_format((float) ($item['line_total'] ?? 0), 2) }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="xl:col-span-1">
+                                    <label class="{{ $labelClass }}">Action</label>
+                                    <button type="button"
+                                            class="remove-return-item h-9 w-full inline-flex items-center justify-center text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition">
+                                        Remove
+                                    </button>
+                                </div>
                             </div>
-                            <div style="font-size:12px;font-weight:600;color:#dc2626">৳{{ number_format($product->buying_price ?? 0, 2) }}</div>
+
+                            <div class="mt-3 flex flex-wrap items-center gap-3 text-xs">
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
+                                    SKU:
+                                    <span class="return-sku text-gray-700 font-medium">—</span>
+                                </span>
+
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
+                                    Stock:
+                                    <span class="return-stock text-gray-700 font-medium">0</span>
+                                </span>
+
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
+                                    Purchased Qty:
+                                    <span class="return-purchased-qty text-gray-700 font-medium">—</span>
+                                </span>
+                            </div>
                         </div>
                     @endforeach
                 </div>
             </div>
-            @error('items')
-                <p class="text-error mt-2">{{ $message }}</p>
-            @enderror
         </div>
 
-        <div id="cart-container" style="flex:1; display:flex; flex-direction:column; gap:10px;">
-            <div class="field-label">Return Items</div>
-            <div id="cart-empty" class="cart-empty">
-                <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                    <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
-                    <path d="M16 3v4M8 3v4M2 11h20"/>
-                </svg>
-                <span>No return items added yet.<br>Search and select a product above.</span>
+        {{-- Notes --}}
+        <div class="{{ $sectionClass }}">
+            <div class="{{ $headerClass }}">
+                <span class="flex items-center justify-center w-6 h-6 rounded-md bg-gray-100 text-gray-500 shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </span>
+                <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Additional Details</span>
             </div>
-            <div id="cart-list" class="cart-list"></div>
+
+            <div class="{{ $bodyClass }}">
+                <div>
+                    <label for="note" class="{{ $labelClass }}">Note</label>
+                    <textarea id="note" name="note" rows="3"
+                              placeholder="Any additional notes..."
+                              class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg resize-none text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition">{{ old('note', $purchaseReturn?->note) }}</textarea>
+                    @error('note')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="pos-sidebar">
-        <div class="field-group">
-            <div class="field-label">Supplier</div>
-            <select name="supplier_id" id="supplier_id" class="field-input">
-                <option value="">— Select supplier —</option>
-                @foreach ($suppliers as $supplier)
-                    <option value="{{ $supplier->id }}" @selected(old('supplier_id', $purchaseReturn?->supplier_id ?? $prefillPurchase?->supplier_id) == $supplier->id)>
-                        {{ $supplier->name }}{{ $supplier->phone ? ' · '.$supplier->phone : '' }}
-                    </option>
-                @endforeach
-            </select>
-            @error('supplier_id')
-                <p class="text-error">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <hr class="divider">
-
-        <div style="display:flex;flex-direction:column;gap:8px">
-            <div class="totals-row">
-                <span class="label">Subtotal</span>
-                <span class="val" id="subtotal-display">৳0.00</span>
+    {{-- Summary --}}
+    <div class="space-y-4">
+        <div class="{{ $sectionClass }}">
+            <div class="{{ $headerClass }}">
+                <span class="flex items-center justify-center w-6 h-6 rounded-md bg-green-50 text-green-700 shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2"/>
+                    </svg>
+                </span>
+                <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Return Summary</span>
             </div>
 
-            <div class="field-group">
-                <div class="field-label">Discount (৳)</div>
-                <input type="number" name="discount" id="discount"
-                       value="{{ old('discount', $purchaseReturn?->discount ?? 0) }}"
-                       step="0.01" min="0" class="field-input">
+            <div class="{{ $bodyClass }} space-y-4">
+                <div>
+                    <label for="discount" class="{{ $labelClass }}">Discount</label>
+                    <input type="number"
+                           id="discount"
+                           name="discount"
+                           min="0"
+                           step="0.01"
+                           value="{{ $discount }}"
+                           class="{{ $errors->has('discount') ? $inputErrClass : $inputClass }}">
+                    @error('discount')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="return_type" class="{{ $labelClass }}">Return Type</label>
+                    <select id="return_type" name="return_type"
+                            class="{{ $errors->has('return_type') ? $inputErrClass : $inputClass }}">
+                        @foreach(['refund' => 'Refund', 'exchange' => 'Exchange', 'credit' => 'Credit'] as $value => $label)
+                            <option value="{{ $value }}" {{ $returnType === $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('return_type')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="return_status" class="{{ $labelClass }}">Return Status</label>
+                    <select id="return_status" name="return_status"
+                            class="{{ $errors->has('return_status') ? $inputErrClass : $inputClass }}">
+                        @foreach(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected'] as $value => $label)
+                            <option value="{{ $value }}" {{ $returnStatus === $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('return_status')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="payment_method" class="{{ $labelClass }}">Payment Method</label>
+                    <select id="payment_method" name="payment_method"
+                            class="{{ $errors->has('payment_method') ? $inputErrClass : $inputClass }}">
+                        <option value="">— Select —</option>
+                        @foreach(['Cash','Bank','Bkash','Nagad','Card'] as $method)
+                            <option value="{{ $method }}"
+                                {{ old('payment_method', $purchaseReturn?->payment_method) === $method ? 'selected' : '' }}>
+                                {{ $method }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('payment_method')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="cash_memo" class="{{ $labelClass }}">Cash Memo</label>
+                    <input type="text"
+                           id="cash_memo"
+                           name="cash_memo"
+                           value="{{ old('cash_memo', $purchaseReturn?->cash_memo) }}"
+                           placeholder="Memo number"
+                           class="{{ $errors->has('cash_memo') ? $inputErrClass : $inputClass }}">
+                    @error('cash_memo')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="date" class="{{ $labelClass }}">Date</label>
+                    <input type="date"
+                           id="date"
+                           name="date"
+                           value="{{ old('date', optional($purchaseReturn?->date)->format('Y-m-d') ?? now()->format('Y-m-d')) }}"
+                           class="{{ $errors->has('date') ? $inputErrClass : $inputClass }}">
+                    @error('date')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="document" class="{{ $labelClass }}">Attachment</label>
+                    <input type="file" id="document" name="document"
+                           class="w-full text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer
+                                  file:h-7 file:mr-3 file:px-3 file:rounded-md file:border-0
+                                  file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700
+                                  hover:file:bg-blue-100 transition"/>
+                    @if($purchaseReturn?->document)
+                        <a href="{{ asset('storage/'.$purchaseReturn->document) }}" target="_blank"
+                           class="mt-1 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                            View current file
+                        </a>
+                    @endif
+                </div>
+
+                <div class="space-y-2 pt-2">
+                    <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Subtotal</span>
+                        <span id="return-subtotal-display" class="text-base font-semibold text-gray-800">৳0.00</span>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Return Amount</span>
+                        <span id="return-amount-display" class="text-base font-semibold text-red-600">৳0.00</span>
+                    </div>
+                </div>
+
+                <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
+                    Pending returns do not affect stock or supplier balances. Approved returns apply inventory and financial changes.
+                </div>
             </div>
-
-            <div class="totals-row grand" style="padding-top:4px;border-top:1px solid #e5e7eb;margin-top:4px">
-                <span class="label">Return Amount</span>
-                <span class="val" id="grand-total-display">৳0.00</span>
-            </div>
-        </div>
-
-        <hr class="divider">
-
-        <div class="field-group">
-            <div class="field-label">Return Type</div>
-            <select name="return_type" class="field-input">
-                <option value="refund" @selected(old('return_type', $purchaseReturn?->return_type ?? 'refund') === 'refund')>Refund</option>
-                <option value="exchange" @selected(old('return_type', $purchaseReturn?->return_type) === 'exchange')>Exchange</option>
-                <option value="credit" @selected(old('return_type', $purchaseReturn?->return_type) === 'credit')>Credit</option>
-            </select>
-            @error('return_type')
-                <p class="text-error">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div class="field-group">
-            <div class="field-label">Return Status</div>
-            <select name="return_status" class="field-input">
-                <option value="pending" @selected(old('return_status', $purchaseReturn?->return_status ?? 'pending') === 'pending')>Pending</option>
-                <option value="approved" @selected(old('return_status', $purchaseReturn?->return_status) === 'approved')>Approved</option>
-                <option value="rejected" @selected(old('return_status', $purchaseReturn?->return_status) === 'rejected')>Rejected</option>
-            </select>
-            @error('return_status')
-                <p class="text-error">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div class="field-group">
-            <div class="field-label">Payment Method</div>
-            <select name="payment_method" class="field-input">
-                <option value="">— Select —</option>
-                @foreach (['Cash','Bank','Bkash','Nagad','Card'] as $method)
-                    <option value="{{ $method }}" @selected(old('payment_method', $purchaseReturn?->payment_method) == $method)>{{ $method }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <hr class="divider">
-
-        <div class="field-group">
-            <div class="field-label">Cash Memo #</div>
-            <input type="text" name="cash_memo" value="{{ old('cash_memo', $purchaseReturn?->cash_memo) }}" class="field-input">
-        </div>
-
-        <div class="field-group">
-            <div class="field-label">Date</div>
-            <input type="date" name="date"
-                   value="{{ old('date', optional($purchaseReturn?->date)->format('Y-m-d') ?? now()->format('Y-m-d')) }}"
-                   class="field-input">
-            @error('date')
-                <p class="text-error">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div class="field-group">
-            <div class="field-label">Document</div>
-            <input type="file" name="document" class="field-input" style="padding:6px 10px;height:auto">
-            @if($purchaseReturn?->document)
-                <a href="{{ asset('storage/'.$purchaseReturn->document) }}" target="_blank" class="text-xs text-blue-600 hover:underline">
-                    View current file
-                </a>
-            @endif
-        </div>
-
-        <div class="field-group">
-            <div class="field-label">Note</div>
-            <textarea name="note" rows="2" class="field-input">{{ old('note', $purchaseReturn?->note) }}</textarea>
         </div>
     </div>
 </div>
 
-<input type="hidden" name="reference" value="{{ $nextReference ?? $purchaseReturn?->reference }}">
+<template id="return-item-template">
+    <div class="return-item rounded-xl border border-gray-200 bg-gray-50/60 p-4" data-index="__INDEX__">
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-3">
+            <div class="xl:col-span-4">
+                <label class="{{ $labelClass }}">Product</label>
+                <select name="items[__INDEX__][product_id]" class="return-product {{ $inputClass }}">
+                    <option value="">— Select product —</option>
+                    @foreach($products as $product)
+                        <option value="{{ $product->id }}"
+                                data-name="{{ $product->product_name }}"
+                                data-sku="{{ $product->sku }}"
+                                data-stock="{{ (float) optional($product->stock)->stock_qty }}">
+                            {{ $product->product_name }}{{ $product->sku ? ' ['.$product->sku.']' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="xl:col-span-2">
+                <label class="{{ $labelClass }}">Purchase Item</label>
+                <select name="items[__INDEX__][purchase_item_id]" class="return-purchase-item {{ $inputClass }}">
+                    <option value="">— Optional —</option>
+                </select>
+            </div>
+
+            <div class="xl:col-span-2">
+                <label class="{{ $labelClass }}">Qty</label>
+                <input type="number" step="0.01" min="0.01" name="items[__INDEX__][qty]" value="1" class="return-qty {{ $inputClass }}">
+            </div>
+
+            <div class="xl:col-span-2">
+                <label class="{{ $labelClass }}">Price</label>
+                <input type="number" step="0.01" min="0" name="items[__INDEX__][price]" value="0" class="return-price {{ $inputClass }}">
+            </div>
+
+            <div class="xl:col-span-1">
+                <label class="{{ $labelClass }}">Total</label>
+                <div class="h-9 px-3 inline-flex items-center w-full text-sm bg-white border border-gray-200 rounded-lg text-gray-700">
+                    <span class="return-line-total">৳0.00</span>
+                </div>
+            </div>
+
+            <div class="xl:col-span-1">
+                <label class="{{ $labelClass }}">Action</label>
+                <button type="button"
+                        class="remove-return-item h-9 w-full inline-flex items-center justify-center text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition">
+                    Remove
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-3 flex flex-wrap items-center gap-3 text-xs">
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
+                SKU:
+                <span class="return-sku text-gray-700 font-medium">—</span>
+            </span>
+
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
+                Stock:
+                <span class="return-stock text-gray-700 font-medium">0</span>
+            </span>
+
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
+                Purchased Qty:
+                <span class="return-purchased-qty text-gray-700 font-medium">—</span>
+            </span>
+        </div>
+    </div>
+</template>
 
 @push('scripts')
 <script>
-let cartItems = @json($initialCart);
+    const returnPurchases = @json($purchasesJson);
+    const returnProducts = @json($productsJson);
 
-const ALL_PRODUCTS = [
-    @foreach($products as $p)
-    {
-        id: "{{ $p->id }}",
-        name: @json($p->product_name),
-        sku: "{{ $p->sku }}",
-        price: {{ $p->buying_price ?? 0 }}
-    },
-    @endforeach
-];
-
-const searchInput   = document.getElementById('product-search');
-const dropdown      = document.getElementById('search-dropdown');
-const cartList      = document.getElementById('cart-list');
-const cartEmpty     = document.getElementById('cart-empty');
-const discountInput = document.getElementById('discount');
-const subtotalSpan  = document.getElementById('subtotal-display');
-const grandSpan     = document.getElementById('grand-total-display');
-
-searchInput?.addEventListener('input', () => {
-    const q = searchInput.value.trim().toLowerCase();
-    if (!q) {
-        dropdown.classList.remove('open');
-        return;
-    }
-
-    const matches = ALL_PRODUCTS.filter(p =>
-        p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
-    );
-
-    dropdown.innerHTML = matches.length
-        ? matches.slice(0, 12).map(p => `
-            <div class="search-option" data-id="${p.id}" data-name="${escHtml(p.name)}" data-sku="${escHtml(p.sku)}" data-price="${p.price}">
-                <div style="flex:1">
-                    <div style="font-weight:600;color:#1e293b">${escHtml(p.name)}</div>
-                    <div class="sku">${escHtml(p.sku)}</div>
-                </div>
-                <div style="font-size:12px;font-weight:600;color:#dc2626">৳${Number(p.price).toFixed(2)}</div>
-            </div>
-        `).join('')
-        : '<div style="padding:14px 16px;font-size:13px;color:#94a3b8">No products found</div>';
-
-    dropdown.classList.add('open');
-    attachDropdownEvents();
-});
-
-document.addEventListener('click', e => {
-    const wrap = document.getElementById('search-wrap');
-    if (wrap && !wrap.contains(e.target)) {
-        dropdown.classList.remove('open');
-    }
-});
-
-function attachDropdownEvents() {
-    dropdown.querySelectorAll('.search-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-            addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, parseFloat(opt.dataset.price));
-            searchInput.value = '';
-            dropdown.classList.remove('open');
-        });
-    });
-}
-
-function addToCart(id, name, sku, price) {
-    const existing = cartItems.find(i => String(i.product_id) === String(id));
-    if (existing) {
-        existing.qty += 1;
-        existing.line_total = existing.qty * existing.price;
-    } else {
-        cartItems.push({
-            product_id: id,
-            purchase_item_id: '',
-            product_name: name,
-            sku: sku || '',
-            qty: 1,
-            price: price,
-            line_total: price
+    function fmtMoney(value) {
+        const num = parseFloat(value || 0);
+        return '৳' + num.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         });
     }
-    renderCart();
-}
 
-function renderCart() {
-    cartEmpty.style.display = cartItems.length ? 'none' : 'flex';
-    cartList.innerHTML = '';
+    function getSelectedPurchase() {
+        const purchaseId = document.getElementById('purchase_id')?.value;
+        if (!purchaseId) return null;
+        return returnPurchases.find(p => String(p.id) === String(purchaseId)) || null;
+    }
 
-    cartItems.forEach((item, idx) => {
-        const card = document.createElement('div');
-        card.className = 'cart-card';
-        card.innerHTML = `
-            <input type="hidden" name="items[${idx}][product_id]" value="${item.product_id}">
-            <input type="hidden" name="items[${idx}][purchase_item_id]" value="${item.purchase_item_id || ''}">
-            <div class="prod-info">
-                <div class="prod-name">${escHtml(item.product_name)}</div>
-                <div class="prod-sku">${escHtml(item.sku)}</div>
-            </div>
-            <div class="qty-stepper">
-                <button type="button" class="btn-minus" data-idx="${idx}">−</button>
-                <input type="number" name="items[${idx}][qty]" class="item-qty" data-idx="${idx}" value="${item.qty}" step="0.01" min="0.01">
-                <button type="button" class="btn-plus" data-idx="${idx}">+</button>
-            </div>
-            <div class="price-col">
-                <input type="number" name="items[${idx}][price]" class="price-edit item-price" data-idx="${idx}" value="${Number(item.price).toFixed(2)}" step="0.01" min="0" title="Unit price">
-                <div class="line-total item-total">৳${Number(item.line_total).toFixed(2)}</div>
-            </div>
-            <button type="button" class="btn-remove" data-idx="${idx}" title="Remove">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path d="M18 6 6 18M6 6l12 12"/>
-                </svg>
-            </button>
-        `;
-        cartList.appendChild(card);
-    });
+    function getProduct(productId) {
+        return returnProducts.find(p => String(p.id) === String(productId)) || null;
+    }
 
-    attachCardEvents();
-    recalc();
-}
+    function fillPurchaseItemOptions(itemRow) {
+        const purchaseItemSelect = itemRow.querySelector('.return-purchase-item');
+        const productSelect = itemRow.querySelector('.return-product');
+        const purchasedQtyEl = itemRow.querySelector('.return-purchased-qty');
 
-function attachCardEvents() {
-    cartList.querySelectorAll('.btn-minus').forEach(b => b.addEventListener('click', e => {
-        const i = +e.currentTarget.dataset.idx;
-        if (cartItems[i].qty > 1) {
-            cartItems[i].qty -= 1;
-            updateItem(i);
-        } else {
-            removeItem(i);
+        if (!purchaseItemSelect || !productSelect) return;
+
+        const selectedPurchase = getSelectedPurchase();
+        const selectedProductId = productSelect.value;
+        const currentValue = purchaseItemSelect.getAttribute('data-current') || purchaseItemSelect.value || '';
+
+        purchaseItemSelect.innerHTML = '<option value="">— Optional —</option>';
+        purchasedQtyEl.textContent = '—';
+
+        if (!selectedPurchase || !selectedPurchase.items) {
+            return;
         }
-    }));
 
-    cartList.querySelectorAll('.btn-plus').forEach(b => b.addEventListener('click', e => {
-        const i = +e.currentTarget.dataset.idx;
-        cartItems[i].qty += 1;
-        updateItem(i);
-    }));
+        const matchedItems = selectedPurchase.items.filter(item => {
+            if (!selectedProductId) return true;
+            return String(item.product_id) === String(selectedProductId);
+        });
 
-    cartList.querySelectorAll('.item-qty').forEach(inp => inp.addEventListener('change', e => {
-        const i = +e.target.dataset.idx;
-        const v = parseFloat(e.target.value) || 1;
-        cartItems[i].qty = v < 0.01 ? 0.01 : v;
-        updateItem(i);
-    }));
+        matchedItems.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = `${item.product_name || 'Product'} · Purchased ${item.qty} @ ${item.price}`;
+            option.dataset.qty = item.qty;
+            option.dataset.price = item.price;
+            option.dataset.productId = item.product_id;
+            purchaseItemSelect.appendChild(option);
+        });
 
-    cartList.querySelectorAll('.item-price').forEach(inp => inp.addEventListener('change', e => {
-        const i = +e.target.dataset.idx;
-        cartItems[i].price = parseFloat(e.target.value) || 0;
-        updateItem(i);
-    }));
+        if (currentValue) {
+            purchaseItemSelect.value = currentValue;
+        }
 
-    cartList.querySelectorAll('.btn-remove').forEach(b => b.addEventListener('click', e => {
-        removeItem(+e.currentTarget.dataset.idx);
-    }));
-}
+        const selectedOption = purchaseItemSelect.options[purchaseItemSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            purchasedQtyEl.textContent = selectedOption.dataset.qty || '—';
+        }
+    }
 
-function updateItem(idx) {
-    cartItems[idx].line_total = cartItems[idx].qty * cartItems[idx].price;
-    const qtyInp = cartList.querySelector(`.item-qty[data-idx="${idx}"]`);
-    if (qtyInp) qtyInp.value = cartItems[idx].qty;
-    const totalEl = cartList.querySelectorAll('.item-total')[idx];
-    if (totalEl) totalEl.textContent = '৳' + cartItems[idx].line_total.toFixed(2);
-    recalc();
-}
+    function updateItemMeta(itemRow) {
+        const productSelect = itemRow.querySelector('.return-product');
+        const skuEl = itemRow.querySelector('.return-sku');
+        const stockEl = itemRow.querySelector('.return-stock');
 
-function removeItem(idx) {
-    cartItems.splice(idx, 1);
-    renderCart();
-}
+        const product = getProduct(productSelect?.value);
 
-function recalc() {
-    const sub = cartItems.reduce((s, i) => s + i.line_total, 0);
-    const disc = parseFloat(discountInput?.value) || 0;
-    const grand = Math.max(0, sub - disc);
+        skuEl.textContent = product?.sku || '—';
+        stockEl.textContent = product?.stock_qty ?? 0;
+    }
 
-    subtotalSpan.textContent = '৳' + sub.toFixed(2);
-    grandSpan.textContent = '৳' + grand.toFixed(2);
-}
+    function updateItemLine(itemRow) {
+        const qtyInput = itemRow.querySelector('.return-qty');
+        const priceInput = itemRow.querySelector('.return-price');
+        const totalEl = itemRow.querySelector('.return-line-total');
 
-discountInput?.addEventListener('input', recalc);
+        const qty = parseFloat(qtyInput?.value || 0);
+        const price = parseFloat(priceInput?.value || 0);
+        const lineTotal = qty * price;
 
-function escHtml(s) {
-    return String(s).replace(/[&<>"']/g, c =>
-        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])
-    );
-}
+        totalEl.textContent = fmtMoney(lineTotal);
+    }
 
-renderCart();
-recalc();
+    function updateSummary() {
+        let subtotal = 0;
+
+        document.querySelectorAll('.return-item').forEach(row => {
+            const qty = parseFloat(row.querySelector('.return-qty')?.value || 0);
+            const price = parseFloat(row.querySelector('.return-price')?.value || 0);
+            subtotal += qty * price;
+        });
+
+        const discount = parseFloat(document.getElementById('discount')?.value || 0);
+        const returnAmount = Math.max(0, subtotal - discount);
+
+        document.getElementById('return-subtotal-display').textContent = fmtMoney(subtotal);
+        document.getElementById('return-amount-display').textContent = fmtMoney(returnAmount);
+    }
+
+    function updateRowFromPurchaseItem(itemRow) {
+        const purchaseItemSelect = itemRow.querySelector('.return-purchase-item');
+        const productSelect = itemRow.querySelector('.return-product');
+        const qtyInput = itemRow.querySelector('.return-qty');
+        const priceInput = itemRow.querySelector('.return-price');
+        const purchasedQtyEl = itemRow.querySelector('.return-purchased-qty');
+
+        const option = purchaseItemSelect.options[purchaseItemSelect.selectedIndex];
+
+        if (option && option.value) {
+            if (option.dataset.productId) {
+                productSelect.value = option.dataset.productId;
+            }
+
+            if (option.dataset.qty && (!qtyInput.value || parseFloat(qtyInput.value) <= 0)) {
+                qtyInput.value = option.dataset.qty;
+            }
+
+            if (option.dataset.price) {
+                priceInput.value = option.dataset.price;
+            }
+
+            purchasedQtyEl.textContent = option.dataset.qty || '—';
+        } else {
+            purchasedQtyEl.textContent = '—';
+        }
+
+        updateItemMeta(itemRow);
+        updateItemLine(itemRow);
+        updateSummary();
+    }
+
+    function bindRowEvents(itemRow) {
+        const productSelect = itemRow.querySelector('.return-product');
+        const purchaseItemSelect = itemRow.querySelector('.return-purchase-item');
+        const qtyInput = itemRow.querySelector('.return-qty');
+        const priceInput = itemRow.querySelector('.return-price');
+        const removeBtn = itemRow.querySelector('.remove-return-item');
+
+        productSelect?.addEventListener('change', () => {
+            fillPurchaseItemOptions(itemRow);
+            updateItemMeta(itemRow);
+            updateItemLine(itemRow);
+            updateSummary();
+        });
+
+        purchaseItemSelect?.addEventListener('change', () => {
+            updateRowFromPurchaseItem(itemRow);
+        });
+
+        qtyInput?.addEventListener('input', () => {
+            updateItemLine(itemRow);
+            updateSummary();
+        });
+
+        priceInput?.addEventListener('input', () => {
+            updateItemLine(itemRow);
+            updateSummary();
+        });
+
+        removeBtn?.addEventListener('click', () => {
+            const rows = document.querySelectorAll('.return-item');
+            if (rows.length <= 1) return;
+            itemRow.remove();
+            updateSummary();
+        });
+
+        fillPurchaseItemOptions(itemRow);
+        updateItemMeta(itemRow);
+        updateItemLine(itemRow);
+    }
+
+    function addReturnItemRow(data = {}) {
+        const wrapper = document.getElementById('return-items-wrapper');
+        const template = document.getElementById('return-item-template').innerHTML;
+        const index = wrapper.querySelectorAll('.return-item').length;
+
+        const html = template.replaceAll('__INDEX__', index);
+        wrapper.insertAdjacentHTML('beforeend', html);
+
+        const itemRow = wrapper.lastElementChild;
+
+        if (data.product_id) {
+            itemRow.querySelector('.return-product').value = data.product_id;
+        }
+
+        if (data.qty) {
+            itemRow.querySelector('.return-qty').value = data.qty;
+        }
+
+        if (data.price) {
+            itemRow.querySelector('.return-price').value = data.price;
+        }
+
+        if (data.purchase_item_id) {
+            itemRow.querySelector('.return-purchase-item').setAttribute('data-current', data.purchase_item_id);
+        }
+
+        bindRowEvents(itemRow);
+        updateSummary();
+    }
+
+    function rebuildRowsFromSelectedPurchase() {
+        const wrapper = document.getElementById('return-items-wrapper');
+        const selectedPurchase = getSelectedPurchase();
+
+        if (!wrapper) return;
+
+        const currentRows = Array.from(wrapper.querySelectorAll('.return-item'));
+        const hasOldInput = {{ old('items') ? 'true' : 'false' }};
+        const isEditPage = {{ $purchaseReturn ? 'true' : 'false' }};
+
+        if (hasOldInput || isEditPage) {
+            currentRows.forEach(bindRowEvents);
+            updateSummary();
+            return;
+        }
+
+        wrapper.innerHTML = '';
+
+        if (selectedPurchase && selectedPurchase.items.length) {
+            selectedPurchase.items.forEach(item => {
+                addReturnItemRow({
+                    purchase_item_id: item.id,
+                    product_id: item.product_id,
+                    qty: item.qty,
+                    price: item.price,
+                });
+            });
+        } else {
+            addReturnItemRow();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const purchaseSelect = document.getElementById('purchase_id');
+        const supplierSelect = document.getElementById('supplier_id');
+        const discountInput = document.getElementById('discount');
+        const addBtn = document.getElementById('add-return-item');
+
+        document.querySelectorAll('.return-item').forEach(bindRowEvents);
+        updateSummary();
+
+        purchaseSelect?.addEventListener('change', () => {
+            const purchase = getSelectedPurchase();
+
+            if (purchase && purchase.supplier_id && supplierSelect) {
+                supplierSelect.value = purchase.supplier_id;
+            }
+
+            rebuildRowsFromSelectedPurchase();
+        });
+
+        discountInput?.addEventListener('input', updateSummary);
+
+        addBtn?.addEventListener('click', () => {
+            addReturnItemRow();
+        });
+
+        if (!document.querySelectorAll('.return-item').length) {
+            addReturnItemRow();
+        }
+    });
 </script>
 @endpush

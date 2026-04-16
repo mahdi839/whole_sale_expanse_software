@@ -51,11 +51,10 @@ class PurchaseReturnController extends Controller
 
         return view('purchase_returns.index', compact('returns', 'filters', 'totals'));
     }
-
     public function create(Request $request)
     {
         $nextReference = PurchaseReturn::generateReference();
-        $suppliers     = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $suppliers     = Supplier::orderBy('name')->get(['id', 'name', 'code', 'phone']);
         $products      = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
 
         $purchase = null;
@@ -132,9 +131,9 @@ class PurchaseReturnController extends Controller
 
     public function edit(PurchaseReturn $purchaseReturn)
     {
-        $purchaseReturn->load(['purchase.supplier', 'purchase.items.product', 'items.product', 'items.purchaseItem']);
+        $purchaseReturn->load(['items.product', 'items.purchaseItem', 'purchase.items.product', 'supplier']);
 
-        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'code', 'phone']);
         $products  = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
 
         return view('purchase_returns.edit', compact('purchaseReturn', 'suppliers', 'products'));
@@ -276,8 +275,8 @@ class PurchaseReturnController extends Controller
             ]);
 
             foreach ($rows as $row) {
-                $itemsSummary = $row->items->map(fn($i) =>
-                    ($i->product?->product_name ?? 'Unknown Product') . ' x' . $i->qty . ' @' . $i->price
+                $itemsSummary = $row->items->map(
+                    fn($i) => ($i->product?->product_name ?? 'Unknown Product') . ' x' . $i->qty . ' @' . $i->price
                 )->implode(' | ');
 
                 fputcsv($file, [

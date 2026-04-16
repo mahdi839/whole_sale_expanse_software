@@ -46,7 +46,7 @@ class SaleReturnController extends Controller
             sum(subtotal)          as total_subtotal,
             sum(return_amount)     as total_return_amount
         ')->first();
-
+        
         return view('sale_returns.index', compact('returns', 'filters', 'totals'));
     }
 
