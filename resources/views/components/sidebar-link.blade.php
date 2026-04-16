@@ -5,8 +5,8 @@
     title="{{ $slot }}"
     class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors group
         {{ $active
-            ? 'bg-blue-500/20 text-blue-400'
-            : 'text-white/60 hover:text-white hover:bg-white/6' }}"
+            ? 'bg-blue-500/20 text-white'
+            : 'text-white hover:text-white hover:bg-white/6' }}"
 >
     @isset($icon)
         <span class="w-4 h-4 shrink-0 flex items-center justify-center">{{ $icon }}</span>
