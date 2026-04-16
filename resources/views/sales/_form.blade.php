@@ -1,457 +1,555 @@
-@php $sale = $sale ?? null; @endphp
-
+{{-- resources/views/sales/_form.blade.php --}}
 @php
-    $sectionClass  = 'bg-white border border-gray-200 rounded-xl overflow-hidden';
-    $headerClass   = 'flex items-center gap-2.5 px-5 py-3 border-b border-gray-100 bg-gray-50/60';
-    $bodyClass     = 'p-5';
-    $labelClass    = 'block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5';
-    $inputClass    = 'w-full h-9 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg
-                      text-gray-800 placeholder-gray-400
-                      focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition';
-    $inputErrClass = 'w-full h-9 px-3 text-sm bg-red-50 border border-red-300 rounded-lg
-                      text-gray-800 placeholder-gray-400
-                      focus:outline-none focus:ring-2 focus:ring-red-400/20 focus:border-red-400 transition';
+    $sale = $sale ?? null;
+
+    $initialCart = [];
+    if ($sale && $sale->relationLoaded('items') && $sale->items->count()) {
+        $initialCart = $sale->items
+            ->map(fn($item) => [
+                'product_id'   => $item->product_id,
+                'product_name' => $item->product->product_name ?? 'Unknown',
+                'sku'          => $item->product->sku ?? '',
+                'qty'          => (float) $item->qty,
+                'price_on_sale'=> (float) $item->price_on_sale,
+                'line_total'   => (float) $item->line_total,
+            ])
+            ->values()
+            ->toArray();
+    }
 @endphp
 
-{{-- ══════════════════════
-     1 — Customer
-══════════════════════ --}}
-<div class="{{ $sectionClass }}">
-    <div class="{{ $headerClass }}">
-        <span class="flex items-center justify-center w-6 h-6 rounded-md bg-blue-50 text-blue-700 shrink-0">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
-        </span>
-        <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Customer</span>
-    </div>
-    <div class="{{ $bodyClass }}">
+<style>
+    /* ---- POS Layout ---- */
+    .pos-wrap {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 0;
+        min-height: 600px;
+    }
+    @media (max-width: 900px) {
+        .pos-wrap { grid-template-columns: 1fr; }
+        .pos-sidebar { border-left: none !important; border-top: 1px solid #e5e7eb; }
+    }
+
+    /* LEFT – product search + cart */
+    .pos-left  { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+    .pos-sidebar { padding: 24px; background: #f8fafc; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 18px; }
+
+    /* Search */
+    .search-wrap { position: relative; }
+    .search-wrap input {
+        width: 100%;
+        height: 44px;
+        padding: 0 16px 0 42px;
+        font-size: 14px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fff;
+        outline: none;
+        transition: border .15s, box-shadow .15s;
+    }
+    .search-wrap input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+    .search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; }
+    .search-dropdown {
+        position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.09);
+        max-height: 240px; overflow-y: auto; z-index: 50;
+        display: none;
+    }
+    .search-dropdown.open { display: block; }
+    .search-option {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 14px; cursor: pointer; font-size: 13px;
+        border-bottom: 1px solid #f1f5f9;
+        transition: background .1s;
+    }
+    .search-option:last-child { border-bottom: none; }
+    .search-option:hover { background: #f0f9ff; }
+    .search-option .sku { font-size: 11px; color: #94a3b8; font-family: monospace; }
+
+    /* Cart items */
+    .cart-empty {
+        flex: 1; display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        color: #cbd5e1; gap: 10px; padding: 40px;
+        border: 2px dashed #e2e8f0; border-radius: 12px;
+        font-size: 13px; text-align: center;
+    }
+    .cart-list { display: flex; flex-direction: column; gap: 10px; }
+    .cart-card {
+        display: flex; align-items: center; gap: 12px;
+        background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 10px; padding: 12px 14px;
+        animation: slideIn .18s ease;
+    }
+    @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+    .cart-card .prod-info { flex: 1; min-width: 0; }
+    .cart-card .prod-name { font-size: 13px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cart-card .prod-sku  { font-size: 11px; color: #94a3b8; font-family: monospace; }
+    .cart-card .price-col { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .cart-card .line-total { font-size: 13px; font-weight: 700; color: #1d4ed8; }
+    .price-edit { width: 90px; height: 32px; padding: 0 8px; font-size: 12px; border: 1px solid #e2e8f0; border-radius: 6px; text-align: right; }
+    .price-edit:focus { outline: none; border-color: #3b82f6; }
+
+    /* Qty stepper */
+    .qty-stepper { display: flex; align-items: center; gap: 0; border: 1px solid #e2e8f0; border-radius: 7px; overflow: hidden; }
+    .qty-stepper button {
+        width: 28px; height: 32px; font-size: 16px; font-weight: 600;
+        background: #f8fafc; border: none; cursor: pointer; color: #475569;
+        transition: background .12s;
+    }
+    .qty-stepper button:hover { background: #e2e8f0; }
+    .qty-stepper input {
+        width: 40px; height: 32px; border: none; border-left: 1px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0; text-align: center; font-size: 13px;
+        font-weight: 600; outline: none; background: #fff; color: #0f172a;
+    }
+    /* hide arrows on number inputs */
+    .qty-stepper input::-webkit-inner-spin-button,
+    .qty-stepper input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .btn-remove {
+        width: 28px; height: 28px; border-radius: 6px;
+        border: none; background: #fef2f2; color: #ef4444;
+        cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+        transition: background .12s;
+    }
+    .btn-remove:hover { background: #fee2e2; }
+
+    /* ---- Sidebar fields ---- */
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+    .field-input {
+        width: 100%; height: 38px; padding: 0 12px;
+        border: 1.5px solid #e2e8f0; border-radius: 8px;
+        font-size: 13px; background: #fff; outline: none;
+        transition: border .15s, box-shadow .15s;
+    }
+    .field-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
+    .field-input[readonly] { background: #f1f5f9; color: #64748b; cursor: default; }
+    select.field-input { cursor: pointer; }
+    textarea.field-input { height: auto; padding: 8px 12px; resize: vertical; }
+
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 0; }
+
+    /* Totals */
+    .totals-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+    .totals-row.grand { font-size: 16px; font-weight: 700; margin-top: 4px; }
+    .totals-row .label { color: #64748b; }
+    .totals-row .val   { color: #1e293b; }
+    .totals-row.grand .val { color: #16a34a; font-size: 20px; }
+
+    /* Badge status */
+    .payment-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+</style>
+
+<div class="pos-wrap">
+
+    {{-- ==================== LEFT PANEL ==================== --}}
+    <div class="pos-left">
+
+        {{-- Product Search --}}
         <div>
-            <label for="customer_id" class="{{ $labelClass }}">Customer</label>
-            <div class="flex gap-2">
-                <select id="customer_id" name="customer_id"
-                        class="{{ $errors->has('customer_id') ? $inputErrClass : $inputClass }} flex-1">
-                    <option value="">— Walk-in / No customer —</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}"
-                            {{ old('customer_id', $sale?->customer_id) == $c->id ? 'selected' : '' }}>
-                            {{ $c->full_name }}{{ $c->phone ? ' · '.$c->phone : '' }}
+            <div class="field-label mb-2">Search Products</div>
+            <div class="search-wrap" id="search-wrap">
+                <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" id="product-search" placeholder="Search by name or SKU…" autocomplete="off">
+                <div class="search-dropdown" id="search-dropdown">
+                    @foreach ($products as $product)
+                        <div class="search-option"
+                             data-id="{{ $product->id }}"
+                             data-name="{{ $product->product_name }}"
+                             data-sku="{{ $product->sku }}"
+                             data-price="{{ $product->selling_price ?? 0 }}">
+                            <div style="flex:1">
+                                <div style="font-weight:600;color:#1e293b">{{ $product->product_name }}</div>
+                                <div class="sku">{{ $product->sku }}</div>
+                            </div>
+                            <div style="font-size:12px;font-weight:600;color:#2563eb">৳{{ number_format($product->selling_price ?? 0, 2) }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
+        {{-- Cart --}}
+        <div id="cart-container" style="flex:1; display:flex; flex-direction:column; gap:10px;">
+            <div class="field-label">Cart Items</div>
+            <div id="cart-empty" class="cart-empty">
+                <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                <span>No items added yet.<br>Search and select a product above.</span>
+            </div>
+            <div id="cart-list" class="cart-list"></div>
+        </div>
+    </div>
+
+    {{-- ==================== RIGHT SIDEBAR ==================== --}}
+    <div class="pos-sidebar">
+
+        {{-- Customer --}}
+        <div class="field-group">
+            <div class="field-label">Customer</div>
+            <div style="display:flex;gap:8px">
+                <select name="customer_id" id="customer_id" class="field-input" style="flex:1">
+                    <option value="">Walk-in / No customer</option>
+                    @foreach ($customers as $customer)
+                        <option value="{{ $customer->id }}" @selected(old('customer_id', $sale?->customer_id) == $customer->id)>
+                            {{ $customer->full_name }}{{ $customer->phone ? ' · '.$customer->phone : '' }}
                         </option>
                     @endforeach
                 </select>
-                <button type="button" onclick="openModal('customerModal')"
-                        class="flex-none flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50
-                               border border-blue-200 text-blue-600 hover:bg-blue-100 transition">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path d="M12 4v16m8-8H4"/>
-                    </svg>
+                <button type="button" onclick="openCustomerModal()" title="Add customer"
+                    style="width:38px;height:38px;flex-shrink:0;border-radius:8px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#2563eb;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background .12s">
+                    +
                 </button>
             </div>
-            @error('customer_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
         </div>
-    </div>
+
+        <hr class="divider">
+
+        {{-- Totals --}}
+        <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="totals-row">
+                <span class="label">Subtotal</span>
+                <span class="val" id="subtotal-display">৳0.00</span>
+            </div>
+            <div class="field-group">
+                <div class="field-label">Discount (৳)</div>
+                <input type="number" name="discount" id="discount"
+                       value="{{ old('discount', $sale?->discount ?? 0) }}"
+                       step="0.01" min="0" class="field-input">
+            </div>
+            <div class="totals-row grand" style="padding-top:4px;border-top:1px solid #e5e7eb;margin-top:4px">
+                <span class="label">Grand Total</span>
+                <span class="val" id="grand-total-display">৳0.00</span>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        {{-- Payment --}}
+        <div class="field-group">
+            <div class="field-label">Payment Status</div>
+            <select name="payment_status" id="payment_status" class="field-input">
+                <option value="due"     @selected(old('payment_status', $sale?->payment_status ?? 'due') === 'due')>Due</option>
+                <option value="paid"    @selected(old('payment_status', $sale?->payment_status) === 'paid')>Paid</option>
+                <option value="partial" @selected(old('payment_status', $sale?->payment_status) === 'partial')>Partial</option>
+            </select>
+        </div>
+
+        <div id="paid-field" class="field-group" style="display:none">
+            <div class="field-label">Paid Amount (৳)</div>
+            <input type="number" name="paid" id="paid"
+                   value="{{ old('paid', $sale?->paid ?? 0) }}"
+                   step="0.01" min="0" class="field-input">
+        </div>
+
+        <div id="due-field" class="field-group" style="display:none">
+            <div class="field-label">Due Amount (৳)</div>
+            <input type="number" name="due" id="due"
+                   value="{{ old('due', $sale?->due ?? 0) }}"
+                   step="0.01" min="0" readonly class="field-input">
+        </div>
+
+        <div class="field-group">
+            <div class="field-label">Payment Method</div>
+            <select name="payment_method" class="field-input">
+                <option value="">— Select —</option>
+                @foreach (['Cash','Bank','Bkash','Nagad','Card'] as $method)
+                    <option value="{{ $method }}" @selected(old('payment_method', $sale?->payment_method) == $method)>{{ $method }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <hr class="divider">
+
+        {{-- Extra --}}
+        <div class="field-group">
+            <div class="field-label">Cash Memo #</div>
+            <input type="text" name="cash_memo" value="{{ old('cash_memo', $sale?->cash_memo) }}" class="field-input">
+        </div>
+
+        <div class="field-group">
+            <div class="field-label">Note</div>
+            <textarea name="note" rows="2" class="field-input">{{ old('note', $sale?->note) }}</textarea>
+        </div>
+
+    </div>{{-- /sidebar --}}
 </div>
 
-{{-- ══════════════════════
-     2 — Product
-══════════════════════ --}}
-<div class="{{ $sectionClass }}">
-    <div class="{{ $headerClass }}">
-        <span class="flex items-center justify-center w-6 h-6 rounded-md bg-violet-50 text-violet-700 shrink-0">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
-                <path d="M16 3v4M8 3v4"/>
-            </svg>
-        </span>
-        <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Product</span>
-    </div>
-    <div class="{{ $bodyClass }}">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label for="product_id" class="{{ $labelClass }}">Product</label>
-                <select id="product_id" name="product_id"
-                        onchange="fillProductFields(this)"
-                        class="{{ $errors->has('product_id') ? $inputErrClass : $inputClass }}">
-                    <option value="">— Select product —</option>
-                    @foreach($products as $p)
-                        <option value="{{ $p->id }}"
-                                data-name="{{ $p->product_name }}"
-                                data-sku="{{ $p->sku }}"
-                            {{ old('product_id', $sale?->product_id) == $p->id ? 'selected' : '' }}>
-                            {{ $p->product_name }}{{ $p->sku ? ' ['.$p->sku.']' : '' }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('product_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label for="product_code" class="{{ $labelClass }}">Product Code / SKU</label>
-                <input type="text" id="product_code" name="product_code"
-                       value="{{ old('product_code', $sale?->product_code) }}"
-                       placeholder="Auto-filled or enter manually"
-                       class="{{ $inputClass }}"/>
-                @error('product_code') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-        </div>
-        <input type="hidden" id="product_name_hidden" name="product_name"
-               value="{{ old('product_name', $sale?->product_name) }}">
-    </div>
-</div>
+{{-- Hidden --}}
+<input type="hidden" name="reference" value="{{ $nextReference ?? $sale?->reference }}">
 
-{{-- ══════════════════════
-     3 — Pricing
-══════════════════════ --}}
-<div class="{{ $sectionClass }}">
-    <div class="{{ $headerClass }}">
-        <span class="flex items-center justify-center w-6 h-6 rounded-md bg-green-50 text-green-700 shrink-0">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2"/>
-            </svg>
-        </span>
-        <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Pricing</span>
-    </div>
-    <div class="{{ $bodyClass }}">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-                <label for="qty" class="{{ $labelClass }}">Qty <span class="text-red-400 normal-case">*</span></label>
-                <input type="number" id="qty" name="qty"
-                       value="{{ old('qty', $sale?->qty ?? '1') }}"
-                       min="0.01" step="0.01"
-                       oninput="calcSaleTotal()"
-                       class="{{ $errors->has('qty') ? $inputErrClass : $inputClass }}"/>
-                @error('qty') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label for="price_on_sale" class="{{ $labelClass }}">
-                    Sale price (৳) <span class="text-red-400 normal-case">*</span>
-                </label>
-                <input type="number" id="price_on_sale" name="price_on_sale"
-                       value="{{ old('price_on_sale', $sale?->price_on_sale ?? '0') }}"
-                       min="0" step="0.01"
-                       oninput="calcSaleTotal()"
-                       class="{{ $errors->has('price_on_sale') ? $inputErrClass : $inputClass }}"/>
-                @error('price_on_sale') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label for="discount" class="{{ $labelClass }}">Discount (৳)</label>
-                <input type="number" id="discount" name="discount"
-                       value="{{ old('discount', $sale?->discount ?? '0') }}"
-                       min="0" step="0.01"
-                       oninput="calcSaleTotal()"
-                       class="{{ $inputClass }}"/>
-                @error('discount') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
+{{-- ============ Customer Modal ============ --}}
+<div id="customerModal" class="hidden" style="position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:16px"
+     onclick="closeCustomerModal(event)">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:440px;box-shadow:0 20px 50px rgba(0,0,0,.15)" onclick="event.stopPropagation()">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #f1f5f9">
+            <span style="font-weight:700;font-size:14px">New Customer</span>
+            <button type="button" onclick="closeCustomerModal()" style="border:none;background:none;font-size:18px;color:#94a3b8;cursor:pointer">✕</button>
         </div>
-
-        {{-- Live summary --}}
-        <div class="grid grid-cols-2 gap-3 mt-4">
-            <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-                <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Subtotal</span>
-                <span id="subtotal-display" class="text-base font-semibold text-gray-800">৳0.00</span>
-            </div>
-            <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-                <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Grand total</span>
-                <span id="grand-total-display" class="text-base font-semibold text-green-700">৳0.00</span>
-            </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+            <input type="text" id="new_customer_name" placeholder="Full Name *" class="field-input">
+            <input type="text" id="new_customer_phone" placeholder="Phone" class="field-input">
+            <div id="modal-error" class="hidden" style="font-size:12px;color:#ef4444"></div>
         </div>
-    </div>
-</div>
-
-{{-- ══════════════════════════
-     4 — Status & Payment
-══════════════════════════ --}}
-<div class="{{ $sectionClass }}">
-    <div class="{{ $headerClass }}">
-        <span class="flex items-center justify-center w-6 h-6 rounded-md bg-amber-50 text-amber-700 shrink-0">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        </span>
-        <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Status &amp; Payment</span>
-    </div>
-    <div class="{{ $bodyClass }}">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-                <label for="purchase_status" class="{{ $labelClass }}">
-                    Sale status <span class="text-red-400 normal-case">*</span>
-                </label>
-                <select id="purchase_status" name="purchase_status"
-                        class="{{ $errors->has('purchase_status') ? $inputErrClass : $inputClass }}">
-                    @foreach(['received'=>'Received','partial'=>'Partial','pending'=>'Pending','ordered'=>'Ordered'] as $val=>$label)
-                        <option value="{{ $val }}"
-                            {{ old('purchase_status', $sale?->purchase_status ?? 'pending') == $val ? 'selected' : '' }}>
-                            {{ $label }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('purchase_status') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label for="payment_status" class="{{ $labelClass }}">
-                    Payment status <span class="text-red-400 normal-case">*</span>
-                </label>
-                <select id="payment_status" name="payment_status"
-                        onchange="toggleSalePaymentFields()"
-                        class="{{ $errors->has('payment_status') ? $inputErrClass : $inputClass }}">
-                    @foreach(['due'=>'Due','paid'=>'Paid','partial'=>'Partial'] as $val=>$label)
-                        <option value="{{ $val }}"
-                            {{ old('payment_status', $sale?->payment_status ?? 'due') == $val ? 'selected' : '' }}>
-                            {{ $label }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('payment_status') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label for="payment_method" class="{{ $labelClass }}">Payment method</label>
-                <select id="payment_method" name="payment_method" class="{{ $inputClass }}">
-                    <option value="">— Select —</option>
-                    @foreach(['Cash','Bank','Bkash','Nagad','Card'] as $m)
-                        <option value="{{ $m }}"
-                            {{ old('payment_method', $sale?->payment_method) == $m ? 'selected' : '' }}>
-                            {{ $m }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('payment_method') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-            <div id="paid-amount-field" class="hidden">
-                <label for="paid" class="block text-xs font-medium text-green-700 uppercase tracking-wide mb-1.5">
-                    Paid amount (৳)
-                </label>
-                <input type="number" id="paid" name="paid"
-                       value="{{ old('paid', $sale?->paid ?? '0') }}"
-                       min="0" step="0.01"
-                       oninput="syncSaleDueFromPaid()"
-                       class="w-full h-9 px-3 text-sm bg-green-50 border border-green-200 rounded-lg
-                              text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-400/20 focus:border-green-400 transition"/>
-                @error('paid') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-
-            <div id="due-amount-field" class="hidden">
-                <label for="due" class="block text-xs font-medium text-red-600 uppercase tracking-wide mb-1.5">
-                    Due amount (৳)
-                </label>
-                <input type="number" id="due" name="due"
-                       value="{{ old('due', $sale?->due ?? '0') }}"
-                       min="0" step="0.01"
-                       class="w-full h-9 px-3 text-sm bg-red-50 border border-red-200 rounded-lg
-                              text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-400/20 focus:border-red-400 transition"/>
-                @error('due') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-        </div>
-    </div>
-</div>
-
-{{-- ══════════════════════════
-     5 — Reference & Details
-══════════════════════════ --}}
-<div class="{{ $sectionClass }}">
-    <div class="{{ $headerClass }}">
-        <span class="flex items-center justify-center w-6 h-6 rounded-md bg-gray-100 text-gray-500 shrink-0">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-        </span>
-        <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Reference &amp; Details</span>
-    </div>
-    <div class="{{ $bodyClass }} space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-                <label for="cash_memo" class="{{ $labelClass }}">Cash memo #</label>
-                <input type="text" id="cash_memo" name="cash_memo"
-                       value="{{ old('cash_memo', $sale?->cash_memo) }}"
-                       placeholder="Memo number"
-                       class="{{ $inputClass }}"/>
-                @error('cash_memo') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label for="date" class="{{ $labelClass }}">
-                    Date <span class="text-red-400 normal-case">*</span>
-                </label>
-                <input type="date" id="date" name="date"
-                       value="{{ old('date', optional($sale?->date)->format('Y-m-d') ?? now()->format('Y-m-d')) }}"
-                       class="{{ $errors->has('date') ? $inputErrClass : $inputClass }}"/>
-                @error('date') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label for="document" class="{{ $labelClass }}">Attachment</label>
-                <input type="file" id="document" name="document"
-                       class="w-full text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer
-                              file:h-7 file:mr-3 file:px-3 file:rounded-md file:border-0
-                              file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700
-                              hover:file:bg-blue-100 transition"/>
-                @if($sale?->document)
-                    <a href="{{ asset('storage/'.$sale->document) }}" target="_blank"
-                       class="mt-1 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                        </svg>
-                        View current file
-                    </a>
-                @endif
-                @error('document') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-        </div>
-
-        <div>
-            <label for="note" class="{{ $labelClass }}">Note</label>
-            <textarea id="note" name="note" rows="3"
-                      placeholder="Any additional notes about this sale…"
-                      class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg resize-none
-                             text-gray-800 placeholder-gray-400
-                             focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition">{{ old('note', $sale?->note) }}</textarea>
-            @error('note') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-        </div>
-    </div>
-</div>
-
-{{-- ══════════════════════
-     Modal — New Customer
-══════════════════════ --}}
-<div id="customerModal"
-     class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-     onclick="closeModal('customerModal', event)">
-    <div class="bg-white rounded-xl w-full max-w-lg border border-gray-200 overflow-hidden"
-         onclick="event.stopPropagation()">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/60">
-            <h3 class="text-sm font-semibold text-gray-800">New Customer</h3>
-            <button type="button" onclick="closeModal('customerModal')"
-                    class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition text-base leading-none">✕</button>
-        </div>
-        <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label class="{{ $labelClass }}">Full Name <span class="text-red-400 normal-case">*</span></label>
-                <input type="text" id="new_customer_name" placeholder="Customer name" class="{{ $inputClass }}"/>
-            </div>
-            <div>
-                <label class="{{ $labelClass }}">Phone</label>
-                <input type="text" id="new_customer_phone" placeholder="01XXXXXXXXX" class="{{ $inputClass }}"/>
-            </div>
-            <div id="customer-modal-error" class="hidden col-span-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
-        </div>
-        <div class="flex items-center justify-end gap-2.5 px-5 py-4 border-t border-gray-100 bg-gray-50/60">
-            <button type="button" onclick="closeModal('customerModal')"
-                    class="h-8 px-3.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-                Cancel
-            </button>
-            <button type="button" onclick="saveCustomer()" id="save-customer-btn"
-                    class="h-8 px-4 inline-flex items-center gap-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-                Save customer
-            </button>
+        <div style="padding:12px 20px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:8px">
+            <button type="button" onclick="closeCustomerModal()" style="height:36px;padding:0 16px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer;background:#fff">Cancel</button>
+            <button type="button" id="save-customer-btn" style="height:36px;padding:0 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:#2563eb;color:#fff;cursor:pointer">Save</button>
         </div>
     </div>
 </div>
 
 @push('scripts')
 <script>
-function calcSaleTotal() {
-    const qty      = parseFloat(document.getElementById('qty').value)           || 0;
-    const price    = parseFloat(document.getElementById('price_on_sale').value) || 0;
-    const discount = parseFloat(document.getElementById('discount').value)      || 0;
-    const subtotal = (qty * price) - discount;
-    const grand    = subtotal;
-    const fmt = v => '৳' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    document.getElementById('subtotal-display').textContent    = fmt(subtotal);
-    document.getElementById('grand-total-display').textContent = fmt(grand);
-    const ps = document.getElementById('payment_status').value;
-    if (ps === 'due')     setVal('due',  grand);
-    if (ps === 'paid')    setVal('paid', grand);
-    if (ps === 'partial') syncSaleDueFromPaid();
-}
+// ============================================================
+//  State
+// ============================================================
+let cartItems = @json($initialCart);
 
-function setVal(id, v) {
-    const el = document.getElementById(id);
-    if (el) el.value = v.toFixed(2);
-}
+// All products for search
+const ALL_PRODUCTS = [
+    @foreach($products as $p)
+    { id: "{{ $p->id }}", name: @json($p->product_name), sku: "{{ $p->sku }}", price: {{ $p->selling_price ?? 0 }} },
+    @endforeach
+];
 
-function grandTotalNum() {
-    const qty      = parseFloat(document.getElementById('qty').value)           || 0;
-    const price    = parseFloat(document.getElementById('price_on_sale').value) || 0;
-    const discount = parseFloat(document.getElementById('discount').value)      || 0;
-    return (qty * price) - discount;
-}
+// ============================================================
+//  DOM refs
+// ============================================================
+const searchInput   = document.getElementById('product-search');
+const dropdown      = document.getElementById('search-dropdown');
+const cartList      = document.getElementById('cart-list');
+const cartEmpty     = document.getElementById('cart-empty');
+const discountInput = document.getElementById('discount');
+const subtotalSpan  = document.getElementById('subtotal-display');
+const grandSpan     = document.getElementById('grand-total-display');
+const payStatus     = document.getElementById('payment_status');
+const paidField     = document.getElementById('paid-field');
+const dueField      = document.getElementById('due-field');
+const paidInput     = document.getElementById('paid');
+const dueInput      = document.getElementById('due');
 
-function syncSaleDueFromPaid() {
-    const grand = grandTotalNum();
-    const paid  = parseFloat(document.getElementById('paid')?.value) || 0;
-    setVal('due', Math.max(0, grand - paid));
-}
+// ============================================================
+//  Search
+// ============================================================
+searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) { dropdown.classList.remove('open'); return; }
+    const matches = ALL_PRODUCTS.filter(p =>
+        p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
+    );
+    dropdown.innerHTML = matches.length
+        ? matches.slice(0, 12).map(p => `
+            <div class="search-option" data-id="${p.id}" data-name="${escHtml(p.name)}" data-sku="${escHtml(p.sku)}" data-price="${p.price}">
+                <div style="flex:1">
+                    <div style="font-weight:600;color:#1e293b">${escHtml(p.name)}</div>
+                    <div class="sku">${escHtml(p.sku)}</div>
+                </div>
+                <div style="font-size:12px;font-weight:600;color:#2563eb">৳${p.price.toFixed(2)}</div>
+            </div>`).join('')
+        : '<div style="padding:14px 16px;font-size:13px;color:#94a3b8">No products found</div>';
+    dropdown.classList.add('open');
+    attachDropdownEvents();
+});
 
-function toggleSalePaymentFields() {
-    const status    = document.getElementById('payment_status').value;
-    const dueField  = document.getElementById('due-amount-field');
-    const paidField = document.getElementById('paid-amount-field');
-    const grand     = grandTotalNum();
-    dueField.classList.toggle('hidden',  !['due',  'partial'].includes(status));
-    paidField.classList.toggle('hidden', !['paid', 'partial'].includes(status));
-    if (status === 'due')     { setVal('due', grand);  setVal('paid', 0); }
-    if (status === 'paid')    { setVal('paid', grand); setVal('due', 0); }
-    if (status === 'partial') { syncSaleDueFromPaid(); }
-}
+document.addEventListener('click', e => {
+    if (!document.getElementById('search-wrap').contains(e.target))
+        dropdown.classList.remove('open');
+});
 
-function fillProductFields(sel) {
-    const opt = sel.options[sel.selectedIndex];
-    document.getElementById('product_name_hidden').value = opt.dataset.name || '';
-    document.getElementById('product_code').value        = opt.dataset.sku  || '';
-}
-
-function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
-function closeModal(id, e) {
-    if (!e || e.target === document.getElementById(id))
-        document.getElementById(id).classList.add('hidden');
-}
-
-async function saveCustomer() {
-    const name  = document.getElementById('new_customer_name').value.trim();
-    const phone = document.getElementById('new_customer_phone').value.trim();
-    const errEl = document.getElementById('customer-modal-error');
-    if (!name) { showModalError(errEl, 'Customer name is required.'); return; }
-    errEl.classList.add('hidden');
-    const btn = document.getElementById('save-customer-btn');
-    btn.disabled = true;
-    try {
-        const res  = await fetch('{{ route("customers.store") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ full_name: name, phone }),
+function attachDropdownEvents() {
+    dropdown.querySelectorAll('.search-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, parseFloat(opt.dataset.price));
+            searchInput.value = '';
+            dropdown.classList.remove('open');
         });
-        const data = await res.json();
-        if (!res.ok) {
-            showModalError(errEl, data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Error saving customer.'));
-        } else {
-            const sel = document.getElementById('customer_id');
-            const opt = new Option(data.full_name + (data.phone ? ' · ' + data.phone : ''), data.id, true, true);
-            sel.add(opt);
-            sel.value = data.id;
-            closeModal('customerModal');
-            document.getElementById('new_customer_name').value  = '';
-            document.getElementById('new_customer_phone').value = '';
-        }
-    } catch (err) {
-        showModalError(errEl, 'Network error. Please try again.');
-    } finally {
-        btn.disabled = false;
+    });
+}
+
+// ============================================================
+//  Cart logic
+// ============================================================
+function addToCart(id, name, sku, price) {
+    const existing = cartItems.find(i => i.product_id == id);
+    if (existing) {
+        existing.qty += 1;
+        existing.line_total = existing.qty * existing.price_on_sale;
+    } else {
+        cartItems.push({ product_id: id, product_name: name, sku: sku || '', qty: 1, price_on_sale: price, line_total: price });
+    }
+    renderCart();
+}
+
+function renderCart() {
+    cartEmpty.style.display = cartItems.length ? 'none' : 'flex';
+    cartList.innerHTML = '';
+    cartItems.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'cart-card';
+        card.innerHTML = `
+            <input type="hidden" name="items[${idx}][product_id]" value="${item.product_id}">
+            <div class="prod-info">
+                <div class="prod-name">${escHtml(item.product_name)}</div>
+                <div class="prod-sku">${escHtml(item.sku)}</div>
+            </div>
+            <div class="qty-stepper">
+                <button type="button" class="btn-minus" data-idx="${idx}">−</button>
+                <input type="number" name="items[${idx}][qty]" class="item-qty" data-idx="${idx}" value="${item.qty}" step="0.01" min="0.01">
+                <button type="button" class="btn-plus" data-idx="${idx}">+</button>
+            </div>
+            <div class="price-col">
+                <input type="number" name="items[${idx}][price_on_sale]" class="price-edit item-price" data-idx="${idx}" value="${item.price_on_sale.toFixed(2)}" step="0.01" min="0" title="Unit price">
+                <div class="line-total item-total">৳${item.line_total.toFixed(2)}</div>
+            </div>
+            <button type="button" class="btn-remove" data-idx="${idx}" title="Remove">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+        `;
+        cartList.appendChild(card);
+    });
+    attachCardEvents();
+    recalc();
+}
+
+function attachCardEvents() {
+    cartList.querySelectorAll('.btn-minus').forEach(b => b.addEventListener('click', e => {
+        const i = +e.currentTarget.dataset.idx;
+        if (cartItems[i].qty > 1) { cartItems[i].qty -= 1; updateItem(i); }
+        else removeItem(i);
+    }));
+    cartList.querySelectorAll('.btn-plus').forEach(b => b.addEventListener('click', e => {
+        const i = +e.currentTarget.dataset.idx;
+        cartItems[i].qty += 1; updateItem(i);
+    }));
+    cartList.querySelectorAll('.item-qty').forEach(inp => inp.addEventListener('change', e => {
+        const i = +e.target.dataset.idx;
+        const v = parseFloat(e.target.value) || 1;
+        cartItems[i].qty = v < 0.01 ? 0.01 : v;
+        updateItem(i);
+    }));
+    cartList.querySelectorAll('.item-price').forEach(inp => inp.addEventListener('change', e => {
+        const i = +e.target.dataset.idx;
+        cartItems[i].price_on_sale = parseFloat(e.target.value) || 0;
+        updateItem(i);
+    }));
+    cartList.querySelectorAll('.btn-remove').forEach(b => b.addEventListener('click', e => {
+        removeItem(+e.currentTarget.dataset.idx);
+    }));
+}
+
+function updateItem(idx) {
+    cartItems[idx].line_total = cartItems[idx].qty * cartItems[idx].price_on_sale;
+    // update qty input and total label without full re-render
+    const qtyInp = cartList.querySelector(`.item-qty[data-idx="${idx}"]`);
+    if (qtyInp) qtyInp.value = cartItems[idx].qty;
+    const totalEl = cartList.querySelectorAll('.item-total')[idx];
+    if (totalEl) totalEl.textContent = '৳' + cartItems[idx].line_total.toFixed(2);
+    recalc();
+}
+
+function removeItem(idx) {
+    cartItems.splice(idx, 1);
+    renderCart();
+}
+
+// ============================================================
+//  Totals
+// ============================================================
+function recalc() {
+    const sub = cartItems.reduce((s, i) => s + i.line_total, 0);
+    const disc = parseFloat(discountInput.value) || 0;
+    const grand = Math.max(0, sub - disc);
+    subtotalSpan.textContent = '৳' + sub.toFixed(2);
+    grandSpan.textContent    = '৳' + grand.toFixed(2);
+    updatePayment(grand);
+}
+
+function updatePayment(grand) {
+    const s = payStatus.value;
+    paidField.style.display = (s === 'paid' || s === 'partial') ? 'flex' : 'none';
+    dueField.style.display  = (s === 'due'  || s === 'partial') ? 'flex' : 'none';
+    if (s === 'paid')    { paidInput.value = grand.toFixed(2); dueInput.value = '0.00'; }
+    else if (s === 'due'){ paidInput.value = '0.00'; dueInput.value = grand.toFixed(2); }
+    else { // partial
+        let paid = Math.min(parseFloat(paidInput.value) || 0, grand);
+        paidInput.value = paid.toFixed(2);
+        dueInput.value  = (grand - paid).toFixed(2);
     }
 }
 
-function showModalError(el, msg) {
-    el.textContent = msg;
-    el.classList.remove('hidden');
+discountInput.addEventListener('input', recalc);
+payStatus.addEventListener('change', recalc);
+paidInput.addEventListener('input', () => {
+    if (payStatus.value === 'partial') {
+        const g = getGrand();
+        let p = Math.min(parseFloat(paidInput.value) || 0, g);
+        dueInput.value = (g - p).toFixed(2);
+    }
+});
+
+function getGrand() {
+    return Math.max(0, cartItems.reduce((s,i)=>s+i.line_total,0) - (parseFloat(discountInput.value)||0));
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    calcSaleTotal();
-    toggleSalePaymentFields();
+// ============================================================
+//  Customer modal
+// ============================================================
+function openCustomerModal() {
+    const m = document.getElementById('customerModal');
+    m.style.display = 'flex'; m.classList.remove('hidden');
+}
+function closeCustomerModal(e) {
+    if (!e || e.target === document.getElementById('customerModal')) {
+        const m = document.getElementById('customerModal');
+        m.style.display = 'none'; m.classList.add('hidden');
+    }
+}
+document.getElementById('save-customer-btn').addEventListener('click', async () => {
+    const name  = document.getElementById('new_customer_name').value.trim();
+    const phone = document.getElementById('new_customer_phone').value.trim();
+    const err   = document.getElementById('modal-error');
+    if (!name) { err.textContent = 'Name is required'; err.classList.remove('hidden'); return; }
+    err.classList.add('hidden');
+    const btn = document.getElementById('save-customer-btn');
+    btn.disabled = true;
+    try {
+        const res  = await fetch('{{ route('customers.store') }}', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json' },
+            body: JSON.stringify({ full_name: name, phone })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Error saving customer');
+        const sel = document.getElementById('customer_id');
+        sel.add(new Option(data.full_name + (data.phone ? ' · ' + data.phone : ''), data.id, true, true));
+        sel.value = data.id;
+        closeCustomerModal();
+        document.getElementById('new_customer_name').value = '';
+        document.getElementById('new_customer_phone').value = '';
+    } catch(ex) {
+        err.textContent = ex.message; err.classList.remove('hidden');
+    } finally { btn.disabled = false; }
 });
+
+// ============================================================
+//  Helpers
+// ============================================================
+function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ============================================================
+//  Init
+// ============================================================
+renderCart();
+recalc();
+setTimeout(recalc, 100);
 </script>
 @endpush
