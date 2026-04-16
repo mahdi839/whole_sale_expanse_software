@@ -15,9 +15,9 @@ class SaleItem extends Model
     ];
 
     protected $casts = [
-        'qty'          => 'decimal:2',
-        'price_on_sale'=> 'decimal:2',
-        'line_total'   => 'decimal:2',
+        'qty'           => 'decimal:2',
+        'price_on_sale' => 'decimal:2',
+        'line_total'    => 'decimal:2',
     ];
 
     public function sale()
@@ -28,5 +28,10 @@ class SaleItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function returnItems()
+    {
+        return $this->hasMany(SaleReturnItem::class);
     }
 }

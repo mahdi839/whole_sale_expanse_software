@@ -40,10 +40,16 @@ class Sale extends Model
         return $this->hasMany(SaleItem::class);
     }
 
+    public function returns()
+    {
+        return $this->hasMany(SaleReturn::class);
+    }
+
     public static function generateReference(): string
     {
         $last = static::orderByDesc('id')->value('reference');
         $next = $last ? ((int) preg_replace('/\D/', '', $last)) + 1 : 1;
+
         return 'SALE-' . str_pad($next, 6, '0', STR_PAD_LEFT);
     }
 }
