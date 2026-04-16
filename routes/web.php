@@ -28,7 +28,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/purchases/export/csv', [PurchaseController::class, 'exportCsv'])->name('purchases.export.csv');
     Route::resource('/purchases', PurchaseController::class);
 
-    Route::resource('/purchase-returns', PurchaseReturnController::class)->except(['show']);
+    Route::resource('purchase-returns', PurchaseReturnController::class);
+    Route::post('purchase-returns/{purchaseReturn}/approve', [PurchaseReturnController::class, 'approve'])
+        ->name('purchase-returns.approve');
+    Route::get('purchase-returns-export', [PurchaseReturnController::class, 'exportCsv'])
+        ->name('purchase-returns.export');
     Route::resource('stocks', StockController::class);
 
     Route::resource('sales', SaleController::class);
