@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\PurchaseItem;
 use App\Models\Stock;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,29 +17,27 @@ class PurchaseController extends Controller
     public function index(Request $request)
     {
         $filters = [
-            'date' => $request->input('date'),
-            'seller_store_name' => $request->input('seller_store_name'),
-            'purchased_by' => $request->input('purchased_by'),
             'purchase_status' => $request->input('purchase_status'),
-            'payment_status' => $request->input('payment_status'),
-            'search' => $request->input('search'),
+            'payment_status'  => $request->input('payment_status'),
+            'search'          => $request->input('search'),
+            'date'            => $request->input('date'),
         ];
 
         $purchases = Purchase::query()
-            ->with(['supplier', 'product'])
-            ->when($filters['date'], fn($q) => $q->whereDate('date', $filters['date']))
-            ->when($filters['seller_store_name'], fn($q) => $q->where('seller_store_name', 'like', '%' . $filters['seller_store_name'] . '%'))
-            ->when($filters['purchased_by'], fn($q) => $q->where('purchased_by', 'like', '%' . $filters['purchased_by'] . '%'))
+            ->with(['supplier', 'items.product'])
             ->when($filters['purchase_status'], fn($q) => $q->where('purchase_status', $filters['purchase_status']))
             ->when($filters['payment_status'], fn($q) => $q->where('payment_status', $filters['payment_status']))
+            ->when($filters['date'], fn($q) => $q->whereDate('date', $filters['date']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
+
                 $q->where(function ($sub) use ($s) {
-                    $sub->where('product_name', 'like', "%{$s}%")
-                        ->orWhere('product_code', 'like', "%{$s}%")
-                        ->orWhere('reference', 'like', "%{$s}%")
+                    $sub->where('reference', 'like', "%{$s}%")
                         ->orWhere('cash_memo', 'like', "%{$s}%")
-                        ->orWhere('seller_store_name', 'like', "%{$s}%");
+                        ->orWhere('seller_store_name', 'like', "%{$s}%")
+                        ->orWhere('purchased_by', 'like', "%{$s}%")
+                        ->orWhereHas('supplier', fn($supplier) => $supplier->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('items.product', fn($product) => $product->where('product_name', 'like', "%{$s}%"));
                 });
             })
             ->latest()
@@ -45,10 +45,10 @@ class PurchaseController extends Controller
             ->withQueryString();
 
         $totals = Purchase::selectRaw('
-            count(*)           as total_purchases,
-            sum(qty)           as total_qty,
-            sum(subtotal)      as total_subtotal,
-            sum(grand_total)   as total_amount
+            count(*)              as total_purchases,
+            sum(grand_total)      as total_amount,
+            sum(paid_amount)      as total_paid,
+            sum(due_amount)       as total_due
         ')->first();
 
         return view('purchases.index', compact('purchases', 'filters', 'totals'));
@@ -57,8 +57,8 @@ class PurchaseController extends Controller
     public function create()
     {
         $nextReference = Purchase::generateReference();
-        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'code', 'phone']);
-        $products = Product::orderBy('product_name')->get(['id', 'product_name', 'sku']);
+        $suppliers     = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $products      = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
 
         return view('purchases.create', compact('nextReference', 'suppliers', 'products'));
     }
@@ -67,39 +67,67 @@ class PurchaseController extends Controller
     {
         $validated = $this->validatePurchase($request);
 
-        if ($request->hasFile('document')) {
-            $validated['document'] = $request->file('document')->store('purchases', 'public');
-        }
+        DB::transaction(function () use ($request, $validated) {
+            $reference = $validated['reference'] ?? Purchase::generateReference();
 
-        // Auto-fill name fields from related models if IDs provided
-        if (! empty($validated['supplier_id'])) {
-            $supplier = Supplier::find($validated['supplier_id']);
-            $validated['seller_store_name'] = $supplier?->name ?? $validated['seller_store_name'];
-        }
+            if ($request->hasFile('document')) {
+                $validated['document'] = $request->file('document')->store('purchases', 'public');
+            }
 
-        if (! empty($validated['product_id'])) {
-            $product = Product::find($validated['product_id']);
-            $validated['product_name'] = $product?->product_name ?? $validated['product_name'];
-            $validated['product_code'] = $product?->sku ?? $validated['product_code'];
+            $itemsInput = $request->input('items', []);
+            $itemsTotal = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price']);
+            $grandTotal = $itemsTotal + (float) ($validated['other_cost'] ?? 0) - (float) ($validated['discount'] ?? 0);
 
-            if ($product) {
+            [$paidAmount, $dueAmount] = $this->resolvePaymentAmounts(
+                $validated['payment_status'],
+                $grandTotal,
+                (float) ($validated['paid_amount'] ?? 0)
+            );
+
+            $purchase = Purchase::create([
+                'reference'         => $reference,
+                'supplier_id'       => $validated['supplier_id'] ?? null,
+                'seller_store_name' => $validated['seller_store_name'] ?? null,
+                'purchased_by'      => $validated['purchased_by'],
+                'discount'          => $validated['discount'] ?? 0,
+                'other_cost'        => $validated['other_cost'] ?? 0,
+                'grand_total'       => $grandTotal,
+                'paid_amount'       => $paidAmount,
+                'due_amount'        => $dueAmount,
+                'cash_memo'         => $validated['cash_memo'] ?? null,
+                'date'              => $validated['date'],
+                'payment_method'    => $validated['payment_method'] ?? null,
+                'document'          => $validated['document'] ?? null,
+                'note'              => $validated['note'] ?? null,
+                'purchase_status'   => $validated['purchase_status'],
+                'payment_status'    => $validated['payment_status'],
+            ]);
+
+            foreach ($itemsInput as $item) {
+                $product   = Product::findOrFail($item['product_id']);
+                $qty       = (float) $item['qty'];
+                $price     = (float) $item['price'];
+                $lineTotal = $qty * $price;
+
+                PurchaseItem::create([
+                    'purchase_id' => $purchase->id,
+                    'product_id'  => $product->id,
+                    'qty'         => $qty,
+                    'price'       => $price,
+                    'line_total'  => $lineTotal,
+                ]);
+
                 $stock = Stock::firstOrCreate(
                     ['product_id' => $product->id],
-                    ['stock_qty' => 0],
+                    ['stock_qty' => 0]
                 );
-                $stock->increment('stock_qty', (float) $validated['qty']);
+
+                $stock->increment('stock_qty', $qty);
             }
-        }
 
-        $validated['subtotal'] = (float) $validated['qty'] * (float) $validated['price'];
-        $validated['grand_total'] = $validated['subtotal'] + (float) ($validated['other_cost'] ?? 0);
-
-        // Compute payment amounts based on status
-        $validated = $this->resolvePaymentAmounts($validated);
-        if (empty($validated['reference'])) {
-            $validated['reference'] = Purchase::generateReference();
-        }
-        Purchase::create($validated);
+            // Update supplier financials
+            $this->syncSupplierFinancials($purchase->supplier_id);
+        });
 
         return redirect()->route('purchases.index')
             ->with('success', 'Purchase created successfully.');
@@ -107,15 +135,16 @@ class PurchaseController extends Controller
 
     public function show(Purchase $purchase)
     {
-        $purchase->load(['supplier', 'product']);
+        $purchase->load(['supplier', 'items.product.stock']);
 
         return view('purchases.show', compact('purchase'));
     }
 
     public function edit(Purchase $purchase)
     {
-        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'code', 'phone']);
-        $products = Product::orderBy('product_name')->get(['id', 'product_name', 'sku']);
+        $purchase->load('items.product');
+        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $products  = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
 
         return view('purchases.edit', compact('purchase', 'suppliers', 'products'));
     }
@@ -124,47 +153,83 @@ class PurchaseController extends Controller
     {
         $validated = $this->validatePurchase($request, $purchase->id);
 
-        if ($request->hasFile('document')) {
-            if ($purchase->document) {
-                Storage::disk('public')->delete($purchase->document);
+        DB::transaction(function () use ($request, $purchase, $validated) {
+            $oldSupplierId = $purchase->supplier_id;
+
+            if ($request->hasFile('document')) {
+                if ($purchase->document) {
+                    Storage::disk('public')->delete($purchase->document);
+                }
+
+                $validated['document'] = $request->file('document')->store('purchases', 'public');
             }
-            $validated['document'] = $request->file('document')->store('purchases', 'public');
-        }
 
-        if (! empty($validated['supplier_id'])) {
-            $supplier = Supplier::find($validated['supplier_id']);
-            $validated['seller_store_name'] = $supplier?->name ?? $validated['seller_store_name'];
-        }
-
-        if (! empty($validated['product_id'])) {
-            $product = Product::find($validated['product_id']);
-            $validated['product_name'] = $product?->product_name ?? $validated['product_name'];
-            $validated['product_code'] = $product?->sku ?? $validated['product_code'];
-        }
-
-        if ($purchase->product_id) {
-            $oldStock = Stock::where('product_id', $purchase->product_id)->first();
-            if ($oldStock) {
-                $oldStock->decrement('stock_qty', $purchase->qty);
+            foreach ($purchase->items as $oldItem) {
+                $stock = Stock::where('product_id', $oldItem->product_id)->first();
+                if ($stock) {
+                    $stock->decrement('stock_qty', (float) $oldItem->qty);
+                }
             }
-        }
 
-        // add new qty to new product stock
-        if (! empty($validated['product_id'])) {
-            $newStock = Stock::firstOrCreate(
-                ['product_id' => $validated['product_id']],
-                ['stock_qty' => 0]
+            $purchase->items()->delete();
+
+            $itemsInput = $request->input('items', []);
+            $itemsTotal = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price']);
+            $grandTotal = $itemsTotal + (float) ($validated['other_cost'] ?? 0) - (float) ($validated['discount'] ?? 0);
+
+            [$paidAmount, $dueAmount] = $this->resolvePaymentAmounts(
+                $validated['payment_status'],
+                $grandTotal,
+                (float) ($validated['paid_amount'] ?? 0)
             );
 
-            $newStock->increment('stock_qty', (float) $validated['qty']);
-        }
+            $purchase->update([
+                'supplier_id'       => $validated['supplier_id'] ?? null,
+                'seller_store_name' => $validated['seller_store_name'] ?? null,
+                'purchased_by'      => $validated['purchased_by'],
+                'discount'          => $validated['discount'] ?? 0,
+                'other_cost'        => $validated['other_cost'] ?? 0,
+                'grand_total'       => $grandTotal,
+                'paid_amount'       => $paidAmount,
+                'due_amount'        => $dueAmount,
+                'cash_memo'         => $validated['cash_memo'] ?? null,
+                'date'              => $validated['date'],
+                'payment_method'    => $validated['payment_method'] ?? null,
+                'document'          => $validated['document'] ?? $purchase->document,
+                'note'              => $validated['note'] ?? null,
+                'purchase_status'   => $validated['purchase_status'],
+                'payment_status'    => $validated['payment_status'],
+            ]);
 
+            foreach ($itemsInput as $item) {
+                $product   = Product::findOrFail($item['product_id']);
+                $qty       = (float) $item['qty'];
+                $price     = (float) $item['price'];
 
-        $validated['subtotal'] = (float) $validated['qty'] * (float) $validated['price'];
-        $validated['grand_total'] = $validated['subtotal'] + (float) ($validated['other_cost'] ?? 0);
-        $validated = $this->resolvePaymentAmounts($validated);
+                PurchaseItem::create([
+                    'purchase_id' => $purchase->id,
+                    'product_id'  => $product->id,
+                    'qty'         => $qty,
+                    'price'       => $price,
+                    'line_total'  => $qty * $price,
+                ]);
 
-        $purchase->update($validated);
+                $stock = Stock::firstOrCreate(
+                    ['product_id' => $product->id],
+                    ['stock_qty' => 0]
+                );
+
+                $stock->increment('stock_qty', $qty);
+            }
+
+            // Recalculate old supplier if changed
+            if ($oldSupplierId && $oldSupplierId != $purchase->supplier_id) {
+                $this->syncSupplierFinancials($oldSupplierId);
+            }
+
+            // Update current supplier totals
+            $this->syncSupplierFinancials($purchase->supplier_id);
+        });
 
         return redirect()->route('purchases.index')
             ->with('success', 'Purchase updated successfully.');
@@ -172,18 +237,26 @@ class PurchaseController extends Controller
 
     public function destroy(Purchase $purchase)
     {
-        if ($purchase->product_id) {
-            $stock = Stock::where('product_id', $purchase->product_id)->first();
-            if ($stock) {
-                $stock->decrement('stock_qty', (float) $purchase->qty);
+        DB::transaction(function () use ($purchase) {
+            $supplierId = $purchase->supplier_id;
+
+            foreach ($purchase->items as $item) {
+                $stock = Stock::where('product_id', $item->product_id)->first();
+                if ($stock) {
+                    $stock->decrement('stock_qty', (float) $item->qty);
+                }
             }
-        }
 
-        if ($purchase->document) {
-            Storage::disk('public')->delete($purchase->document);
-        }
+            if ($purchase->document) {
+                Storage::disk('public')->delete($purchase->document);
+            }
 
-        $purchase->delete();
+            $purchase->items()->delete();
+            $purchase->delete();
+
+            // Update supplier financials after delete
+            $this->syncSupplierFinancials($supplierId);
+        });
 
         return redirect()->route('purchases.index')
             ->with('success', 'Purchase deleted successfully.');
@@ -193,43 +266,26 @@ class PurchaseController extends Controller
     {
         $fileName = 'purchases-' . now()->format('Y-m-d-H-i-s') . '.csv';
 
-        $rows = Purchase::query()
-            ->when($request->date, fn($q) => $q->whereDate('date', $request->date))
-            ->when($request->seller_store_name, fn($q) => $q->where('seller_store_name', 'like', '%' . $request->seller_store_name . '%'))
-            ->when($request->purchased_by, fn($q) => $q->where('purchased_by', 'like', '%' . $request->purchased_by . '%'))
+        $purchases = Purchase::with(['supplier', 'items.product'])
             ->when($request->purchase_status, fn($q) => $q->where('purchase_status', $request->purchase_status))
             ->when($request->payment_status, fn($q) => $q->where('payment_status', $request->payment_status))
-            ->when($request->search, function ($q) use ($request) {
-                $s = $request->search;
-                $q->where(function ($sub) use ($s) {
-                    $sub->where('product_name', 'like', "%{$s}%")
-                        ->orWhere('product_code', 'like', "%{$s}%")
-                        ->orWhere('reference', 'like', "%{$s}%")
-                        ->orWhere('cash_memo', 'like', "%{$s}%");
-                });
-            })
-            ->latest()->get();
+            ->latest()
+            ->get();
 
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-        ];
-
-        $callback = function () use ($rows) {
+        $callback = function () use ($purchases) {
             $file = fopen('php://output', 'w');
+
             fputcsv($file, [
                 'Reference',
-                'Seller/Store',
+                'Supplier',
+                'Store',
                 'Purchased By',
-                'Product Name',
-                'Product Code',
-                'Qty',
-                'Price',
-                'Subtotal',
-                'Other Cost',
+                'Products',
                 'Grand Total',
-                'Due Amount',
-                'Paid Amount',
+                'Discount',
+                'Other Cost',
+                'Paid',
+                'Due',
                 'Cash Memo',
                 'Date',
                 'Payment Method',
@@ -238,83 +294,101 @@ class PurchaseController extends Controller
                 'Note',
             ]);
 
-            foreach ($rows as $row) {
+            foreach ($purchases as $purchase) {
+                $productsSummary = $purchase->items->map(fn($i) =>
+                    ($i->product?->product_name ?? 'Unknown Product') . ' x' . $i->qty . ' @' . $i->price
+                )->implode(' | ');
+
                 fputcsv($file, [
-                    $row->reference,
-                    $row->seller_store_name,
-                    $row->purchased_by,
-                    $row->product_name,
-                    $row->product_code,
-                    $row->qty,
-                    $row->price,
-                    $row->subtotal,
-                    $row->other_cost,
-                    $row->grand_total,
-                    $row->due_amount,
-                    $row->paid_amount,
-                    $row->cash_memo,
-                    optional($row->date)->format('Y-m-d'),
-                    $row->payment_method,
-                    $row->purchase_status,
-                    $row->payment_status,
-                    $row->note,
+                    $purchase->reference,
+                    $purchase->supplier?->name,
+                    $purchase->seller_store_name,
+                    $purchase->purchased_by,
+                    $productsSummary,
+                    $purchase->grand_total,
+                    $purchase->discount,
+                    $purchase->other_cost,
+                    $purchase->paid_amount,
+                    $purchase->due_amount,
+                    $purchase->cash_memo,
+                    optional($purchase->date)->format('Y-m-d'),
+                    $purchase->payment_method,
+                    $purchase->purchase_status,
+                    $purchase->payment_status,
+                    $purchase->note,
                 ]);
             }
+
             fclose($file);
         };
 
-        return Response::stream($callback, 200, $headers);
+        return Response::stream($callback, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ]);
     }
 
-    // ── Helpers ────────────────────────────────────────────
-
-    private function resolvePaymentAmounts(array $data): array
+    private function resolvePaymentAmounts(string $status, float $grandTotal, float $paidInput): array
     {
-        $grandTotal = $data['grand_total'] ?? 0;
+        return match ($status) {
+            'paid'    => [$grandTotal, 0],
+            'due'     => [0, $grandTotal],
+            'partial' => [min($paidInput, $grandTotal), max(0, $grandTotal - $paidInput)],
+            default   => [0, $grandTotal],
+        };
+    }
 
-        switch ($data['payment_status'] ?? 'due') {
-            case 'paid':
-                $data['paid_amount'] = $grandTotal;
-                $data['due_amount'] = 0;
-                break;
-            case 'due':
-                $data['due_amount'] = $grandTotal;
-                $data['paid_amount'] = 0;
-                break;
-            case 'partial':
-                // keep whatever the user entered; just ensure non-negative
-                $data['paid_amount'] = max(0, (float) ($data['paid_amount'] ?? 0));
-                $data['due_amount'] = max(0, $grandTotal - $data['paid_amount']);
-                break;
+    private function syncSupplierFinancials(?int $supplierId): void
+    {
+        if (! $supplierId) {
+            return;
         }
 
-        return $data;
+        $supplier = Supplier::find($supplierId);
+
+        if (! $supplier) {
+            return;
+        }
+
+        $totals = Purchase::where('supplier_id', $supplierId)
+            ->selectRaw('
+                COALESCE(SUM(grand_total), 0) as total_purchase,
+                COALESCE(SUM(paid_amount), 0) as total_paid
+            ')
+            ->first();
+
+        $totalPurchase = (float) ($totals->total_purchase ?? 0);
+        $totalPaid     = (float) ($totals->total_paid ?? 0);
+
+        $supplier->update([
+            'total_purchase' => $totalPurchase,
+            'total_paid'     => $totalPaid,
+            'due'            => max(0, $totalPurchase - $totalPaid),
+        ]);
     }
 
     private function validatePurchase(Request $request, ?int $purchaseId = null): array
     {
-        $rules = [
-            'reference' => 'nullable|string|max:50|unique:purchases,reference,' . $purchaseId,
-            'supplier_id' => 'nullable|exists:suppliers,id',
-            'seller_store_name' => 'nullable|string|max:255',
-            'product_id' => 'nullable|exists:products,id',
-            'product_name' => 'nullable|string|max:255',
-            'product_code' => 'nullable|string|max:100',
-            'purchased_by' => 'required|string|max:255',
-            'qty' => 'required|numeric|min:0.01',
-            'price' => 'required|numeric|min:0',
-            'other_cost' => 'nullable|numeric|min:0',
-            'cash_memo' => 'nullable|string|max:100',
-            'date' => 'required|date',
-            'payment_method' => 'nullable|string|max:100',
-            'document' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:4096',
-            'purchase_status' => 'required|in:received,partial,pending,ordered',
-            'payment_status' => 'required|in:due,paid,partial',
-            'due_amount' => 'nullable|numeric|min:0',
-            'paid_amount' => 'nullable|numeric|min:0',
-            'note' => 'nullable|string|max:2000',
-        ];
+        return $request->validate([
+            'reference'             => 'nullable|string|max:50|unique:purchases,reference,' . $purchaseId,
+            'supplier_id'           => 'nullable|exists:suppliers,id',
+            'seller_store_name'     => 'nullable|string|max:255',
+            'purchased_by'          => 'required|string|max:255',
+            'discount'              => 'nullable|numeric|min:0',
+            'other_cost'            => 'nullable|numeric|min:0',
+            'cash_memo'             => 'nullable|string|max:100',
+            'date'                  => 'required|date',
+            'payment_method'        => 'nullable|string|max:100',
+            'document'              => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:4096',
+            'note'                  => 'nullable|string|max:2000',
+            'purchase_status'       => 'required|in:received,partial,pending,ordered',
+            'payment_status'        => 'required|in:due,paid,partial',
+            'paid_amount'           => 'nullable|numeric|min:0',
 
-        return $request->validate($rules);
+            'items'                 => 'required|array|min:1',
+            'items.*.product_id'    => 'required|exists:products,id',
+            'items.*.qty'           => 'required|numeric|min:0.01',
+            'items.*.price'         => 'required|numeric|min:0',
+        ]);
     }
 }

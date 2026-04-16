@@ -13,17 +13,12 @@ class Purchase extends Model
         'reference',
         'supplier_id',
         'seller_store_name',
-        'product_id',
-        'product_name',
-        'product_code',
         'purchased_by',
-        'qty',
-        'price',
+        'discount',
         'other_cost',
-        'subtotal',
         'grand_total',
-        'due_amount',
         'paid_amount',
+        'due_amount',
         'cash_memo',
         'date',
         'payment_method',
@@ -34,30 +29,29 @@ class Purchase extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
+        'date'         => 'date',
+        'discount'     => 'decimal:2',
+        'other_cost'   => 'decimal:2',
+        'grand_total'  => 'decimal:2',
+        'paid_amount'  => 'decimal:2',
+        'due_amount'   => 'decimal:2',
     ];
 
-    // ── Relationships ──────────────────────────────────────
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function product()
+    public function items()
     {
-        return $this->belongsTo(Product::class);
+        return $this->hasMany(PurchaseItem::class);
     }
 
-    // ── Auto-generate reference ────────────────────────────
     public static function generateReference(): string
     {
-        $prefix = 'PUR-' . date('Ymd') . '-';
-        $last   = static::where('reference', 'like', $prefix . '%')
-                        ->orderByDesc('id')
-                        ->value('reference');
+        $last = static::orderByDesc('id')->value('reference');
+        $next = $last ? ((int) preg_replace('/\D/', '', $last)) + 1 : 1;
 
-        $next = $last ? ((int) substr($last, -4)) + 1 : 1;
-
-        return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
+        return 'PUR-' . str_pad($next, 6, '0', STR_PAD_LEFT);
     }
 }
