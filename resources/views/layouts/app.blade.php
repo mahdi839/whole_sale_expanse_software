@@ -47,7 +47,7 @@
             Desktop : relative, always w-64, never overlays
         --}}
         <aside :class="drawerOpen ? 'w-64' : 'max-md:-translate-x-full md:w-14 xl:w-64'"
-            class="fixed inset-y-0 left-0 z-50 flex flex-col bg-[#1e2433]
+            class="fixed inset-y-0 left-0 z-50 flex flex-col bg-[#4834d4]
                    transition-all duration-300 ease-in-out w-64
                    md:relative md:translate-x-0 xl:w-64">
             {{-- Logo --}}
@@ -62,7 +62,7 @@
                 <div :class="drawerOpen ? 'opacity-100' : 'opacity-0 xl:opacity-100'"
                     class="overflow-hidden whitespace-nowrap transition-opacity duration-200">
                     <div class="text-white text-sm font-medium">{{ config('app.name') }}</div>
-                    <div class="text-white/40 text-[11px]">Inventory System</div>
+                    <div class="text-white text-[11px]">Inventory System</div>
                 </div>
             </div>
 
@@ -71,7 +71,7 @@
 
                 {{-- Section labels shown only when expanded --}}
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'"
-                    class="px-3 pt-1 pb-1 text-[10px] font-medium uppercase tracking-widest text-white/30">Overview</p>
+                    class="px-3 pt-1 pb-1 text-[10px] font-medium uppercase tracking-widest text-white">Overview</p>
 
                 <x-sidebar-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="currentColor">
@@ -81,7 +81,7 @@
                 </x-sidebar-link>
 
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'"
-                    class="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-widest text-white/30">Inventory</p>
+                    class="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-widest text-white">Inventory</p>
 
                 <x-sidebar-dropdown label="People" :active="request()->routeIs('people.*')">
                     <x-slot name="icon">
@@ -111,7 +111,7 @@
                 </x-sidebar-dropdown>
 
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'"
-                    class="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-widest text-white/30">Purchasing
+                    class="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-widest text-white">Purchasing
                 </p>
 
                 <x-sidebar-dropdown label="Purchase Management" :active="request()->routeIs('purchases.*') || request()->routeIs('purchase-returns.*')">
@@ -156,7 +156,7 @@
                 </x-sidebar-dropdown> --}}
 
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'"
-                    class="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-widest text-white/30">Reports &
+                    class="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-widest text-white">Reports &
                     Settings</p>
 
                 <x-sidebar-link :href="route('dashboard')" :active="false">
@@ -196,7 +196,7 @@
                         :class="drawerOpen ? 'block' : 'hidden xl:block'" class="shrink-0">
                         @csrf
                         <button type="submit" title="Log Out"
-                            class="text-white/30 hover:text-white/70 transition-colors p-1">
+                            class="text-white hover:text-white/70 transition-colors p-1">
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <path

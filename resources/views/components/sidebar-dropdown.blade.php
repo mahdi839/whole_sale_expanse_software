@@ -7,8 +7,8 @@
         :title="drawerOpen || window.innerWidth >= 1280 ? '' : '{{ $label }}'"
         class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] transition-colors
             {{ $active
-                ? 'text-blue-400'
-                : 'text-white/60 hover:text-white hover:bg-white/6' }}"
+                ? 'text-white'
+                : 'text-white hover:text-white hover:bg-white/6' }}"
     >
         @isset($icon)
             <span class="w-4 h-4 shrink-0 flex items-center justify-center">{{ $icon }}</span>
@@ -24,7 +24,7 @@
         <svg
             x-show="drawerOpen || window.innerWidth >= 1280"
             :class="open ? 'rotate-90' : ''"
-            class="w-3.5 h-3.5 shrink-0 text-white/30 transition-transform duration-200"
+            class="w-3.5 h-3.5 shrink-0 text-white transition-transform duration-200"
             fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
         >
             <path d="M9 18l6-6-6-6"/>
