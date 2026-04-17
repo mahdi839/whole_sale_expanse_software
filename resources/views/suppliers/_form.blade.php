@@ -62,63 +62,6 @@
     @enderror
 </div>
 
-{{-- Divider --}}
-<div class="border-t border-gray-100 pt-4">
-    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">Financial Summary</p>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-        {{-- Total Purchase --}}
-        <div class="space-y-1.5">
-            <label for="total_purchase" class="block text-sm font-medium text-gray-700">Total Purchase (৳)</label>
-            <input type="number" id="total_purchase" name="total_purchase"
-                   value="{{ old('total_purchase', $supplier?->total_purchase ?? '0') }}"
-                   min="0" step="0.01"
-                   class="w-full px-3.5 py-2.5 text-sm border rounded-lg transition
-                          @error('total_purchase') border-red-400 bg-red-50 focus:ring-red-400
-                          @else border-gray-200 focus:ring-blue-500 @enderror
-                          focus:outline-none focus:ring-2 focus:border-transparent"
-                   oninput="calcDue()"/>
-            @error('total_purchase')
-                <p class="text-xs text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        {{-- Total Paid --}}
-        <div class="space-y-1.5">
-            <label for="total_paid" class="block text-sm font-medium text-gray-700">Total Paid (৳)</label>
-            <input type="number" id="total_paid" name="total_paid"
-                   value="{{ old('total_paid', $supplier?->total_paid ?? '0') }}"
-                   min="0" step="0.01"
-                   class="w-full px-3.5 py-2.5 text-sm border rounded-lg transition
-                          @error('total_paid') border-red-400 bg-red-50 focus:ring-red-400
-                          @else border-gray-200 focus:ring-blue-500 @enderror
-                          focus:outline-none focus:ring-2 focus:border-transparent"
-                   oninput="calcDue()"/>
-            @error('total_paid')
-                <p class="text-xs text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-    </div>
-
-    {{-- Due (read-only live) --}}
-    <div class="mt-4 space-y-1.5">
-        <label class="block text-sm font-medium text-gray-700">
-            Due (৳)
-            <span class="text-xs font-normal text-gray-400 ml-1">auto-calculated</span>
-        </label>
-        <div id="due-display"
-             class="w-full px-3.5 py-2.5 text-sm font-semibold rounded-lg border bg-gray-50
-                    border-gray-200 text-gray-500 select-none transition">
-            ৳{{ number_format(max(0,
-                old('total_purchase', $supplier?->total_purchase ?? 0)
-                - old('total_paid',   $supplier?->total_paid     ?? 0)
-            ), 2) }}
-        </div>
-        <p class="text-xs text-gray-400">Total Purchase − Total Paid</p>
-    </div>
-</div>
-
 @push('scripts')
 <script>
 function calcDue() {
