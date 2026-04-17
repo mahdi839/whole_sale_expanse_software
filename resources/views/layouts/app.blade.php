@@ -50,19 +50,19 @@
             class="fixed inset-y-0 left-0 z-50 flex flex-col bg-[#4834d4]
                    transition-all duration-300 ease-in-out w-64
                    md:relative md:translate-x-0 xl:w-64">
-            {{-- Logo --}}
             <div
-                class="flex items-center gap-3 px-3.5 py-4 border-b border-white/10 shrink-0 overflow-hidden min-h-[60px]">
-                <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500 shrink-0">
-                    <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                        <path
-                            d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM4 5h16a1 1 0 000-2H4a1 1 0 000 2z" />
-                    </svg>
+                class="flex items-center gap-3 px-3.5 py-4 border-b border-white/10 shrink-0 overflow-hidden min-h-[70px]">
+
+                <!-- Logo Container -->
+                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 shrink-0 overflow-hidden">
+                    <img src="/inaya_creation_logo.jpeg" alt="Logo" class="w-full h-full object-contain p-1">
                 </div>
+
+                <!-- Text -->
                 <div :class="drawerOpen ? 'opacity-100' : 'opacity-0 xl:opacity-100'"
                     class="overflow-hidden whitespace-nowrap transition-opacity duration-200">
-                    <div class="text-white text-sm font-medium">{{ config('app.name') }}</div>
-                    <div class="text-white text-[11px]">Inventory System</div>
+                    <div class="text-white text-sm font-semibold">Inaya Creation</div>
+                    <div class="text-white text-[11px] opacity-70">Inventory System</div>
                 </div>
             </div>
 
