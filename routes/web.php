@@ -12,8 +12,9 @@ use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [AuthenticatedSessionController::class, 'create'])
-        ->name('login');
+Route::get('/', function () {
+    return redirect()->route('login');
+});
 
 Route::middleware(['auth', 'verified','admin'])->group(function () {
 
