@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">Add Customer</x-slot>
 
-    <div class="max-w-xl">
+    <div class="max-w-xl mx-auto">
 
         {{-- Breadcrumb --}}
         <nav class="flex items-center gap-2 text-xs text-gray-400 mb-5">
