@@ -36,7 +36,9 @@
 
                 <div class="flex flex-wrap gap-2">
                     <button type="submit" class="h-9 px-4 bg-gray-800 text-white rounded-lg text-sm">Filter</button>
-                    <a href="{{ route('purchases.index') }}" class="h-9 px-4 bg-cyan-600 text-white rounded-lg text-sm">Reset</a>
+                    <button class="h-9 px-4 bg-cyan-600 text-white rounded-lg text-sm" type="button">
+                        <a href="{{ route('purchases.index') }}">Reset</a>
+                    </button>
                     <span class="flex-1"></span>
                     <a href="{{ route('purchases.export.csv', request()->query()) }}" class="h-9 px-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm flex items-center gap-1">⬇ CSV</a>
                     <a href="{{ route('purchases.create') }}" class="h-9 px-4 bg-blue-600 text-white rounded-lg text-sm flex items-center gap-1">+ New Purchase</a>
