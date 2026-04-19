@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseController;
@@ -18,9 +19,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified','admin'])->group(function () {
 
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
 
     Route::resource('/products', ProductController::class)->except(['show']);
     Route::resource('/customers', CustomerController::class);

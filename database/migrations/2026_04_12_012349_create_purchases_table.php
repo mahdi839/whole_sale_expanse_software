@@ -22,7 +22,7 @@ return new class extends Migration
 
             $table->string('seller_store_name')->nullable();
             $table->string('purchased_by');
-
+            
             $table->decimal('discount', 12, 2)->default(0);
             $table->decimal('other_cost', 12, 2)->default(0);
             $table->decimal('grand_total', 12, 2)->default(0);
