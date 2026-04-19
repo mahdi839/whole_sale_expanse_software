@@ -115,6 +115,9 @@ class PurchaseReturnController extends Controller
 
             if ($purchaseReturn->return_status === 'approved') {
                 $this->applyReturnEffects($purchaseReturn->fresh('items'));
+                $purchaseReturn->purchase->update([
+                    'purchase_status'=> 'returned'
+                ]);
             }
         });
 
@@ -155,6 +158,9 @@ class PurchaseReturnController extends Controller
 
             if ($oldStatus === 'approved') {
                 $this->reverseReturnEffects($purchaseReturn->load('items'));
+                 $purchaseReturn->purchase->update([
+                    'purchase_status'=> 'returned'
+                ]);
             }
 
             $purchaseReturn->items()->delete();
