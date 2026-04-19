@@ -33,7 +33,7 @@
 {{-- SKU --}}
 <div class="space-y-1.5">
     <label for="sku" class="block text-sm font-medium text-gray-700">
-        SKU <span class="text-red-500">*</span>
+        SKU / Product Code <span class="text-red-500">*</span>
     </label>
     <input type="text" id="sku" name="sku" value="{{ old('sku', $product?->sku) }}"
         placeholder="e.g. WM-001-BLK"

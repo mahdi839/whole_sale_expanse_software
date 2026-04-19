@@ -70,15 +70,16 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b bg-gray-50">
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Reference</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Supplier</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Products</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 hidden lg:table-cell">Purchased By</th>
-                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Grand Total</th>
-                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
-                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Due</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Status</th>
-                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Actions</th>
+                            <th class="px-5 py-3 text-left text-sm font-medium text-gray-400">Reference</th>
+                            <th class="px-5 py-3 text-left text-sm font-medium text-gray-400">Supplier</th>
+                            <th class="px-5 py-3 text-left text-sm font-medium text-gray-400">Seller Store</th>
+                            <th class="px-5 py-3 text-left text-sm font-medium text-gray-400">Products</th>
+                            <th class="px-5 py-3 text-left text-sm font-medium text-gray-400 hidden lg:table-cell">Purchased By</th>
+                            <th class="px-5 py-3 text-right text-sm font-medium text-gray-400">Grand Total</th>
+                            <th class="px-5 py-3 text-right text-sm font-medium text-gray-400">Paid</th>
+                            <th class="px-5 py-3 text-right text-sm font-medium text-gray-400">Due</th>
+                            <th class="px-5 py-3 text-left text-sm font-medium text-gray-400">Status</th>
+                            <th class="px-5 py-3 text-right text-sm font-medium text-gray-400">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -92,7 +93,11 @@
                                 </td>
 
                                 <td class="px-5 py-3">
-                                    {{ $purchase->supplier?->company_name ?? ($purchase->seller_store_name ?: '—') }}
+                                    {{ $purchase->supplier?->name ?? ($purchase->seller_store_name ?: '—') }}
+                                </td>
+
+                                  <td class="px-5 py-3">
+                                    {{ $purchase->seller_store_name ?: '—' }}
                                 </td>
 
                                 <td class="px-5 py-3 text-xs text-gray-600">

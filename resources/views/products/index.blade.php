@@ -60,7 +60,7 @@
                         <tr class="border-b border-gray-100 bg-gray-50/60">
                             <th class="text-left px-5 py-3 font-medium text-gray-500 w-16">Image</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Product Name</th>
-                            <th class="text-left px-5 py-3 font-medium text-gray-500">SKU</th>
+                            <th class="text-left px-5 py-3 font-medium text-gray-500">SKU / Product Code</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Stock</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden sm:table-cell">Added</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Actions</th>
@@ -96,7 +96,7 @@
                                 </td>
                                 {{-- stock --}}
                                 <td class="px-5 py-3">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-xs font-mono font-medium">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md @if ($product->stock?->stock_qty < 10) bg-red-100 text-red-600 @else bg-gray-100 text-gray-600 @endif text-xs font-mono font-medium">
                                         {{ $product->stock?->stock_qty??0 }}
                                     </span>
                                 </td>
