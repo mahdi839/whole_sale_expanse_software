@@ -56,24 +56,24 @@
         ]];
     }
 
-    $returnType = old('return_type', $purchaseReturn?->return_type ?? 'refund');
+    $returnType   = old('return_type',   $purchaseReturn?->return_type   ?? 'refund');
     $returnStatus = old('return_status', $purchaseReturn?->return_status ?? 'pending');
-    $discount = old('discount', $purchaseReturn?->discount ?? 0);
+    $discount     = old('discount',      $purchaseReturn?->discount      ?? 0);
 
     $purchasesJson = $allPurchases->map(function ($purchase) {
         return [
-            'id' => $purchase->id,
-            'reference' => $purchase->reference,
+            'id'          => $purchase->id,
+            'reference'   => $purchase->reference,
             'supplier_id' => $purchase->supplier_id,
-            'items' => $purchase->items->map(function ($item) {
+            'items'       => $purchase->items->map(function ($item) {
                 return [
-                    'id' => $item->id,
-                    'product_id' => $item->product_id,
+                    'id'           => $item->id,
+                    'product_id'   => $item->product_id,
                     'product_name' => $item->product?->product_name,
-                    'sku' => $item->product?->sku,
-                    'qty' => (float) $item->qty,
-                    'price' => (float) $item->price,
-                    'line_total' => (float) $item->line_total,
+                    'sku'          => $item->product?->sku,
+                    'qty'          => (float) $item->qty,
+                    'price'        => (float) $item->price,
+                    'line_total'   => (float) $item->line_total,
                 ];
             })->values(),
         ];
@@ -81,18 +81,117 @@
 
     $productsJson = $products->map(function ($product) {
         return [
-            'id' => $product->id,
-            'name' => $product->product_name,
-            'sku' => $product->sku,
+            'id'        => $product->id,
+            'name'      => $product->product_name,
+            'sku'       => $product->sku,
             'stock_qty' => (float) optional($product->stock)->stock_qty,
         ];
     })->values();
 @endphp
 
+<style>
+/* ── Searchable dropdown trigger (inline element) ── */
+.sd-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 36px;
+    padding: 0 10px;
+    font-size: 14px;
+    cursor: pointer;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    color: #1f2937;
+    outline: none;
+    user-select: none;
+    transition: border-color .15s, box-shadow .15s;
+    white-space: nowrap;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+.sd-trigger:focus,
+.sd-trigger.is-open {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+}
+.sd-trigger-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+}
+.sd-trigger-text.placeholder { color: #9ca3af; }
+.sd-chevron {
+    flex-shrink: 0;
+    margin-left: 6px;
+    color: #9ca3af;
+    transition: transform .2s;
+}
+.sd-chevron.is-open { transform: rotate(180deg); }
+
+/* ── Portal dropdown — fixed to viewport, escapes overflow:hidden ── */
+#sd-portal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 0; height: 0;
+    z-index: 9999;
+    pointer-events: none;
+}
+.sd-portal-panel {
+    position: fixed;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.13);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    pointer-events: all;
+    min-width: 200px;
+}
+.sd-search-box { padding: 8px; border-bottom: 1px solid #f3f4f6; }
+.sd-search-box input {
+    width: 100%;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 13px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #f9fafb;
+    color: #1f2937;
+    outline: none;
+    transition: border-color .15s;
+    box-sizing: border-box;
+}
+.sd-search-box input:focus { border-color: #60a5fa; }
+.sd-list { max-height: 210px; overflow-y: auto; }
+.sd-option {
+    padding: 9px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background .1s;
+    color: #1f2937;
+}
+.sd-option:last-child { border-bottom: none; }
+.sd-option:hover,
+.sd-option.is-active { background: #eff6ff; }
+.sd-option .sd-main { font-weight: 600; line-height: 1.3; }
+.sd-option .sd-sub  { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+.sd-option.sd-clear { color: #9ca3af; font-style: italic; font-weight: 400; }
+.sd-no-results { padding: 12px; font-size: 13px; color: #9ca3af; text-align: center; }
+</style>
+
+{{-- Portal container — lives at body level, outside all overflow:hidden cards --}}
+<div id="sd-portal"></div>
+
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
     <div class="xl:col-span-2 space-y-4">
 
-        {{-- Purchase / Supplier --}}
+        {{-- ── Return Information ── --}}
         <div class="{{ $sectionClass }}">
             <div class="{{ $headerClass }}">
                 <span class="flex items-center justify-center w-6 h-6 rounded-md bg-violet-50 text-violet-700 shrink-0">
@@ -105,49 +204,45 @@
 
             <div class="{{ $bodyClass }}">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    {{-- Original Purchase --}}
                     <div>
-                        <label for="purchase_id" class="{{ $labelClass }}">Original Purchase</label>
-                        <select id="purchase_id" name="purchase_id"
-                                class="{{ $errors->has('purchase_id') ? $inputErrClass : $inputClass }}">
-                            <option value="">— No linked purchase —</option>
-                            @foreach($allPurchases as $p)
-                                <option value="{{ $p->id }}" {{ (string) $selectedPurchaseId === (string) $p->id ? 'selected' : '' }}>
-                                    {{ $p->reference }}
-                                    @if($p->supplier)
-                                        — {{ $p->supplier->name }}
-                                    @endif
-                                </option>
-                            @endforeach
-                        </select>
+                        <label class="{{ $labelClass }}">Original Purchase</label>
+                        <div class="sd-wrap" id="purchase-sd-wrap">
+                            <div class="sd-trigger" id="purchase-sd-trigger" tabindex="0">
+                                <span class="sd-trigger-text placeholder" id="purchase-sd-label">— No linked purchase —</span>
+                                <svg class="sd-chevron" id="purchase-sd-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                            </div>
+                            <input type="hidden" name="purchase_id" id="purchase_id"
+                                   value="{{ old('purchase_id', $purchaseReturn?->purchase_id ?? $prefillPurchase?->id) }}">
+                        </div>
                         @error('purchase_id')
                             <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                         @enderror
-                        <p class="mt-1.5 text-xs text-gray-400">
-                            Selecting a purchase auto-fills supplier and purchase items.
-                        </p>
+                        <p class="mt-1.5 text-xs text-gray-400">Selecting a purchase auto-fills supplier and purchase items.</p>
                     </div>
 
+                    {{-- Supplier --}}
                     <div>
-                        <label for="supplier_id" class="{{ $labelClass }}">Supplier</label>
-                        <select id="supplier_id" name="supplier_id"
-                                class="{{ $errors->has('supplier_id') ? $inputErrClass : $inputClass }}">
-                            <option value="">— No supplier —</option>
-                            @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}"
-                                    {{ (string) old('supplier_id', $purchaseReturn?->supplier_id ?? $prefillPurchase?->supplier_id) === (string) $supplier->id ? 'selected' : '' }}>
-                                    {{ $supplier->name }}{{ $supplier->phone ? ' · '.$supplier->phone : '' }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <label class="{{ $labelClass }}">Supplier</label>
+                        <div class="sd-wrap" id="supplier-sd-wrap">
+                            <div class="sd-trigger" id="supplier-sd-trigger" tabindex="0">
+                                <span class="sd-trigger-text placeholder" id="supplier-sd-label">— No supplier —</span>
+                                <svg class="sd-chevron" id="supplier-sd-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                            </div>
+                            <input type="hidden" name="supplier_id" id="supplier_id"
+                                   value="{{ old('supplier_id', $purchaseReturn?->supplier_id ?? $prefillPurchase?->supplier_id) }}">
+                        </div>
                         @error('supplier_id')
                             <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                         @enderror
                     </div>
+
                 </div>
             </div>
         </div>
 
-        {{-- Return Items --}}
+        {{-- ── Return Items ── --}}
         <div class="{{ $sectionClass }}">
             <div class="{{ $headerClass }}">
                 <span class="flex items-center justify-center w-6 h-6 rounded-md bg-blue-50 text-blue-700 shrink-0">
@@ -157,13 +252,9 @@
                 </span>
                 <div class="flex items-center justify-between w-full gap-3">
                     <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Return Items</span>
-
-                    <button type="button"
-                            id="add-return-item"
+                    <button type="button" id="add-return-item"
                             class="h-8 px-3 inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                            <path d="M12 4v16m8-8H4"/>
-                        </svg>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
                         Add Item
                     </button>
                 </div>
@@ -178,21 +269,20 @@
                     @foreach($items as $index => $item)
                         <div class="return-item rounded-xl border border-gray-200 bg-gray-50/60 p-4" data-index="{{ $index }}">
                             <div class="grid grid-cols-1 xl:grid-cols-12 gap-3">
+
+                                {{-- Product searchable --}}
                                 <div class="xl:col-span-4">
                                     <label class="{{ $labelClass }}">Product</label>
-                                    <select name="items[{{ $index }}][product_id]"
-                                            class="return-product {{ $errors->has('items.'.$index.'.product_id') ? $inputErrClass : $inputClass }}">
-                                        <option value="">— Select product —</option>
-                                        @foreach($products as $product)
-                                            <option value="{{ $product->id }}"
-                                                    data-name="{{ $product->product_name }}"
-                                                    data-sku="{{ $product->sku }}"
-                                                    data-stock="{{ (float) optional($product->stock)->stock_qty }}"
-                                                {{ (string) ($item['product_id'] ?? '') === (string) $product->id ? 'selected' : '' }}>
-                                                {{ $product->product_name }}{{ $product->sku ? ' ['.$product->sku.']' : '' }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    <div class="sd-wrap return-product-wrap">
+                                        <div class="sd-trigger return-product-trigger" tabindex="0">
+                                            <span class="sd-trigger-text placeholder">— Select product —</span>
+                                            <svg class="sd-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                                        </div>
+                                        <input type="hidden"
+                                               name="items[{{ $index }}][product_id]"
+                                               class="return-product-hidden"
+                                               value="{{ $item['product_id'] ?? '' }}">
+                                    </div>
                                     @error('items.'.$index.'.product_id')
                                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                                     @enderror
@@ -211,9 +301,7 @@
 
                                 <div class="xl:col-span-2">
                                     <label class="{{ $labelClass }}">Qty</label>
-                                    <input type="number"
-                                           step="0.01"
-                                           min="0.01"
+                                    <input type="number" step="0.01" min="0.01"
                                            name="items[{{ $index }}][qty]"
                                            value="{{ $item['qty'] }}"
                                            class="return-qty {{ $errors->has('items.'.$index.'.qty') ? $inputErrClass : $inputClass }}">
@@ -224,9 +312,7 @@
 
                                 <div class="xl:col-span-2">
                                     <label class="{{ $labelClass }}">Price</label>
-                                    <input type="number"
-                                           step="0.01"
-                                           min="0"
+                                    <input type="number" step="0.01" min="0"
                                            name="items[{{ $index }}][price]"
                                            value="{{ $item['price'] }}"
                                            class="return-price {{ $errors->has('items.'.$index.'.price') ? $inputErrClass : $inputClass }}">
@@ -253,18 +339,13 @@
 
                             <div class="mt-3 flex flex-wrap items-center gap-3 text-xs">
                                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
-                                    SKU:
-                                    <span class="return-sku text-gray-700 font-medium">—</span>
+                                    SKU: <span class="return-sku text-gray-700 font-medium">—</span>
                                 </span>
-
                                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
-                                    Stock:
-                                    <span class="return-stock text-gray-700 font-medium">0</span>
+                                    Stock: <span class="return-stock text-gray-700 font-medium">0</span>
                                 </span>
-
                                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
-                                    Purchased Qty:
-                                    <span class="return-purchased-qty text-gray-700 font-medium">—</span>
+                                    Purchased Qty: <span class="return-purchased-qty text-gray-700 font-medium">—</span>
                                 </span>
                             </div>
                         </div>
@@ -283,22 +364,19 @@
                 </span>
                 <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Additional Details</span>
             </div>
-
             <div class="{{ $bodyClass }}">
-                <div>
-                    <label for="note" class="{{ $labelClass }}">Note</label>
-                    <textarea id="note" name="note" rows="3"
-                              placeholder="Any additional notes..."
-                              class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg resize-none text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition">{{ old('note', $purchaseReturn?->note) }}</textarea>
-                    @error('note')
-                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                    @enderror
-                </div>
+                <label for="note" class="{{ $labelClass }}">Note</label>
+                <textarea id="note" name="note" rows="3" placeholder="Any additional notes..."
+                          class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg resize-none text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition">{{ old('note', $purchaseReturn?->note) }}</textarea>
+                @error('note')
+                    <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                @enderror
             </div>
         </div>
-    </div>
 
-    {{-- Summary --}}
+    </div>{{-- /col-span-2 --}}
+
+    {{-- ── Summary Sidebar ── --}}
     <div class="space-y-4">
         <div class="{{ $sectionClass }}">
             <div class="{{ $headerClass }}">
@@ -311,13 +389,10 @@
             </div>
 
             <div class="{{ $bodyClass }} space-y-4">
+
                 <div>
                     <label for="discount" class="{{ $labelClass }}">Discount</label>
-                    <input type="number"
-                           id="discount"
-                           name="discount"
-                           min="0"
-                           step="0.01"
+                    <input type="number" id="discount" name="discount" min="0" step="0.01"
                            value="{{ $discount }}"
                            class="{{ $errors->has('discount') ? $inputErrClass : $inputClass }}">
                     @error('discount')
@@ -330,9 +405,7 @@
                     <select id="return_type" name="return_type"
                             class="{{ $errors->has('return_type') ? $inputErrClass : $inputClass }}">
                         @foreach(['refund' => 'Refund', 'exchange' => 'Exchange', 'credit' => 'Credit'] as $value => $label)
-                            <option value="{{ $value }}" {{ $returnType === $value ? 'selected' : '' }}>
-                                {{ $label }}
-                            </option>
+                            <option value="{{ $value }}" {{ $returnType === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
                     @error('return_type')
@@ -345,9 +418,7 @@
                     <select id="return_status" name="return_status"
                             class="{{ $errors->has('return_status') ? $inputErrClass : $inputClass }}">
                         @foreach(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected'] as $value => $label)
-                            <option value="{{ $value }}" {{ $returnStatus === $value ? 'selected' : '' }}>
-                                {{ $label }}
-                            </option>
+                            <option value="{{ $value }}" {{ $returnStatus === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
                     @error('return_status')
@@ -374,9 +445,7 @@
 
                 <div>
                     <label for="cash_memo" class="{{ $labelClass }}">Cash Memo</label>
-                    <input type="text"
-                           id="cash_memo"
-                           name="cash_memo"
+                    <input type="text" id="cash_memo" name="cash_memo"
                            value="{{ old('cash_memo', $purchaseReturn?->cash_memo) }}"
                            placeholder="Memo number"
                            class="{{ $errors->has('cash_memo') ? $inputErrClass : $inputClass }}">
@@ -387,9 +456,7 @@
 
                 <div>
                     <label for="date" class="{{ $labelClass }}">Date</label>
-                    <input type="date"
-                           id="date"
-                           name="date"
+                    <input type="date" id="date" name="date"
                            value="{{ old('date', optional($purchaseReturn?->date)->format('Y-m-d') ?? now()->format('Y-m-d')) }}"
                            class="{{ $errors->has('date') ? $inputErrClass : $inputClass }}">
                     @error('date')
@@ -417,7 +484,6 @@
                         <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Subtotal</span>
                         <span id="return-subtotal-display" class="text-base font-semibold text-gray-800">৳0.00</span>
                     </div>
-
                     <div class="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg px-4 py-3">
                         <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Return Amount</span>
                         <span id="return-amount-display" class="text-base font-semibold text-red-600">৳0.00</span>
@@ -432,22 +498,20 @@
     </div>
 </div>
 
+{{-- ── Row template ── --}}
 <template id="return-item-template">
     <div class="return-item rounded-xl border border-gray-200 bg-gray-50/60 p-4" data-index="__INDEX__">
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-3">
+
             <div class="xl:col-span-4">
                 <label class="{{ $labelClass }}">Product</label>
-                <select name="items[__INDEX__][product_id]" class="return-product {{ $inputClass }}">
-                    <option value="">— Select product —</option>
-                    @foreach($products as $product)
-                        <option value="{{ $product->id }}"
-                                data-name="{{ $product->product_name }}"
-                                data-sku="{{ $product->sku }}"
-                                data-stock="{{ (float) optional($product->stock)->stock_qty }}">
-                            {{ $product->product_name }}{{ $product->sku ? ' ['.$product->sku.']' : '' }}
-                        </option>
-                    @endforeach
-                </select>
+                <div class="sd-wrap return-product-wrap">
+                    <div class="sd-trigger return-product-trigger" tabindex="0">
+                        <span class="sd-trigger-text placeholder">— Select product —</span>
+                        <svg class="sd-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                    <input type="hidden" name="items[__INDEX__][product_id]" class="return-product-hidden" value="">
+                </div>
             </div>
 
             <div class="xl:col-span-2">
@@ -485,18 +549,13 @@
 
         <div class="mt-3 flex flex-wrap items-center gap-3 text-xs">
             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
-                SKU:
-                <span class="return-sku text-gray-700 font-medium">—</span>
+                SKU: <span class="return-sku text-gray-700 font-medium">—</span>
             </span>
-
             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
-                Stock:
-                <span class="return-stock text-gray-700 font-medium">0</span>
+                Stock: <span class="return-stock text-gray-700 font-medium">0</span>
             </span>
-
             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
-                Purchased Qty:
-                <span class="return-purchased-qty text-gray-700 font-medium">—</span>
+                Purchased Qty: <span class="return-purchased-qty text-gray-700 font-medium">—</span>
             </span>
         </div>
     </div>
@@ -504,271 +563,464 @@
 
 @push('scripts')
 <script>
-    const returnPurchases = @json($purchasesJson);
-    const returnProducts = @json($productsJson);
+// ─────────────────────────────────────────────────────────────
+// Data
+// ─────────────────────────────────────────────────────────────
+const returnPurchases = @json($purchasesJson);
+const returnProducts  = @json($productsJson);
+const returnSuppliers = @json($suppliers->map(fn($s) => ['id' => $s->id, 'name' => $s->name, 'phone' => $s->phone ?? ''])->values());
 
-    function fmtMoney(value) {
-        const num = parseFloat(value || 0);
-        return '৳' + num.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
+// ─────────────────────────────────────────────────────────────
+// Portal-based searchable dropdown
+// Renders the panel into #sd-portal (fixed, outside all cards)
+// so overflow:hidden on ancestor elements never clips it.
+// ─────────────────────────────────────────────────────────────
+const sdPortal = document.getElementById('sd-portal');
+let activeSD = null; // currently open instance
+
+function escHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])
+    );
+}
+
+/**
+ * makeSD(config) → { setValue(id), getValue(), destroy() }
+ *
+ * config: {
+ *   triggerEl,          — the .sd-trigger div
+ *   hiddenEl,           — <input type="hidden">
+ *   items,              — array of data objects
+ *   placeholder,        — string shown when nothing selected
+ *   labelFn(item),      — returns display label string
+ *   subFn(item),        — returns subtitle string or null
+ *   filterFn(item, q),  — returns bool
+ *   onPick(item|null),  — callback after selection
+ * }
+ */
+function makeSD(config) {
+    const { triggerEl, hiddenEl, items, placeholder, labelFn, subFn, filterFn, onPick } = config;
+
+    const labelEl  = triggerEl.querySelector('.sd-trigger-text');
+    const chevron  = triggerEl.querySelector('.sd-chevron');
+
+    // Build the portal panel (created once, reused)
+    const panel = document.createElement('div');
+    panel.className = 'sd-portal-panel';
+    panel.innerHTML = `
+        <div class="sd-search-box"><input type="text" placeholder="Search…" autocomplete="off"></div>
+        <div class="sd-list"></div>
+    `;
+    const searchInput = panel.querySelector('input');
+    const listEl      = panel.querySelector('.sd-list');
+    sdPortal.appendChild(panel);
+    panel.style.display = 'none';
+
+    function positionPanel() {
+        const rect = triggerEl.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const panelH = Math.min(270, spaceBelow > 200 ? 270 : spaceBelow - 10);
+
+        panel.style.width  = rect.width + 'px';
+        panel.style.left   = rect.left  + window.scrollX + 'px';
+        panel.style.maxHeight = panelH + 'px';
+
+        // Open upward if not enough space below
+        if (spaceBelow < 220) {
+            panel.style.top    = '';
+            panel.style.bottom = (window.innerHeight - rect.top - window.scrollY) + 'px';
+        } else {
+            panel.style.bottom = '';
+            panel.style.top    = rect.bottom + window.scrollY + 4 + 'px';
+        }
     }
 
-    function getSelectedPurchase() {
-        const purchaseId = document.getElementById('purchase_id')?.value;
-        if (!purchaseId) return null;
-        return returnPurchases.find(p => String(p.id) === String(purchaseId)) || null;
-    }
+    function renderList(q) {
+        q = (q || '').trim().toLowerCase();
+        const hits = q ? items.filter(i => filterFn(i, q)) : items;
+        listEl.innerHTML = '';
 
-    function getProduct(productId) {
-        return returnProducts.find(p => String(p.id) === String(productId)) || null;
-    }
+        const clearEl = document.createElement('div');
+        clearEl.className = 'sd-option sd-clear';
+        clearEl.textContent = placeholder;
+        clearEl.addEventListener('mousedown', e => { e.preventDefault(); pick(null); });
+        listEl.appendChild(clearEl);
 
-    function fillPurchaseItemOptions(itemRow) {
-        const purchaseItemSelect = itemRow.querySelector('.return-purchase-item');
-        const productSelect = itemRow.querySelector('.return-product');
-        const purchasedQtyEl = itemRow.querySelector('.return-purchased-qty');
-
-        if (!purchaseItemSelect || !productSelect) return;
-
-        const selectedPurchase = getSelectedPurchase();
-        const selectedProductId = productSelect.value;
-        const currentValue = purchaseItemSelect.getAttribute('data-current') || purchaseItemSelect.value || '';
-
-        purchaseItemSelect.innerHTML = '<option value="">— Optional —</option>';
-        purchasedQtyEl.textContent = '—';
-
-        if (!selectedPurchase || !selectedPurchase.items) {
+        if (!hits.length) {
+            const n = document.createElement('div');
+            n.className = 'sd-no-results';
+            n.textContent = 'No results found';
+            listEl.appendChild(n);
             return;
         }
 
-        const matchedItems = selectedPurchase.items.filter(item => {
-            if (!selectedProductId) return true;
-            return String(item.product_id) === String(selectedProductId);
-        });
-
-        matchedItems.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item.id;
-            option.textContent = `${item.product_name || 'Product'} · Purchased ${item.qty} @ ${item.price}`;
-            option.dataset.qty = item.qty;
-            option.dataset.price = item.price;
-            option.dataset.productId = item.product_id;
-            purchaseItemSelect.appendChild(option);
-        });
-
-        if (currentValue) {
-            purchaseItemSelect.value = currentValue;
-        }
-
-        const selectedOption = purchaseItemSelect.options[purchaseItemSelect.selectedIndex];
-        if (selectedOption && selectedOption.value) {
-            purchasedQtyEl.textContent = selectedOption.dataset.qty || '—';
-        }
-    }
-
-    function updateItemMeta(itemRow) {
-        const productSelect = itemRow.querySelector('.return-product');
-        const skuEl = itemRow.querySelector('.return-sku');
-        const stockEl = itemRow.querySelector('.return-stock');
-
-        const product = getProduct(productSelect?.value);
-
-        skuEl.textContent = product?.sku || '—';
-        stockEl.textContent = product?.stock_qty ?? 0;
-    }
-
-    function updateItemLine(itemRow) {
-        const qtyInput = itemRow.querySelector('.return-qty');
-        const priceInput = itemRow.querySelector('.return-price');
-        const totalEl = itemRow.querySelector('.return-line-total');
-
-        const qty = parseFloat(qtyInput?.value || 0);
-        const price = parseFloat(priceInput?.value || 0);
-        const lineTotal = qty * price;
-
-        totalEl.textContent = fmtMoney(lineTotal);
-    }
-
-    function updateSummary() {
-        let subtotal = 0;
-
-        document.querySelectorAll('.return-item').forEach(row => {
-            const qty = parseFloat(row.querySelector('.return-qty')?.value || 0);
-            const price = parseFloat(row.querySelector('.return-price')?.value || 0);
-            subtotal += qty * price;
-        });
-
-        const discount = parseFloat(document.getElementById('discount')?.value || 0);
-        const returnAmount = Math.max(0, subtotal - discount);
-
-        document.getElementById('return-subtotal-display').textContent = fmtMoney(subtotal);
-        document.getElementById('return-amount-display').textContent = fmtMoney(returnAmount);
-    }
-
-    function updateRowFromPurchaseItem(itemRow) {
-        const purchaseItemSelect = itemRow.querySelector('.return-purchase-item');
-        const productSelect = itemRow.querySelector('.return-product');
-        const qtyInput = itemRow.querySelector('.return-qty');
-        const priceInput = itemRow.querySelector('.return-price');
-        const purchasedQtyEl = itemRow.querySelector('.return-purchased-qty');
-
-        const option = purchaseItemSelect.options[purchaseItemSelect.selectedIndex];
-
-        if (option && option.value) {
-            if (option.dataset.productId) {
-                productSelect.value = option.dataset.productId;
+        hits.forEach(item => {
+            const d = document.createElement('div');
+            d.className = 'sd-option' + (hiddenEl.value && String(item.id) === String(hiddenEl.value) ? ' is-active' : '');
+            const main = document.createElement('div');
+            main.className = 'sd-main';
+            main.textContent = labelFn(item);
+            d.appendChild(main);
+            if (subFn) {
+                const sub = subFn(item);
+                if (sub) {
+                    const s = document.createElement('div');
+                    s.className = 'sd-sub';
+                    s.textContent = sub;
+                    d.appendChild(s);
+                }
             }
+            d.addEventListener('mousedown', e => { e.preventDefault(); pick(item); });
+            listEl.appendChild(d);
+        });
+    }
 
-            if (option.dataset.qty && (!qtyInput.value || parseFloat(qtyInput.value) <= 0)) {
-                qtyInput.value = option.dataset.qty;
-            }
-
-            if (option.dataset.price) {
-                priceInput.value = option.dataset.price;
-            }
-
-            purchasedQtyEl.textContent = option.dataset.qty || '—';
+    function pick(item) {
+        if (item) {
+            hiddenEl.value = item.id;
+            labelEl.textContent = labelFn(item);
+            labelEl.classList.remove('placeholder');
         } else {
-            purchasedQtyEl.textContent = '—';
+            hiddenEl.value = '';
+            labelEl.textContent = placeholder;
+            labelEl.classList.add('placeholder');
         }
-
-        updateItemMeta(itemRow);
-        updateItemLine(itemRow);
-        updateSummary();
+        close();
+        if (onPick) onPick(item);
     }
 
-    function bindRowEvents(itemRow) {
-        const productSelect = itemRow.querySelector('.return-product');
-        const purchaseItemSelect = itemRow.querySelector('.return-purchase-item');
-        const qtyInput = itemRow.querySelector('.return-qty');
-        const priceInput = itemRow.querySelector('.return-price');
-        const removeBtn = itemRow.querySelector('.remove-return-item');
+    function open() {
+        // Close any currently open dropdown
+        if (activeSD && activeSD !== instance) activeSD.close();
+        activeSD = instance;
 
-        productSelect?.addEventListener('change', () => {
+        panel.style.display = 'flex';
+        positionPanel();
+        triggerEl.classList.add('is-open');
+        chevron.classList.add('is-open');
+        searchInput.value = '';
+        renderList('');
+        setTimeout(() => searchInput.focus(), 30);
+    }
+
+    function close() {
+        panel.style.display = 'none';
+        triggerEl.classList.remove('is-open');
+        chevron.classList.remove('is-open');
+        if (activeSD === instance) activeSD = null;
+    }
+
+    function isOpen() { return panel.style.display !== 'none'; }
+
+    // Prefill label from existing hidden value
+    function prefill() {
+        const v = hiddenEl.value;
+        if (!v) return;
+        const found = items.find(i => String(i.id) === String(v));
+        if (found) {
+            labelEl.textContent = labelFn(found);
+            labelEl.classList.remove('placeholder');
+        }
+    }
+
+    // Events
+    triggerEl.addEventListener('click', () => isOpen() ? close() : open());
+    triggerEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); isOpen() ? close() : open(); }
+        if (e.key === 'Escape') close();
+    });
+    searchInput.addEventListener('input', () => renderList(searchInput.value));
+    searchInput.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+    // Reposition on scroll/resize
+    const reposition = () => { if (isOpen()) positionPanel(); };
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+
+    prefill();
+
+    const instance = {
+        open, close, isOpen,
+        setValue(id) {
+            const found = id ? items.find(i => String(i.id) === String(id)) : null;
+            pick(found || null);
+        },
+        getValue() { return hiddenEl.value; },
+        destroy() {
+            panel.remove();
+            window.removeEventListener('scroll', reposition, true);
+            window.removeEventListener('resize', reposition);
+        }
+    };
+    return instance;
+}
+
+// Close active dropdown on outside click
+document.addEventListener('mousedown', e => {
+    if (!activeSD) return;
+    const panel = [...sdPortal.children].find(p => p.style.display !== 'none');
+    if (panel && panel.contains(e.target)) return;
+    if (activeSD.isOpen() && !e.target.closest('.sd-trigger')) {
+        activeSD.close();
+    }
+});
+
+// ─────────────────────────────────────────────────────────────
+// Purchase dropdown
+// ─────────────────────────────────────────────────────────────
+let purchaseSD, supplierSD;
+
+function initPurchaseDropdown() {
+    purchaseSD = makeSD({
+        triggerEl:   document.getElementById('purchase-sd-trigger'),
+        hiddenEl:    document.getElementById('purchase_id'),
+        items:       returnPurchases,
+        placeholder: '— No linked purchase —',
+        labelFn:     p => p.reference,
+        subFn: p => {
+            const sup = returnSuppliers.find(s => String(s.id) === String(p.supplier_id));
+            return sup ? sup.name + (sup.phone ? ' · ' + sup.phone : '') : null;
+        },
+        filterFn: (p, q) => {
+            if (p.reference.toLowerCase().includes(q)) return true;
+            const sup = returnSuppliers.find(s => String(s.id) === String(p.supplier_id));
+            return sup ? sup.name.toLowerCase().includes(q) : false;
+        },
+        onPick: purchase => {
+            if (purchase?.supplier_id) supplierSD?.setValue(purchase.supplier_id);
+            rebuildRowsFromSelectedPurchase();
+        }
+    });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Supplier dropdown
+// ─────────────────────────────────────────────────────────────
+function initSupplierDropdown() {
+    supplierSD = makeSD({
+        triggerEl:   document.getElementById('supplier-sd-trigger'),
+        hiddenEl:    document.getElementById('supplier_id'),
+        items:       returnSuppliers,
+        placeholder: '— No supplier —',
+        labelFn:     s => s.name + (s.phone ? ' · ' + s.phone : ''),
+        subFn:       null,
+        filterFn:    (s, q) => s.name.toLowerCase().includes(q) || s.phone.includes(q),
+        onPick:      null
+    });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Product dropdown — per row
+// ─────────────────────────────────────────────────────────────
+function initRowProductDropdown(itemRow) {
+    const triggerEl = itemRow.querySelector('.return-product-trigger');
+    const hiddenEl  = itemRow.querySelector('.return-product-hidden');
+    if (!triggerEl || triggerEl._sdInstance) return; // already init'd
+
+    const sd = makeSD({
+        triggerEl,
+        hiddenEl,
+        items:       returnProducts,
+        placeholder: '— Select product —',
+        labelFn:     p => p.name + (p.sku ? ' [' + p.sku + ']' : ''),
+        subFn:       p => 'Stock: ' + (p.stock_qty ?? 0),
+        filterFn:    (p, q) => p.name.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q),
+        onPick: () => {
             fillPurchaseItemOptions(itemRow);
             updateItemMeta(itemRow);
             updateItemLine(itemRow);
             updateSummary();
-        });
-
-        purchaseItemSelect?.addEventListener('change', () => {
-            updateRowFromPurchaseItem(itemRow);
-        });
-
-        qtyInput?.addEventListener('input', () => {
-            updateItemLine(itemRow);
-            updateSummary();
-        });
-
-        priceInput?.addEventListener('input', () => {
-            updateItemLine(itemRow);
-            updateSummary();
-        });
-
-        removeBtn?.addEventListener('click', () => {
-            const rows = document.querySelectorAll('.return-item');
-            if (rows.length <= 1) return;
-            itemRow.remove();
-            updateSummary();
-        });
-
-        fillPurchaseItemOptions(itemRow);
-        updateItemMeta(itemRow);
-        updateItemLine(itemRow);
-    }
-
-    function addReturnItemRow(data = {}) {
-        const wrapper = document.getElementById('return-items-wrapper');
-        const template = document.getElementById('return-item-template').innerHTML;
-        const index = wrapper.querySelectorAll('.return-item').length;
-
-        const html = template.replaceAll('__INDEX__', index);
-        wrapper.insertAdjacentHTML('beforeend', html);
-
-        const itemRow = wrapper.lastElementChild;
-
-        if (data.product_id) {
-            itemRow.querySelector('.return-product').value = data.product_id;
-        }
-
-        if (data.qty) {
-            itemRow.querySelector('.return-qty').value = data.qty;
-        }
-
-        if (data.price) {
-            itemRow.querySelector('.return-price').value = data.price;
-        }
-
-        if (data.purchase_item_id) {
-            itemRow.querySelector('.return-purchase-item').setAttribute('data-current', data.purchase_item_id);
-        }
-
-        bindRowEvents(itemRow);
-        updateSummary();
-    }
-
-    function rebuildRowsFromSelectedPurchase() {
-        const wrapper = document.getElementById('return-items-wrapper');
-        const selectedPurchase = getSelectedPurchase();
-
-        if (!wrapper) return;
-
-        const currentRows = Array.from(wrapper.querySelectorAll('.return-item'));
-        const hasOldInput = {{ old('items') ? 'true' : 'false' }};
-        const isEditPage = {{ $purchaseReturn ? 'true' : 'false' }};
-
-        if (hasOldInput || isEditPage) {
-            currentRows.forEach(bindRowEvents);
-            updateSummary();
-            return;
-        }
-
-        wrapper.innerHTML = '';
-
-        if (selectedPurchase && selectedPurchase.items.length) {
-            selectedPurchase.items.forEach(item => {
-                addReturnItemRow({
-                    purchase_item_id: item.id,
-                    product_id: item.product_id,
-                    qty: item.qty,
-                    price: item.price,
-                });
-            });
-        } else {
-            addReturnItemRow();
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const purchaseSelect = document.getElementById('purchase_id');
-        const supplierSelect = document.getElementById('supplier_id');
-        const discountInput = document.getElementById('discount');
-        const addBtn = document.getElementById('add-return-item');
-
-        document.querySelectorAll('.return-item').forEach(bindRowEvents);
-        updateSummary();
-
-        purchaseSelect?.addEventListener('change', () => {
-            const purchase = getSelectedPurchase();
-
-            if (purchase && purchase.supplier_id && supplierSelect) {
-                supplierSelect.value = purchase.supplier_id;
-            }
-
-            rebuildRowsFromSelectedPurchase();
-        });
-
-        discountInput?.addEventListener('input', updateSummary);
-
-        addBtn?.addEventListener('click', () => {
-            addReturnItemRow();
-        });
-
-        if (!document.querySelectorAll('.return-item').length) {
-            addReturnItemRow();
         }
     });
+
+    triggerEl._sdInstance = sd; // prevent double-init
+}
+
+// ─────────────────────────────────────────────────────────────
+// Business logic (unchanged)
+// ─────────────────────────────────────────────────────────────
+function fmtMoney(value) {
+    return '৳' + parseFloat(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getSelectedPurchase() {
+    const id = document.getElementById('purchase_id')?.value;
+    return id ? (returnPurchases.find(p => String(p.id) === String(id)) || null) : null;
+}
+
+function getProduct(productId) {
+    return returnProducts.find(p => String(p.id) === String(productId)) || null;
+}
+
+function fillPurchaseItemOptions(itemRow) {
+    const purchaseItemSelect = itemRow.querySelector('.return-purchase-item');
+    const hiddenEl           = itemRow.querySelector('.return-product-hidden');
+    const purchasedQtyEl     = itemRow.querySelector('.return-purchased-qty');
+    if (!purchaseItemSelect) return;
+
+    const selectedPurchase  = getSelectedPurchase();
+    const selectedProductId = hiddenEl?.value || '';
+    const currentValue      = purchaseItemSelect.getAttribute('data-current') || purchaseItemSelect.value || '';
+
+    purchaseItemSelect.innerHTML = '<option value="">— Optional —</option>';
+    purchasedQtyEl.textContent = '—';
+    if (!selectedPurchase?.items) return;
+
+    const matchedItems = selectedPurchase.items.filter(item =>
+        !selectedProductId || String(item.product_id) === String(selectedProductId)
+    );
+
+    matchedItems.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = `${item.product_name || 'Product'} · Purchased ${item.qty} @ ${item.price}`;
+        opt.dataset.qty       = item.qty;
+        opt.dataset.price     = item.price;
+        opt.dataset.productId = item.product_id;
+        purchaseItemSelect.appendChild(opt);
+    });
+
+    if (currentValue) purchaseItemSelect.value = currentValue;
+    const sel = purchaseItemSelect.options[purchaseItemSelect.selectedIndex];
+    if (sel?.value) purchasedQtyEl.textContent = sel.dataset.qty || '—';
+}
+
+function updateItemMeta(itemRow) {
+    const product = getProduct(itemRow.querySelector('.return-product-hidden')?.value);
+    itemRow.querySelector('.return-sku').textContent   = product?.sku      || '—';
+    itemRow.querySelector('.return-stock').textContent = product?.stock_qty ?? 0;
+}
+
+function updateItemLine(itemRow) {
+    const qty   = parseFloat(itemRow.querySelector('.return-qty')?.value   || 0);
+    const price = parseFloat(itemRow.querySelector('.return-price')?.value || 0);
+    itemRow.querySelector('.return-line-total').textContent = fmtMoney(qty * price);
+}
+
+function updateSummary() {
+    let subtotal = 0;
+    document.querySelectorAll('.return-item').forEach(row => {
+        subtotal += parseFloat(row.querySelector('.return-qty')?.value   || 0)
+                  * parseFloat(row.querySelector('.return-price')?.value || 0);
+    });
+    const discount = parseFloat(document.getElementById('discount')?.value || 0);
+    document.getElementById('return-subtotal-display').textContent = fmtMoney(subtotal);
+    document.getElementById('return-amount-display').textContent   = fmtMoney(Math.max(0, subtotal - discount));
+}
+
+function updateRowFromPurchaseItem(itemRow) {
+    const purchaseItemSelect = itemRow.querySelector('.return-purchase-item');
+    const hiddenEl           = itemRow.querySelector('.return-product-hidden');
+    const labelEl            = itemRow.querySelector('.sd-trigger-text');
+    const qtyInput           = itemRow.querySelector('.return-qty');
+    const priceInput         = itemRow.querySelector('.return-price');
+    const purchasedQtyEl     = itemRow.querySelector('.return-purchased-qty');
+
+    const option = purchaseItemSelect.options[purchaseItemSelect.selectedIndex];
+    if (option?.value) {
+        if (option.dataset.productId && hiddenEl) {
+            hiddenEl.value = option.dataset.productId;
+            const prod = getProduct(option.dataset.productId);
+            if (prod && labelEl) {
+                labelEl.textContent = prod.name + (prod.sku ? ' [' + prod.sku + ']' : '');
+                labelEl.classList.remove('placeholder');
+            }
+        }
+        if (option.dataset.qty && (!qtyInput.value || parseFloat(qtyInput.value) <= 0)) {
+            qtyInput.value = option.dataset.qty;
+        }
+        if (option.dataset.price) priceInput.value = option.dataset.price;
+        purchasedQtyEl.textContent = option.dataset.qty || '—';
+    } else {
+        purchasedQtyEl.textContent = '—';
+    }
+
+    updateItemMeta(itemRow);
+    updateItemLine(itemRow);
+    updateSummary();
+}
+
+function bindRowEvents(itemRow) {
+    initRowProductDropdown(itemRow);
+
+    itemRow.querySelector('.return-purchase-item')?.addEventListener('change', () => updateRowFromPurchaseItem(itemRow));
+    itemRow.querySelector('.return-qty')?.addEventListener('input',   () => { updateItemLine(itemRow); updateSummary(); });
+    itemRow.querySelector('.return-price')?.addEventListener('input', () => { updateItemLine(itemRow); updateSummary(); });
+    itemRow.querySelector('.remove-return-item')?.addEventListener('click', () => {
+        if (document.querySelectorAll('.return-item').length <= 1) return;
+        // Destroy portal panel for this row's product dropdown
+        const trigger = itemRow.querySelector('.return-product-trigger');
+        trigger?._sdInstance?.destroy();
+        itemRow.remove();
+        updateSummary();
+    });
+
+    fillPurchaseItemOptions(itemRow);
+    updateItemMeta(itemRow);
+    updateItemLine(itemRow);
+}
+
+function addReturnItemRow(data = {}) {
+    const wrapper  = document.getElementById('return-items-wrapper');
+    const template = document.getElementById('return-item-template').innerHTML;
+    const index    = wrapper.querySelectorAll('.return-item').length;
+
+    wrapper.insertAdjacentHTML('beforeend', template.replaceAll('__INDEX__', index));
+    const itemRow = wrapper.lastElementChild;
+
+    if (data.product_id) itemRow.querySelector('.return-product-hidden').value = data.product_id;
+    if (data.qty)        itemRow.querySelector('.return-qty').value   = data.qty;
+    if (data.price)      itemRow.querySelector('.return-price').value = data.price;
+    if (data.purchase_item_id) {
+        itemRow.querySelector('.return-purchase-item').setAttribute('data-current', data.purchase_item_id);
+    }
+
+    bindRowEvents(itemRow);
+    updateSummary();
+}
+
+function rebuildRowsFromSelectedPurchase() {
+    const wrapper          = document.getElementById('return-items-wrapper');
+    const selectedPurchase = getSelectedPurchase();
+    const hasOldInput      = {{ old('items') ? 'true' : 'false' }};
+    const isEditPage       = {{ $purchaseReturn ? 'true' : 'false' }};
+
+    if (hasOldInput || isEditPage) {
+        wrapper.querySelectorAll('.return-item').forEach(bindRowEvents);
+        updateSummary();
+        return;
+    }
+
+    // Destroy existing product SD panels before clearing
+    wrapper.querySelectorAll('.return-product-trigger').forEach(t => t._sdInstance?.destroy());
+    wrapper.innerHTML = '';
+
+    if (selectedPurchase?.items?.length) {
+        selectedPurchase.items.forEach(item => addReturnItemRow({
+            purchase_item_id: item.id,
+            product_id:       item.product_id,
+            qty:              item.qty,
+            price:            item.price,
+        }));
+    } else {
+        addReturnItemRow();
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    initPurchaseDropdown();
+    initSupplierDropdown();
+
+    document.querySelectorAll('.return-item').forEach(bindRowEvents);
+    updateSummary();
+
+    document.getElementById('discount')?.addEventListener('input', updateSummary);
+    document.getElementById('add-return-item')?.addEventListener('click', () => addReturnItemRow());
+
+    if (!document.querySelectorAll('.return-item').length) addReturnItemRow();
+});
 </script>
 @endpush
