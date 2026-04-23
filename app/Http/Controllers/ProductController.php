@@ -94,6 +94,11 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
+        if ($product->purchaseItems()->exists()) {
+        return redirect()
+            ->route('products.index')
+            ->with('error', 'This product cannot be deleted because it is used in purchases.');
+        }
         if ($product->image) {
             Storage::disk('public')->delete($product->image);
         }
