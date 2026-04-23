@@ -317,7 +317,7 @@
                     <span class="text-[9px] font-medium">Home</span>
                 </a>
 
-                <a href="#"
+                <a href="{{ route('purchases.index')}}"
                     class="flex flex-col items-center gap-0.5 px-3 py-1 {{ request()->routeIs('purchases.*') ? 'text-blue-400' : 'text-white/45' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.75"
                         viewBox="0 0 24 24">
@@ -328,7 +328,7 @@
                     <span class="text-[9px] font-medium">Purchase</span>
                 </a>
 
-                <a href="#"
+                <a href="{{ route('sales.index') }}"
                     class="flex flex-col items-center gap-0.5 px-3 py-1 {{ request()->routeIs('sales.*') ? 'text-blue-400' : 'text-white/45' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.75"
                         viewBox="0 0 24 24">
@@ -338,7 +338,7 @@
                     <span class="text-[9px] font-medium">Sales</span>
                 </a>
 
-                <a href="#"
+                {{-- <a href="{{ route('reports.index') }}"
                     class="flex flex-col items-center gap-0.5 px-3 py-1 {{ request()->routeIs('reports.*') ? 'text-blue-400' : 'text-white/45' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.75"
                         viewBox="0 0 24 24">
@@ -346,7 +346,7 @@
                             d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span class="text-[9px] font-medium">Reports</span>
-                </a>
+                </a> --}}
 
                 <button @click="drawerOpen = !drawerOpen"
                     class="flex flex-col items-center gap-0.5 px-3 py-1 text-white/45">
