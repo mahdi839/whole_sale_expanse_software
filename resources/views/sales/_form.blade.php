@@ -22,21 +22,55 @@
     /* ---- POS Layout ---- */
     .pos-wrap {
         display: grid;
-        grid-template-columns: 1fr 380px;
+        grid-template-columns: minmax(0, 1fr) 380px;
         gap: 0;
         min-height: 600px;
     }
+
     @media (max-width: 900px) {
-        .pos-wrap { grid-template-columns: 1fr; }
-        .pos-sidebar { border-left: none !important; border-top: 1px solid #e5e7eb; }
+        .pos-wrap {
+            grid-template-columns: 1fr;
+        }
+
+        .pos-sidebar {
+            border-left: none !important;
+            border-top: 1px solid #e5e7eb;
+        }
     }
 
-    /* LEFT – product search + cart */
-    .pos-left  { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
-    .pos-sidebar { padding: 24px; background: #f8fafc; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 18px; }
+    .pos-left,
+    .pos-sidebar {
+        min-width: 0;
+    }
+
+    .pos-left {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .pos-sidebar {
+        padding: 24px;
+        background: #f8fafc;
+        border-left: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    @media (max-width: 640px) {
+        .pos-left,
+        .pos-sidebar {
+            padding: 16px;
+        }
+    }
 
     /* Search */
-    .search-wrap { position: relative; }
+    .search-wrap {
+        position: relative;
+    }
+
     .search-wrap input {
         width: 100%;
         height: 44px;
@@ -48,102 +82,374 @@
         outline: none;
         transition: border .15s, box-shadow .15s;
     }
-    .search-wrap input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
-    .search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; }
+
+    .search-wrap input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        pointer-events: none;
+    }
+
     .search-dropdown {
-        position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-        background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
         box-shadow: 0 8px 24px rgba(0,0,0,.09);
-        max-height: 240px; overflow-y: auto; z-index: 50;
+        max-height: 240px;
+        overflow-y: auto;
+        z-index: 50;
         display: none;
     }
-    .search-dropdown.open { display: block; }
+
+    .search-dropdown.open {
+        display: block;
+    }
+
     .search-option {
-        display: flex; align-items: center; gap: 10px;
-        padding: 10px 14px; cursor: pointer; font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+        font-size: 13px;
         border-bottom: 1px solid #f1f5f9;
         transition: background .1s;
     }
-    .search-option:last-child { border-bottom: none; }
-    .search-option:hover { background: #f0f9ff; }
-    .search-option .sku { font-size: 11px; color: #94a3b8; font-family: monospace; }
+
+    .search-option:last-child {
+        border-bottom: none;
+    }
+
+    .search-option:hover {
+        background: #f0f9ff;
+    }
+
+    .search-option .sku {
+        font-size: 11px;
+        color: #94a3b8;
+        font-family: monospace;
+        word-break: break-all;
+    }
 
     /* Cart items */
     .cart-empty {
-        flex: 1; display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        color: #cbd5e1; gap: 10px; padding: 40px;
-        border: 2px dashed #e2e8f0; border-radius: 12px;
-        font-size: 13px; text-align: center;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #cbd5e1;
+        gap: 10px;
+        padding: 40px;
+        border: 2px dashed #e2e8f0;
+        border-radius: 12px;
+        font-size: 13px;
+        text-align: center;
     }
-    .cart-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .cart-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
     .cart-card {
-        display: flex; align-items: center; gap: 12px;
-        background: #fff; border: 1px solid #e5e7eb;
-        border-radius: 10px; padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 12px 14px;
         animation: slideIn .18s ease;
+        min-width: 0;
     }
-    @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
-    .cart-card .prod-info { flex: 1; min-width: 0; }
-    .cart-card .prod-name { font-size: 13px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cart-card .prod-sku  { font-size: 11px; color: #94a3b8; font-family: monospace; }
-    .cart-card .price-col { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-    .cart-card .line-total { font-size: 13px; font-weight: 700; color: #1d4ed8; }
-    .price-edit { width: 90px; height: 32px; padding: 0 8px; font-size: 12px; border: 1px solid #e2e8f0; border-radius: 6px; text-align: right; }
-    .price-edit:focus { outline: none; border-color: #3b82f6; }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to { opacity: 1; transform: none; }
+    }
+
+    .cart-card .prod-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .cart-card .prod-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cart-card .prod-sku {
+        font-size: 11px;
+        color: #94a3b8;
+        font-family: monospace;
+        word-break: break-all;
+    }
+
+    .cart-card .price-col {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+        flex-shrink: 0;
+    }
+
+    .cart-card .line-total {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1d4ed8;
+    }
+
+    .price-edit {
+        width: 90px;
+        height: 32px;
+        padding: 0 8px;
+        font-size: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        text-align: right;
+    }
+
+    .price-edit:focus {
+        outline: none;
+        border-color: #3b82f6;
+    }
 
     /* Qty stepper */
-    .qty-stepper { display: flex; align-items: center; gap: 0; border: 1px solid #e2e8f0; border-radius: 7px; overflow: hidden; }
+    .qty-stepper {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 7px;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
     .qty-stepper button {
-        width: 28px; height: 32px; font-size: 16px; font-weight: 600;
-        background: #f8fafc; border: none; cursor: pointer; color: #475569;
+        width: 28px;
+        height: 32px;
+        font-size: 16px;
+        font-weight: 600;
+        background: #f8fafc;
+        border: none;
+        cursor: pointer;
+        color: #475569;
         transition: background .12s;
     }
-    .qty-stepper button:hover { background: #e2e8f0; }
-    .qty-stepper input {
-        width: 40px; height: 32px; border: none; border-left: 1px solid #e2e8f0;
-        border-right: 1px solid #e2e8f0; text-align: center; font-size: 13px;
-        font-weight: 600; outline: none; background: #fff; color: #0f172a;
+
+    .qty-stepper button:hover {
+        background: #e2e8f0;
     }
-    /* hide arrows on number inputs */
+
+    .qty-stepper input {
+        width: 40px;
+        height: 32px;
+        border: none;
+        border-left: 1px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 600;
+        outline: none;
+        background: #fff;
+        color: #0f172a;
+    }
+
     .qty-stepper input::-webkit-inner-spin-button,
-    .qty-stepper input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .qty-stepper input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+    }
 
     .btn-remove {
-        width: 28px; height: 28px; border-radius: 6px;
-        border: none; background: #fef2f2; color: #ef4444;
-        cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: none;
+        background: #fef2f2;
+        color: #ef4444;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         transition: background .12s;
+        flex-shrink: 0;
     }
-    .btn-remove:hover { background: #fee2e2; }
 
-    /* ---- Sidebar fields ---- */
-    .field-group { display: flex; flex-direction: column; gap: 6px; }
-    .field-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+    .btn-remove:hover {
+        background: #fee2e2;
+    }
+
+    @media (max-width: 640px) {
+        .cart-card {
+            flex-wrap: wrap;
+            align-items: flex-start;
+            padding: 12px;
+        }
+
+        .cart-card .prod-info {
+            width: 100%;
+        }
+
+        .cart-card .prod-name {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+            word-break: break-word;
+        }
+
+        .qty-stepper {
+            order: 2;
+        }
+
+        .cart-card .price-col {
+            order: 3;
+            width: calc(100% - 44px);
+            align-items: stretch;
+        }
+
+        .price-edit {
+            width: 100%;
+        }
+
+        .btn-remove {
+            order: 4;
+            margin-left: auto;
+        }
+    }
+
+    /* Sidebar fields */
+    .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .field-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
     .field-input {
-        width: 100%; height: 38px; padding: 0 12px;
-        border: 1.5px solid #e2e8f0; border-radius: 8px;
-        font-size: 13px; background: #fff; outline: none;
+        width: 100%;
+        height: 38px;
+        padding: 0 12px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 13px;
+        background: #fff;
+        outline: none;
         transition: border .15s, box-shadow .15s;
+        min-width: 0;
     }
-    .field-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
-    .field-input[readonly] { background: #f1f5f9; color: #64748b; cursor: default; }
-    select.field-input { cursor: pointer; }
-    textarea.field-input { height: auto; padding: 8px 12px; resize: vertical; }
 
-    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 0; }
+    .field-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+    }
+
+    .field-input[readonly] {
+        background: #f1f5f9;
+        color: #64748b;
+        cursor: default;
+    }
+
+    select.field-input {
+        cursor: pointer;
+    }
+
+    textarea.field-input {
+        height: auto;
+        padding: 8px 12px;
+        resize: vertical;
+    }
+
+    .divider {
+        border: none;
+        border-top: 1px solid #e5e7eb;
+        margin: 0;
+    }
 
     /* Totals */
-    .totals-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-    .totals-row.grand { font-size: 16px; font-weight: 700; margin-top: 4px; }
-    .totals-row .label { color: #64748b; }
-    .totals-row .val   { color: #1e293b; }
-    .totals-row.grand .val { color: #16a34a; font-size: 20px; }
+    .totals-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        font-size: 13px;
+    }
+
+    .totals-row.grand {
+        font-size: 16px;
+        font-weight: 700;
+        margin-top: 4px;
+    }
+
+    .totals-row .label {
+        color: #64748b;
+    }
+
+    .totals-row .val {
+        color: #1e293b;
+        text-align: right;
+        word-break: break-word;
+    }
+
+    .totals-row.grand .val {
+        color: #16a34a;
+        font-size: 20px;
+    }
 
     /* Badge status */
     .payment-badge {
-        display: inline-flex; align-items: center; gap: 5px;
-        padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    @media (max-width: 640px) {
+        .customer-select-row {
+            flex-direction: column;
+        }
+
+        .customer-select-row > button {
+            width: 100% !important;
+            height: 40px !important;
+        }
+
+        .customer-modal-actions {
+            flex-direction: column-reverse;
+        }
+
+        .customer-modal-actions button {
+            width: 100%;
+            justify-content: center;
+        }
     }
 </style>
 
@@ -156,7 +462,10 @@
         <div>
             <div class="field-label mb-2">Search Products</div>
             <div class="search-wrap" id="search-wrap">
-                <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                </svg>
                 <input type="text" id="product-search" placeholder="Search by name or SKU…" autocomplete="off">
                 <div class="search-dropdown" id="search-dropdown">
                     @foreach ($products as $product)
@@ -165,11 +474,11 @@
                              data-name="{{ $product->product_name }}"
                              data-sku="{{ $product->sku }}"
                              data-price="{{ $product->selling_price ?? 0 }}">
-                            <div style="flex:1">
-                                <div style="font-weight:600;color:#1e293b">{{ $product->product_name }}</div>
+                            <div style="flex:1;min-width:0">
+                                <div style="font-weight:600;color:#1e293b;word-break:break-word">{{ $product->product_name }}</div>
                                 <div class="sku">{{ $product->sku }}</div>
                             </div>
-                            <div style="font-size:12px;font-weight:600;color:#2563eb">৳{{ number_format($product->selling_price ?? 0, 2) }}</div>
+                            <div style="font-size:12px;font-weight:600;color:#2563eb;flex-shrink:0">৳{{ number_format($product->selling_price ?? 0, 2) }}</div>
                         </div>
                     @endforeach
                 </div>
@@ -177,10 +486,14 @@
         </div>
 
         {{-- Cart --}}
-        <div id="cart-container" style="flex:1; display:flex; flex-direction:column; gap:10px;">
+        <div id="cart-container" style="flex:1; display:flex; flex-direction:column; gap:10px; min-width:0;">
             <div class="field-label">Cart Items</div>
             <div id="cart-empty" class="cart-empty">
-                <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+                    <path d="M3 6h18"/>
+                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                </svg>
                 <span>No items added yet.<br>Search and select a product above.</span>
             </div>
             <div id="cart-list" class="cart-list"></div>
@@ -193,7 +506,7 @@
         {{-- Customer --}}
         <div class="field-group">
             <div class="field-label">Customer</div>
-            <div style="display:flex;gap:8px">
+            <div class="customer-select-row" style="display:flex;gap:8px">
                 <select name="customer_id" id="customer_id" class="field-input" style="flex:1">
                     <option value="">Walk-in / No customer</option>
                     @foreach ($customers as $customer)
@@ -202,8 +515,12 @@
                         </option>
                     @endforeach
                 </select>
-                <button type="button" onclick="openCustomerModal()" title="Add customer"
-                    style="width:38px;height:38px;flex-shrink:0;border-radius:8px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#2563eb;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background .12s">
+                <button
+                    type="button"
+                    onclick="openCustomerModal()"
+                    title="Add customer"
+                    style="width:38px;height:38px;flex-shrink:0;border-radius:8px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#2563eb;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background .12s"
+                >
                     +
                 </button>
             </div>
@@ -278,28 +595,49 @@
             <textarea name="note" rows="2" class="field-input">{{ old('note', $sale?->note) }}</textarea>
         </div>
 
-    </div>{{-- /sidebar --}}
+    </div>
 </div>
 
 {{-- Hidden --}}
 <input type="hidden" name="reference" value="{{ $nextReference ?? $sale?->reference }}">
 
 {{-- ============ Customer Modal ============ --}}
-<div id="customerModal" class="hidden" style="position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:16px"
-     onclick="closeCustomerModal(event)">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:440px;box-shadow:0 20px 50px rgba(0,0,0,.15)" onclick="event.stopPropagation()">
+<div
+    id="customerModal"
+    class="hidden"
+    style="position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:16px"
+    onclick="closeCustomerModal(event)"
+>
+    <div
+        style="background:#fff;border-radius:14px;width:100%;max-width:440px;box-shadow:0 20px 50px rgba(0,0,0,.15)"
+        onclick="event.stopPropagation()"
+    >
         <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #f1f5f9">
             <span style="font-weight:700;font-size:14px">New Customer</span>
             <button type="button" onclick="closeCustomerModal()" style="border:none;background:none;font-size:18px;color:#94a3b8;cursor:pointer">✕</button>
         </div>
+
         <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
             <input type="text" id="new_customer_name" placeholder="Full Name *" class="field-input">
             <input type="text" id="new_customer_phone" placeholder="Phone" class="field-input">
             <div id="modal-error" class="hidden" style="font-size:12px;color:#ef4444"></div>
         </div>
-        <div style="padding:12px 20px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:8px">
-            <button type="button" onclick="closeCustomerModal()" style="height:36px;padding:0 16px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer;background:#fff">Cancel</button>
-            <button type="button" id="save-customer-btn" style="height:36px;padding:0 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:#2563eb;color:#fff;cursor:pointer">Save</button>
+
+        <div class="customer-modal-actions" style="padding:12px 20px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:8px">
+            <button
+                type="button"
+                onclick="closeCustomerModal()"
+                style="height:36px;padding:0 16px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer;background:#fff"
+            >
+                Cancel
+            </button>
+            <button
+                type="button"
+                id="save-customer-btn"
+                style="height:36px;padding:0 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:#2563eb;color:#fff;cursor:pointer"
+            >
+                Save
+            </button>
         </div>
     </div>
 </div>
@@ -339,27 +677,35 @@ const dueInput      = document.getElementById('due');
 // ============================================================
 searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
-    if (!q) { dropdown.classList.remove('open'); return; }
+    if (!q) {
+        dropdown.classList.remove('open');
+        return;
+    }
+
     const matches = ALL_PRODUCTS.filter(p =>
         p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
     );
+
     dropdown.innerHTML = matches.length
         ? matches.slice(0, 12).map(p => `
             <div class="search-option" data-id="${p.id}" data-name="${escHtml(p.name)}" data-sku="${escHtml(p.sku)}" data-price="${p.price}">
-                <div style="flex:1">
-                    <div style="font-weight:600;color:#1e293b">${escHtml(p.name)}</div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-weight:600;color:#1e293b;word-break:break-word">${escHtml(p.name)}</div>
                     <div class="sku">${escHtml(p.sku)}</div>
                 </div>
-                <div style="font-size:12px;font-weight:600;color:#2563eb">৳${p.price.toFixed(2)}</div>
+                <div style="font-size:12px;font-weight:600;color:#2563eb;flex-shrink:0">৳${p.price.toFixed(2)}</div>
             </div>`).join('')
         : '<div style="padding:14px 16px;font-size:13px;color:#94a3b8">No products found</div>';
+
     dropdown.classList.add('open');
     attachDropdownEvents();
 });
 
 document.addEventListener('click', e => {
-    if (!document.getElementById('search-wrap').contains(e.target))
+    const wrap = document.getElementById('search-wrap');
+    if (wrap && !wrap.contains(e.target)) {
         dropdown.classList.remove('open');
+    }
 });
 
 function attachDropdownEvents() {
@@ -389,6 +735,7 @@ function addToCart(id, name, sku, price) {
 function renderCart() {
     cartEmpty.style.display = cartItems.length ? 'none' : 'flex';
     cartList.innerHTML = '';
+
     cartItems.forEach((item, idx) => {
         const card = document.createElement('div');
         card.className = 'cart-card';
@@ -413,6 +760,7 @@ function renderCart() {
         `;
         cartList.appendChild(card);
     });
+
     attachCardEvents();
     recalc();
 }
@@ -420,24 +768,33 @@ function renderCart() {
 function attachCardEvents() {
     cartList.querySelectorAll('.btn-minus').forEach(b => b.addEventListener('click', e => {
         const i = +e.currentTarget.dataset.idx;
-        if (cartItems[i].qty > 1) { cartItems[i].qty -= 1; updateItem(i); }
-        else removeItem(i);
+        if (cartItems[i].qty > 1) {
+            cartItems[i].qty -= 1;
+            updateItem(i);
+        } else {
+            removeItem(i);
+        }
     }));
+
     cartList.querySelectorAll('.btn-plus').forEach(b => b.addEventListener('click', e => {
         const i = +e.currentTarget.dataset.idx;
-        cartItems[i].qty += 1; updateItem(i);
+        cartItems[i].qty += 1;
+        updateItem(i);
     }));
+
     cartList.querySelectorAll('.item-qty').forEach(inp => inp.addEventListener('change', e => {
         const i = +e.target.dataset.idx;
         const v = parseFloat(e.target.value) || 1;
         cartItems[i].qty = v < 0.01 ? 0.01 : v;
         updateItem(i);
     }));
+
     cartList.querySelectorAll('.item-price').forEach(inp => inp.addEventListener('change', e => {
         const i = +e.target.dataset.idx;
         cartItems[i].price_on_sale = parseFloat(e.target.value) || 0;
         updateItem(i);
     }));
+
     cartList.querySelectorAll('.btn-remove').forEach(b => b.addEventListener('click', e => {
         removeItem(+e.currentTarget.dataset.idx);
     }));
@@ -445,11 +802,13 @@ function attachCardEvents() {
 
 function updateItem(idx) {
     cartItems[idx].line_total = cartItems[idx].qty * cartItems[idx].price_on_sale;
-    // update qty input and total label without full re-render
+
     const qtyInp = cartList.querySelector(`.item-qty[data-idx="${idx}"]`);
     if (qtyInp) qtyInp.value = cartItems[idx].qty;
+
     const totalEl = cartList.querySelectorAll('.item-total')[idx];
     if (totalEl) totalEl.textContent = '৳' + cartItems[idx].line_total.toFixed(2);
+
     recalc();
 }
 
@@ -465,6 +824,7 @@ function recalc() {
     const sub = cartItems.reduce((s, i) => s + i.line_total, 0);
     const disc = parseFloat(discountInput.value) || 0;
     const grand = Math.max(0, sub - disc);
+
     subtotalSpan.textContent = '৳' + sub.toFixed(2);
     grandSpan.textContent    = '৳' + grand.toFixed(2);
     updatePayment(grand);
@@ -474,9 +834,14 @@ function updatePayment(grand) {
     const s = payStatus.value;
     paidField.style.display = (s === 'paid' || s === 'partial') ? 'flex' : 'none';
     dueField.style.display  = (s === 'due'  || s === 'partial') ? 'flex' : 'none';
-    if (s === 'paid')    { paidInput.value = grand.toFixed(2); dueInput.value = '0.00'; }
-    else if (s === 'due'){ paidInput.value = '0.00'; dueInput.value = grand.toFixed(2); }
-    else { // partial
+
+    if (s === 'paid') {
+        paidInput.value = grand.toFixed(2);
+        dueInput.value = '0.00';
+    } else if (s === 'due') {
+        paidInput.value = '0.00';
+        dueInput.value = grand.toFixed(2);
+    } else {
         let paid = Math.min(parseFloat(paidInput.value) || 0, grand);
         paidInput.value = paid.toFixed(2);
         dueInput.value  = (grand - paid).toFixed(2);
@@ -494,7 +859,7 @@ paidInput.addEventListener('input', () => {
 });
 
 function getGrand() {
-    return Math.max(0, cartItems.reduce((s,i)=>s+i.line_total,0) - (parseFloat(discountInput.value)||0));
+    return Math.max(0, cartItems.reduce((s, i) => s + i.line_total, 0) - (parseFloat(discountInput.value) || 0));
 }
 
 // ============================================================
@@ -502,39 +867,60 @@ function getGrand() {
 // ============================================================
 function openCustomerModal() {
     const m = document.getElementById('customerModal');
-    m.style.display = 'flex'; m.classList.remove('hidden');
+    m.style.display = 'flex';
+    m.classList.remove('hidden');
 }
+
 function closeCustomerModal(e) {
     if (!e || e.target === document.getElementById('customerModal')) {
         const m = document.getElementById('customerModal');
-        m.style.display = 'none'; m.classList.add('hidden');
+        m.style.display = 'none';
+        m.classList.add('hidden');
     }
 }
+
 document.getElementById('save-customer-btn').addEventListener('click', async () => {
     const name  = document.getElementById('new_customer_name').value.trim();
     const phone = document.getElementById('new_customer_phone').value.trim();
     const err   = document.getElementById('modal-error');
-    if (!name) { err.textContent = 'Name is required'; err.classList.remove('hidden'); return; }
+
+    if (!name) {
+        err.textContent = 'Name is required';
+        err.classList.remove('hidden');
+        return;
+    }
+
     err.classList.add('hidden');
     const btn = document.getElementById('save-customer-btn');
     btn.disabled = true;
+
     try {
-        const res  = await fetch('{{ route('customers.store') }}', {
+        const res = await fetch('{{ route('customers.store') }}', {
             method: 'POST',
-            headers: { 'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
             body: JSON.stringify({ full_name: name, phone })
         });
+
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Error saving customer');
+
         const sel = document.getElementById('customer_id');
         sel.add(new Option(data.full_name + (data.phone ? ' · ' + data.phone : ''), data.id, true, true));
         sel.value = data.id;
+
         closeCustomerModal();
         document.getElementById('new_customer_name').value = '';
         document.getElementById('new_customer_phone').value = '';
-    } catch(ex) {
-        err.textContent = ex.message; err.classList.remove('hidden');
-    } finally { btn.disabled = false; }
+    } catch (ex) {
+        err.textContent = ex.message;
+        err.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+    }
 });
 
 // ============================================================
@@ -542,7 +928,8 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
 // ============================================================
 function escHtml(s) {
     return String(s).replace(/[&<>"']/g, c =>
-        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])
+    );
 }
 
 // ============================================================

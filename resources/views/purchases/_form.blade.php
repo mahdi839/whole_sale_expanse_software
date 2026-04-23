@@ -20,20 +20,55 @@
 <style>
     .pos-wrap {
         display: grid;
-        grid-template-columns: 1fr 380px;
+        grid-template-columns: minmax(0, 1fr) 380px;
         gap: 0;
         min-height: 600px;
     }
+
     @media (max-width: 900px) {
-        .pos-wrap { grid-template-columns: 1fr; }
-        .pos-sidebar { border-left: none !important; border-top: 1px solid #e5e7eb; }
+        .pos-wrap {
+            grid-template-columns: 1fr;
+        }
+
+        .pos-sidebar {
+            border-left: none !important;
+            border-top: 1px solid #e5e7eb;
+        }
     }
 
-    .pos-left  { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
-    .pos-sidebar { padding: 24px; background: #f8fafc; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 18px; }
+    .pos-left,
+    .pos-sidebar {
+        min-width: 0;
+    }
 
-    /* ── Product search ── */
-    .search-wrap { position: relative; }
+    .pos-left {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .pos-sidebar {
+        padding: 24px;
+        background: #f8fafc;
+        border-left: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    @media (max-width: 640px) {
+        .pos-left,
+        .pos-sidebar {
+            padding: 16px;
+        }
+    }
+
+    /* Product search */
+    .search-wrap {
+        position: relative;
+    }
+
     .search-wrap input {
         width: 100%;
         height: 44px;
@@ -45,152 +80,494 @@
         outline: none;
         transition: border .15s, box-shadow .15s;
     }
-    .search-wrap input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
-    .search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; }
+
+    .search-wrap input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        pointer-events: none;
+    }
+
     .search-dropdown {
-        position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-        background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
         box-shadow: 0 8px 24px rgba(0,0,0,.09);
-        max-height: 240px; overflow-y: auto; z-index: 50;
+        max-height: 240px;
+        overflow-y: auto;
+        z-index: 50;
         display: none;
     }
-    .search-dropdown.open { display: block; }
+
+    .search-dropdown.open {
+        display: block;
+    }
+
     .search-option {
-        display: flex; align-items: center; gap: 10px;
-        padding: 10px 14px; cursor: pointer; font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+        font-size: 13px;
         border-bottom: 1px solid #f1f5f9;
         transition: background .1s;
     }
-    .search-option:last-child { border-bottom: none; }
-    .search-option:hover { background: #f0f9ff; }
-    .search-option .sku { font-size: 11px; color: #94a3b8; font-family: monospace; }
 
-    /* ── Cart ── */
+    .search-option:last-child {
+        border-bottom: none;
+    }
+
+    .search-option:hover {
+        background: #f0f9ff;
+    }
+
+    .search-option .sku {
+        font-size: 11px;
+        color: #94a3b8;
+        font-family: monospace;
+    }
+
+    /* Cart */
     .cart-empty {
-        flex: 1; display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        color: #cbd5e1; gap: 10px; padding: 40px;
-        border: 2px dashed #e2e8f0; border-radius: 12px;
-        font-size: 13px; text-align: center;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #cbd5e1;
+        gap: 10px;
+        padding: 40px;
+        border: 2px dashed #e2e8f0;
+        border-radius: 12px;
+        font-size: 13px;
+        text-align: center;
     }
-    .cart-list { display: flex; flex-direction: column; gap: 10px; }
-    .cart-card {
-        display: flex; align-items: center; gap: 12px;
-        background: #fff; border: 1px solid #e5e7eb;
-        border-radius: 10px; padding: 12px 14px;
-        animation: slideIn .18s ease;
-    }
-    @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
-    .cart-card .prod-info { flex: 1; min-width: 0; }
-    .cart-card .prod-name { font-size: 13px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cart-card .prod-sku  { font-size: 11px; color: #94a3b8; font-family: monospace; }
-    .cart-card .price-col { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-    .cart-card .line-total { font-size: 13px; font-weight: 700; color: #16a34a; }
-    .price-edit { width: 90px; height: 32px; padding: 0 8px; font-size: 12px; border: 1px solid #e2e8f0; border-radius: 6px; text-align: right; }
-    .price-edit:focus { outline: none; border-color: #3b82f6; }
 
-    .qty-stepper { display: flex; align-items: center; gap: 0; border: 1px solid #e2e8f0; border-radius: 7px; overflow: hidden; }
+    .cart-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .cart-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 12px 14px;
+        animation: slideIn .18s ease;
+        min-width: 0;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to { opacity: 1; transform: none; }
+    }
+
+    .cart-card .prod-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .cart-card .prod-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cart-card .prod-sku {
+        font-size: 11px;
+        color: #94a3b8;
+        font-family: monospace;
+        word-break: break-all;
+    }
+
+    .cart-card .price-col {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+        flex-shrink: 0;
+    }
+
+    .cart-card .line-total {
+        font-size: 13px;
+        font-weight: 700;
+        color: #16a34a;
+    }
+
+    .price-edit {
+        width: 90px;
+        height: 32px;
+        padding: 0 8px;
+        font-size: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        text-align: right;
+    }
+
+    .price-edit:focus {
+        outline: none;
+        border-color: #3b82f6;
+    }
+
+    .qty-stepper {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 7px;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
     .qty-stepper button {
-        width: 28px; height: 32px; font-size: 16px; font-weight: 600;
-        background: #f8fafc; border: none; cursor: pointer; color: #475569;
+        width: 28px;
+        height: 32px;
+        font-size: 16px;
+        font-weight: 600;
+        background: #f8fafc;
+        border: none;
+        cursor: pointer;
+        color: #475569;
         transition: background .12s;
     }
-    .qty-stepper button:hover { background: #e2e8f0; }
-    .qty-stepper input {
-        width: 40px; height: 32px; border: none; border-left: 1px solid #e2e8f0;
-        border-right: 1px solid #e2e8f0; text-align: center; font-size: 13px;
-        font-weight: 600; outline: none; background: #fff; color: #0f172a;
+
+    .qty-stepper button:hover {
+        background: #e2e8f0;
     }
+
+    .qty-stepper input {
+        width: 40px;
+        height: 32px;
+        border: none;
+        border-left: 1px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 600;
+        outline: none;
+        background: #fff;
+        color: #0f172a;
+    }
+
     .qty-stepper input::-webkit-inner-spin-button,
-    .qty-stepper input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .qty-stepper input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+    }
 
     .btn-remove {
-        width: 28px; height: 28px; border-radius: 6px;
-        border: none; background: #fef2f2; color: #ef4444;
-        cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: none;
+        background: #fef2f2;
+        color: #ef4444;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         transition: background .12s;
+        flex-shrink: 0;
     }
-    .btn-remove:hover { background: #fee2e2; }
 
-    /* ── Form fields ── */
-    .field-group { display: flex; flex-direction: column; gap: 6px; }
-    .field-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+    .btn-remove:hover {
+        background: #fee2e2;
+    }
+
+    @media (max-width: 640px) {
+        .cart-card {
+            flex-wrap: wrap;
+            align-items: flex-start;
+            padding: 12px;
+        }
+
+        .cart-card .prod-info {
+            width: 100%;
+        }
+
+        .cart-card .prod-name {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+            word-break: break-word;
+        }
+
+        .qty-stepper {
+            order: 2;
+        }
+
+        .cart-card .price-col {
+            order: 3;
+            align-items: stretch;
+            width: calc(100% - 44px);
+        }
+
+        .price-edit {
+            width: 100%;
+        }
+
+        .btn-remove {
+            order: 4;
+            margin-left: auto;
+        }
+    }
+
+    /* Form fields */
+    .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .field-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
     .field-input {
-        width: 100%; height: 38px; padding: 0 12px;
-        border: 1.5px solid #e2e8f0; border-radius: 8px;
-        font-size: 13px; background: #fff; outline: none;
+        width: 100%;
+        height: 38px;
+        padding: 0 12px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 13px;
+        background: #fff;
+        outline: none;
         transition: border .15s, box-shadow .15s;
+        min-width: 0;
     }
-    .field-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
-    .field-input[readonly] { background: #f1f5f9; color: #64748b; cursor: default; }
-    select.field-input { cursor: pointer; }
-    textarea.field-input { height: auto; padding: 8px 12px; resize: vertical; }
 
-    /* ── Supplier searchable dropdown ── */
-    .sup-wrap { position: relative; }
-    .sup-display {
-        width: 100%; height: 38px; padding: 0 34px 0 12px;
-        border: 1.5px solid #e2e8f0; border-radius: 8px;
-        font-size: 13px; background: #fff; outline: none;
-        transition: border .15s, box-shadow .15s;
-        cursor: pointer; color: #1e293b;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        text-align: left; appearance: none;
+    .field-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,.1);
     }
-    .sup-display:focus, .sup-display.open { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
-    .sup-display::placeholder { color: #94a3b8; }
+
+    .field-input[readonly] {
+        background: #f1f5f9;
+        color: #64748b;
+        cursor: default;
+    }
+
+    select.field-input {
+        cursor: pointer;
+    }
+
+    textarea.field-input {
+        height: auto;
+        padding: 8px 12px;
+        resize: vertical;
+    }
+
+    /* Supplier searchable dropdown */
+    .sup-wrap {
+        position: relative;
+    }
+
+    .sup-display {
+        width: 100%;
+        height: 38px;
+        padding: 0 34px 0 12px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 13px;
+        background: #fff;
+        outline: none;
+        transition: border .15s, box-shadow .15s;
+        cursor: pointer;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: left;
+        appearance: none;
+        min-width: 0;
+    }
+
+    .sup-display:focus,
+    .sup-display.open {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+    }
+
+    .sup-display::placeholder {
+        color: #94a3b8;
+    }
+
     .sup-chevron {
-        position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
-        color: #9ca3af; pointer-events: none;
+        position: absolute;
+        right: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        pointer-events: none;
         transition: transform .2s;
     }
-    .sup-chevron.open { transform: translateY(-50%) rotate(180deg); }
+
+    .sup-chevron.open {
+        transform: translateY(-50%) rotate(180deg);
+    }
+
     .sup-dropdown {
-        position: absolute; top: calc(100% + 5px); left: 0; right: 0;
-        background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
         box-shadow: 0 8px 24px rgba(0,0,0,.09);
-        z-index: 100; display: none; flex-direction: column;
+        z-index: 100;
+        display: none;
+        flex-direction: column;
         overflow: hidden;
     }
-    .sup-dropdown.open { display: flex; }
-    .sup-search-box { padding: 8px; border-bottom: 1px solid #f1f5f9; }
+
+    .sup-dropdown.open {
+        display: flex;
+    }
+
+    .sup-search-box {
+        padding: 8px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
     .sup-search-box input {
-        width: 100%; height: 32px; padding: 0 10px;
-        font-size: 13px; border: 1px solid #e2e8f0;
-        border-radius: 6px; background: #f8fafc;
-        outline: none; color: #1e293b;
+        width: 100%;
+        height: 32px;
+        padding: 0 10px;
+        font-size: 13px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        background: #f8fafc;
+        outline: none;
+        color: #1e293b;
         transition: border .15s;
     }
-    .sup-search-box input:focus { border-color: #3b82f6; }
-    .sup-list { max-height: 200px; overflow-y: auto; }
-    .sup-option {
-        display: flex; flex-direction: column;
-        padding: 9px 12px; cursor: pointer; font-size: 13px;
-        border-bottom: 1px solid #f1f5f9; transition: background .1s;
-    }
-    .sup-option:last-child { border-bottom: none; }
-    .sup-option:hover { background: #f0f9ff; }
-    .sup-option.sup-selected { background: #eff6ff; }
-    .sup-option .sup-name { font-weight: 600; color: #1e293b; }
-    .sup-option .sup-phone { font-size: 11px; color: #94a3b8; margin-top: 1px; }
-    .sup-option.sup-clear .sup-name { color: #94a3b8; font-style: italic; font-weight: 400; }
-    .sup-no-results { padding: 12px; font-size: 13px; color: #94a3b8; text-align: center; }
 
-    /* ── Misc ── */
-    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 0; }
-    .totals-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-    .totals-row.grand { font-size: 16px; font-weight: 700; margin-top: 4px; }
-    .totals-row .label { color: #64748b; }
-    .totals-row .val   { color: #1e293b; }
-    .totals-row.grand .val { color: #16a34a; font-size: 20px; }
-    .text-error { font-size: 12px; color: #dc2626; }
+    .sup-search-box input:focus {
+        border-color: #3b82f6;
+    }
+
+    .sup-list {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .sup-option {
+        display: flex;
+        flex-direction: column;
+        padding: 9px 12px;
+        cursor: pointer;
+        font-size: 13px;
+        border-bottom: 1px solid #f1f5f9;
+        transition: background .1s;
+    }
+
+    .sup-option:last-child {
+        border-bottom: none;
+    }
+
+    .sup-option:hover {
+        background: #f0f9ff;
+    }
+
+    .sup-option.sup-selected {
+        background: #eff6ff;
+    }
+
+    .sup-option .sup-name {
+        font-weight: 600;
+        color: #1e293b;
+        word-break: break-word;
+    }
+
+    .sup-option .sup-phone {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 1px;
+    }
+
+    .sup-option.sup-clear .sup-name {
+        color: #94a3b8;
+        font-style: italic;
+        font-weight: 400;
+    }
+
+    .sup-no-results {
+        padding: 12px;
+        font-size: 13px;
+        color: #94a3b8;
+        text-align: center;
+    }
+
+    /* Misc */
+    .divider {
+        border: none;
+        border-top: 1px solid #e5e7eb;
+        margin: 0;
+    }
+
+    .totals-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        font-size: 13px;
+    }
+
+    .totals-row.grand {
+        font-size: 16px;
+        font-weight: 700;
+        margin-top: 4px;
+    }
+
+    .totals-row .label {
+        color: #64748b;
+    }
+
+    .totals-row .val {
+        color: #1e293b;
+        text-align: right;
+        word-break: break-word;
+    }
+
+    .totals-row.grand .val {
+        color: #16a34a;
+        font-size: 20px;
+    }
+
+    .text-error {
+        font-size: 12px;
+        color: #dc2626;
+    }
 </style>
 
 <div class="pos-wrap">
 
-    {{-- ════════════════════════════════════════
-         LEFT — Product search + cart
-    ════════════════════════════════════════ --}}
+    {{-- LEFT — Product search + cart --}}
     <div class="pos-left">
         <div>
             <div class="field-label mb-2">Search Products</div>
@@ -207,11 +584,11 @@
                              data-name="{{ $product->product_name }}"
                              data-sku="{{ $product->sku }}"
                              data-price="{{ $product->buying_price ?? 0 }}">
-                            <div style="flex:1">
-                                <div style="font-weight:600;color:#1e293b">{{ $product->product_name }}</div>
+                            <div style="flex:1;min-width:0">
+                                <div style="font-weight:600;color:#1e293b;word-break:break-word">{{ $product->product_name }}</div>
                                 <div class="sku">{{ $product->sku }}</div>
                             </div>
-                            <div style="font-size:12px;font-weight:600;color:#16a34a">৳{{ number_format($product->buying_price ?? 0, 2) }}</div>
+                            <div style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">৳{{ number_format($product->buying_price ?? 0, 2) }}</div>
                         </div>
                     @endforeach
                 </div>
@@ -221,7 +598,7 @@
             @enderror
         </div>
 
-        <div id="cart-container" style="flex:1; display:flex; flex-direction:column; gap:10px;">
+        <div id="cart-container" style="flex:1; display:flex; flex-direction:column; gap:10px; min-width:0;">
             <div class="field-label">Purchase Items</div>
             <div id="cart-empty" class="cart-empty">
                 <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -235,12 +612,9 @@
         </div>
     </div>
 
-    {{-- ════════════════════════════════════════
-         RIGHT — Sidebar / form fields
-    ════════════════════════════════════════ --}}
+    {{-- RIGHT — Sidebar / form fields --}}
     <div class="pos-sidebar">
 
-        {{-- Supplier (searchable) --}}
         <div class="field-group">
             <div class="field-label">Supplier</div>
             <div class="sup-wrap" id="sup-wrap">
@@ -402,7 +776,7 @@
             <div class="field-label">Document</div>
             <input type="file" name="document" class="field-input" style="padding:6px 10px;height:auto">
             @if($purchase?->document)
-                <a href="{{ asset('storage/'.$purchase->document) }}" target="_blank" class="text-xs text-blue-600 hover:underline">
+                <a href="{{ asset('storage/'.$purchase->document) }}" target="_blank" class="text-xs text-blue-600 hover:underline break-all">
                     View current file
                 </a>
             @endif
@@ -490,11 +864,11 @@ searchInput?.addEventListener('input', () => {
                  data-name="${escHtml(p.name)}"
                  data-sku="${escHtml(p.sku)}"
                  data-price="${p.price}">
-                <div style="flex:1">
-                    <div style="font-weight:600;color:#1e293b">${escHtml(p.name)}</div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-weight:600;color:#1e293b;word-break:break-word">${escHtml(p.name)}</div>
                     <div class="sku">${escHtml(p.sku)}</div>
                 </div>
-                <div style="font-size:12px;font-weight:600;color:#16a34a">৳${Number(p.price).toFixed(2)}</div>
+                <div style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">৳${Number(p.price).toFixed(2)}</div>
             </div>
         `).join('')
         : '<div style="padding:14px 16px;font-size:13px;color:#94a3b8">No products found</div>';
@@ -670,7 +1044,6 @@ paidInput?.addEventListener('input', () => {
 
     if (!supDisplay) return;
 
-    // Pre-fill label on edit page
     const preId = supHidden.value;
     if (preId) {
         const pre = ALL_SUPPLIERS.find(s => String(s.id) === String(preId));
@@ -686,7 +1059,6 @@ paidInput?.addEventListener('input', () => {
 
         supList.innerHTML = '';
 
-        // "Clear" option
         const clearEl = document.createElement('div');
         clearEl.className = 'sup-option sup-clear';
         clearEl.innerHTML = '<span class="sup-name">— Select supplier —</span>';

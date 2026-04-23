@@ -3,11 +3,11 @@
     $prefillSale = $sale ?? null;
 
     $sectionClass  = 'bg-white border border-gray-200 rounded-xl overflow-hidden';
-    $headerClass   = 'flex items-center gap-2.5 px-5 py-3 border-b border-gray-100 bg-gray-50/60';
-    $bodyClass     = 'p-5';
+    $headerClass   = 'flex flex-wrap sm:flex-nowrap items-center gap-2.5 px-4 sm:px-5 py-3 border-b border-gray-100 bg-gray-50/60';
+    $bodyClass     = 'p-4 sm:p-5';
     $labelClass    = 'block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5';
-    $inputClass    = 'w-full h-9 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition';
-    $inputErrClass = 'w-full h-9 px-3 text-sm bg-red-50 border border-red-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-400/20 focus:border-red-400 transition';
+    $inputClass    = 'w-full h-10 sm:h-9 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition';
+    $inputErrClass = 'w-full h-10 sm:h-9 px-3 text-sm bg-red-50 border border-red-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-400/20 focus:border-red-400 transition';
 
     $allSales = \App\Models\Sale::with(['customer', 'items.product'])->orderByDesc('id')->get();
 
@@ -164,12 +164,12 @@
                         <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
                     </svg>
                 </span>
-                <div class="flex items-center justify-between w-full gap-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-3">
                     <span class="text-xs font-semibold text-gray-700 tracking-wide uppercase">Return Items</span>
 
                     <button type="button"
                             id="add-return-item"
-                            class="h-8 px-3 inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition">
+                            class="h-9 sm:h-8 px-3 inline-flex items-center justify-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition w-full sm:w-auto">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <path d="M12 4v16m8-8H4"/>
                         </svg>
@@ -246,7 +246,7 @@
 
                                 <div class="xl:col-span-1">
                                     <label class="{{ $labelClass }}">Total</label>
-                                    <div class="h-9 px-3 inline-flex items-center w-full text-sm bg-white border border-gray-200 rounded-lg text-gray-700">
+                                    <div class="h-10 sm:h-9 px-3 inline-flex items-center w-full text-sm bg-white border border-gray-200 rounded-lg text-gray-700">
                                         <span class="return-line-total">৳{{ number_format((float) ($item['line_total'] ?? 0), 2) }}</span>
                                     </div>
                                 </div>
@@ -254,14 +254,14 @@
                                 <div class="xl:col-span-1">
                                     <label class="{{ $labelClass }}">Action</label>
                                     <button type="button"
-                                            class="remove-return-item h-9 w-full inline-flex items-center justify-center text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition">
+                                            class="remove-return-item h-10 sm:h-9 w-full inline-flex items-center justify-center text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition">
                                         Remove
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="mt-3 flex flex-wrap items-center gap-3 text-xs">
-                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
+                            <div class="mt-3 flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500 break-all">
                                     SKU:
                                     <span class="return-sku text-gray-700 font-medium">—</span>
                                 </span>
@@ -395,14 +395,14 @@
                 </div>
 
                 <div class="space-y-2 pt-2">
-                    <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+                    <div class="flex items-center justify-between gap-3 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
                         <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Subtotal</span>
-                        <span id="return-subtotal-display" class="text-base font-semibold text-gray-800">৳0.00</span>
+                        <span id="return-subtotal-display" class="text-base font-semibold text-gray-800 text-right break-words">৳0.00</span>
                     </div>
 
-                    <div class="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                    <div class="flex items-center justify-between gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
                         <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Return Amount</span>
-                        <span id="return-amount-display" class="text-base font-semibold text-red-600">৳0.00</span>
+                        <span id="return-amount-display" class="text-base font-semibold text-red-600 text-right break-words">৳0.00</span>
                     </div>
                 </div>
 
@@ -451,7 +451,7 @@
 
             <div class="xl:col-span-1">
                 <label class="{{ $labelClass }}">Total</label>
-                <div class="h-9 px-3 inline-flex items-center w-full text-sm bg-white border border-gray-200 rounded-lg text-gray-700">
+                <div class="h-10 sm:h-9 px-3 inline-flex items-center w-full text-sm bg-white border border-gray-200 rounded-lg text-gray-700">
                     <span class="return-line-total">৳0.00</span>
                 </div>
             </div>
@@ -459,14 +459,14 @@
             <div class="xl:col-span-1">
                 <label class="{{ $labelClass }}">Action</label>
                 <button type="button"
-                        class="remove-return-item h-9 w-full inline-flex items-center justify-center text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition">
+                        class="remove-return-item h-10 sm:h-9 w-full inline-flex items-center justify-center text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition">
                     Remove
                 </button>
             </div>
         </div>
 
-        <div class="mt-3 flex flex-wrap items-center gap-3 text-xs">
-            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
+        <div class="mt-3 flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500 break-all">
                 SKU:
                 <span class="return-sku text-gray-700 font-medium">—</span>
             </span>
