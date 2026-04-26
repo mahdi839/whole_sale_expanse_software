@@ -187,7 +187,7 @@
                     @foreach($items as $index => $item)
                         <div class="return-item rounded-xl border border-gray-200 bg-gray-50/60 p-4" data-index="{{ $index }}">
                             <div class="grid grid-cols-1 xl:grid-cols-12 gap-3">
-                                <div class="xl:col-span-4">
+                                <div class="xl:col-span-3">
                                     <label class="{{ $labelClass }}">Product</label>
                                     <select name="items[{{ $index }}][product_id]"
                                             class="return-product {{ $errors->has('items.'.$index.'.product_id') ? $inputErrClass : $inputClass }}">
@@ -244,7 +244,7 @@
                                     @enderror
                                 </div>
 
-                                <div class="xl:col-span-1">
+                                <div class="xl:col-span-2">
                                     <label class="{{ $labelClass }}">Total</label>
                                     <div class="h-10 sm:h-9 px-3 inline-flex items-center w-full text-sm bg-white border border-gray-200 rounded-lg text-gray-700">
                                         <span class="return-line-total">৳{{ number_format((float) ($item['line_total'] ?? 0), 2) }}</span>
