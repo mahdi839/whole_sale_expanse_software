@@ -3,13 +3,12 @@
 
     <div class="space-y-4">
         @if (session('success'))
-            <div class="flex items-center gap-2.5 px-4 py-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl">
+            <div
+                class="flex items-center gap-2.5 px-4 py-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl">
                 <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                        fill-rule="evenodd"
+                    <path fill-rule="evenodd"
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clip-rule="evenodd"
-                    />
+                        clip-rule="evenodd" />
                 </svg>
                 {{ session('success') }}
             </div>
@@ -19,25 +18,15 @@
         <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
             <form method="GET" action="{{ route('purchases.index') }}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-3.5">
-                    <input
-                        type="text"
-                        name="search"
-                        value="{{ $filters['search'] ?? '' }}"
+                    <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
                         placeholder="Reference, supplier, product..."
-                        class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full"
-                    >
+                        class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
 
-                    <input
-                        type="date"
-                        name="date"
-                        value="{{ $filters['date'] ?? '' }}"
-                        class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full"
-                    >
+                    <input type="date" name="date" value="{{ $filters['date'] ?? '' }}"
+                        class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
 
-                    <select
-                        name="purchase_status"
-                        class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full"
-                    >
+                    <select name="purchase_status"
+                        class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
                         <option value="">Purchase status</option>
                         <option value="received" @selected(($filters['purchase_status'] ?? '') === 'received')>Received</option>
                         <option value="partial" @selected(($filters['purchase_status'] ?? '') === 'partial')>Partial</option>
@@ -45,10 +34,8 @@
                         <option value="ordered" @selected(($filters['purchase_status'] ?? '') === 'ordered')>Ordered</option>
                     </select>
 
-                    <select
-                        name="payment_status"
-                        class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full"
-                    >
+                    <select name="payment_status"
+                        class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
                         <option value="">Payment status</option>
                         <option value="due" @selected(($filters['payment_status'] ?? '') === 'due')>Due</option>
                         <option value="paid" @selected(($filters['payment_status'] ?? '') === 'paid')>Paid</option>
@@ -58,33 +45,25 @@
 
                 <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2">
                     <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                        <button
-                            type="submit"
-                            class="h-10 px-4 bg-gray-800 text-white rounded-lg text-sm w-full sm:w-auto"
-                        >
+                        <button type="submit"
+                            class="h-10 px-4 bg-gray-800 text-white rounded-lg text-sm w-full sm:w-auto">
                             Filter
                         </button>
 
-                        <a
-                            href="{{ route('purchases.index') }}"
-                            class="h-10 px-4 bg-cyan-600 text-white rounded-lg text-sm inline-flex items-center justify-center w-full sm:w-auto"
-                        >
+                        <a href="{{ route('purchases.index') }}"
+                            class="h-10 px-4 bg-cyan-600 text-white rounded-lg text-sm inline-flex items-center justify-center w-full sm:w-auto">
                             Reset
                         </a>
                     </div>
 
                     <div class="sm:ml-auto flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                        <a
-                            href="{{ route('purchases.export.csv', request()->query()) }}"
-                            class="h-10 px-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm inline-flex items-center justify-center gap-1 w-full sm:w-auto"
-                        >
+                        <a href="{{ route('purchases.export.csv', request()->query()) }}"
+                            class="h-10 px-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm inline-flex items-center justify-center gap-1 w-full sm:w-auto">
                             ⬇ CSV
                         </a>
 
-                        <a
-                            href="{{ route('purchases.create') }}"
-                            class="h-10 px-4 bg-blue-600 text-white rounded-lg text-sm inline-flex items-center justify-center gap-1 w-full sm:w-auto"
-                        >
+                        <a href="{{ route('purchases.create') }}"
+                            class="h-10 px-4 bg-blue-600 text-white rounded-lg text-sm inline-flex items-center justify-center gap-1 w-full sm:w-auto">
                             + New Purchase
                         </a>
                     </div>
@@ -127,10 +106,8 @@
                 <div class="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
-                            <a
-                                href="{{ route('purchases.show', $purchase) }}"
-                                class="inline-flex items-center px-2 py-0.5 bg-violet-50 text-violet-700 rounded-md text-xs font-mono break-all"
-                            >
+                            <a href="{{ route('purchases.show', $purchase) }}"
+                                class="inline-flex items-center px-2 py-0.5 bg-violet-50 text-violet-700 rounded-md text-xs font-mono break-all">
                                 {{ $purchase->reference }}
                             </a>
                             <div class="text-xs text-gray-400 mt-1">
@@ -161,21 +138,20 @@
                             </p>
                         </div>
 
-                        <div>
-                            <p class="text-xs text-gray-400 mb-1">Products</p>
-                            <div class="text-xs text-gray-600 space-y-1">
-                                @foreach ($purchase->items->take(2) as $item)
-                                    <div class="break-words">
-                                        {{ $item->product->product_name ?? 'Unknown' }} (x{{ number_format($item->qty, 2) }})
-                                    </div>
-                                @endforeach
+                        <div class="text-xs text-gray-600 space-y-1">
+                            @foreach ($purchase->items->take(2) as $item)
+                                <div class="break-words">
+                                    {{ $item->product->product_name ?? 'Unknown' }}
+                                    (x{{ number_format($item->qty, 2) }})
+                                    @ ৳{{ number_format($item->price, 2) }}
+                                </div>
+                            @endforeach
 
-                                @if ($purchase->items->count() > 2)
-                                    <div class="text-gray-400">
-                                        +{{ $purchase->items->count() - 2 }} more
-                                    </div>
-                                @endif
-                            </div>
+                            @if ($purchase->items->count() > 2)
+                                <div class="text-gray-400">
+                                    +{{ $purchase->items->count() - 2 }} more
+                                </div>
+                            @endif
                         </div>
 
                         <div>
@@ -230,18 +206,13 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 pt-1">
-                        <a
-                            href="{{ route('purchases.edit', $purchase) }}"
-                            class="px-3 py-2 text-xs bg-blue-50 text-blue-700 rounded-lg text-center"
-                        >
+                        <a href="{{ route('purchases.edit', $purchase) }}"
+                            class="px-3 py-2 text-xs bg-blue-50 text-blue-700 rounded-lg text-center">
                             Edit
                         </a>
 
-                        <form
-                            method="POST"
-                            action="{{ route('purchases.destroy', $purchase) }}"
-                            onsubmit="return confirm('Delete purchase?')"
-                        >
+                        <form method="POST" action="{{ route('purchases.destroy', $purchase) }}"
+                            onsubmit="return confirm('Delete purchase?')">
                             @csrf
                             @method('DELETE')
                             <button class="w-full px-3 py-2 text-xs bg-red-50 text-red-700 rounded-lg">
@@ -270,7 +241,8 @@
                             <th class="px-5 py-3 text-left text-sm font-medium text-gray-400">Supplier</th>
                             <th class="px-5 py-3 text-left text-sm font-medium text-gray-400">Seller Store</th>
                             <th class="px-5 py-3 text-left text-sm font-medium text-gray-400">Products</th>
-                            <th class="px-5 py-3 text-left text-sm font-medium text-gray-400 hidden lg:table-cell">Purchased By</th>
+                            <th class="px-5 py-3 text-left text-sm font-medium text-gray-400 hidden lg:table-cell">
+                                Purchased By</th>
                             <th class="px-5 py-3 text-right text-sm font-medium text-gray-400">Grand Total</th>
                             <th class="px-5 py-3 text-right text-sm font-medium text-gray-400">Paid</th>
                             <th class="px-5 py-3 text-right text-sm font-medium text-gray-400">Due</th>
@@ -284,10 +256,8 @@
                         @forelse($purchases as $purchase)
                             <tr class="hover:bg-gray-50/60">
                                 <td class="px-5 py-3">
-                                    <a
-                                        href="{{ route('purchases.show', $purchase) }}"
-                                        class="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-md text-xs font-mono"
-                                    >
+                                    <a href="{{ route('purchases.show', $purchase) }}"
+                                        class="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-md text-xs font-mono">
                                         {{ $purchase->reference }}
                                     </a>
                                     <div class="text-xs text-gray-400 mt-1">
@@ -305,10 +275,17 @@
 
                                 <td class="px-5 py-3 text-xs text-gray-600">
                                     @foreach ($purchase->items->take(2) as $item)
-                                        {{ $item->product->product_name ?? 'Unknown' }} (x{{ number_format($item->qty, 2) }})<br>
+                                        <div>
+                                            {{ $item->product->product_name ?? 'Unknown' }}
+                                            (x{{ number_format($item->qty, 2) }}) - 
+                                            Unit Price: {{ number_format($item->price, 2) }}
+                                        </div>
                                     @endforeach
+
                                     @if ($purchase->items->count() > 2)
-                                        +{{ $purchase->items->count() - 2 }} more
+                                        <div class="text-gray-400">
+                                            +{{ $purchase->items->count() - 2 }} more
+                                        </div>
                                     @endif
                                 </td>
 
@@ -356,18 +333,13 @@
 
                                 <td class="px-5 py-3 text-right">
                                     <div class="flex justify-end gap-1.5">
-                                        <a
-                                            href="{{ route('purchases.edit', $purchase) }}"
-                                            class="px-2.5 py-1 text-xs bg-blue-50 text-blue-700 rounded-lg"
-                                        >
+                                        <a href="{{ route('purchases.edit', $purchase) }}"
+                                            class="px-2.5 py-1 text-xs bg-blue-50 text-blue-700 rounded-lg">
                                             Edit
                                         </a>
 
-                                        <form
-                                            method="POST"
-                                            action="{{ route('purchases.destroy', $purchase) }}"
-                                            onsubmit="return confirm('Delete purchase?')"
-                                        >
+                                        <form method="POST" action="{{ route('purchases.destroy', $purchase) }}"
+                                            onsubmit="return confirm('Delete purchase?')">
                                             @csrf
                                             @method('DELETE')
                                             <button class="px-2.5 py-1 text-xs bg-red-50 text-red-700 rounded-lg">

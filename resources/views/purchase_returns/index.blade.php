@@ -149,7 +149,8 @@
                         <div class="text-xs text-gray-600 space-y-1">
                             @foreach($return->items->take(2) as $item)
                                 <div class="break-words">
-                                    {{ $item->product->product_name ?? 'Unknown' }} (x{{ number_format($item->qty, 2) }})
+                                    {{ $item->product->product_name ?? 'Unknown' }} (x{{ number_format($item->qty, 2) }}) - 
+                                    ({{ number_format($item->price, 2) }})
                                 </div>
                             @endforeach
 
@@ -268,6 +269,7 @@
                                     @if($return->items->count() > 2)
                                         +{{ $return->items->count() - 2 }} more
                                     @endif
+                                    - ({{ number_format($item->price, 2) }})
                                 </td>
 
                                 <td class="px-5 py-3 text-right font-medium text-red-600">

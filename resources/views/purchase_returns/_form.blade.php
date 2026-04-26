@@ -271,7 +271,7 @@
                             <div class="grid grid-cols-1 xl:grid-cols-12 gap-3">
 
                                 {{-- Product searchable --}}
-                                <div class="xl:col-span-4">
+                                <div class="xl:col-span-3">
                                     <label class="{{ $labelClass }}">Product</label>
                                     <div class="sd-wrap return-product-wrap">
                                         <div class="sd-trigger return-product-trigger" tabindex="0">
@@ -321,7 +321,7 @@
                                     @enderror
                                 </div>
 
-                                <div class="xl:col-span-1">
+                                <div class="xl:col-span-2">
                                     <label class="{{ $labelClass }}">Total</label>
                                     <div class="h-9 px-3 inline-flex items-center w-full text-sm bg-white border border-gray-200 rounded-lg text-gray-700">
                                         <span class="return-line-total">৳{{ number_format((float) ($item['line_total'] ?? 0), 2) }}</span>
