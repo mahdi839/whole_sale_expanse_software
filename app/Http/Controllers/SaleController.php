@@ -17,28 +17,47 @@ class SaleController extends Controller
     {
         $filters = [
             'payment_status' => $request->input('payment_status'),
-            'status'         => $request->input('status'),
-            'search'         => $request->input('search'),
+            'status' => $request->input('status'),
+            'search' => $request->input('search'),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
         ];
 
         $sales = Sale::query()
             ->with(['customer', 'items.product'])
-            ->when($filters['payment_status'], fn($q) => $q->where('payment_status', $filters['payment_status']))
-            ->when($filters['status'], fn($q) => $q->where('status', $filters['status']))
+            ->when($filters['payment_status'], fn ($q) => $q->where('payment_status', $filters['payment_status']))
+            ->when($filters['status'], fn ($q) => $q->where('status', $filters['status']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
                 $q->where(function ($sub) use ($s) {
                     $sub->where('reference', 'like', "%{$s}%")
                         ->orWhere('cash_memo', 'like', "%{$s}%")
-                        ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
-                        ->orWhereHas('items.product', fn($p) => $p->where('product_name', 'like', "%{$s}%"));
+                        ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', "%{$s}%"))
+                        ->orWhereHas('items.product', fn ($p) => $p->where('product_name', 'like', "%{$s}%"));
                 });
             })
+            ->when($filters['date_from'], fn ($q) => $q->whereDate('created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn ($q) => $q->whereDate('created_at', '<=', $filters['date_to']))
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
-        $totals = Sale::selectRaw('
+        $totalsQuery = Sale::query()
+            ->when($filters['payment_status'], fn ($q) => $q->where('payment_status', $filters['payment_status']))
+            ->when($filters['status'], fn ($q) => $q->where('status', $filters['status']))
+            ->when($filters['search'], function ($q) use ($filters) {
+                $s = $filters['search'];
+                $q->where(function ($sub) use ($s) {
+                    $sub->where('reference', 'like', "%{$s}%")
+                        ->orWhere('cash_memo', 'like', "%{$s}%")
+                        ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', "%{$s}%"))
+                        ->orWhereHas('items.product', fn ($p) => $p->where('product_name', 'like', "%{$s}%"));
+                });
+            })
+            ->when($filters['date_from'], fn ($q) => $q->whereDate('created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn ($q) => $q->whereDate('created_at', '<=', $filters['date_to']));
+
+        $totals = $totalsQuery->selectRaw('
         count(*)         as total_sales,
         sum(grand_total) as total_amount,
         sum(paid)        as total_paid,
@@ -51,8 +70,8 @@ class SaleController extends Controller
     public function create()
     {
         $nextReference = Sale::generateReference();
-        $customers     = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
-        $products      = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
+        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
+        $products = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
 
         return view('sales.create', compact('nextReference', 'customers', 'products'));
     }
@@ -68,50 +87,50 @@ class SaleController extends Controller
 
             // Compute grand total from items
             $itemsInput = $request->input('items', []);
-            $itemsTotal = collect($itemsInput)->sum(fn($i) => (float)$i['qty'] * (float)$i['price_on_sale']);
-            $grandTotal = $itemsTotal - (float)($validated['discount'] ?? 0);
+            $itemsTotal = collect($itemsInput)->sum(fn ($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
+            $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0);
 
             // Resolve payment amounts
             [$paid, $due] = $this->resolvePaymentAmounts(
                 $validated['payment_status'],
                 $grandTotal,
-                (float)($validated['paid'] ?? 0)
+                (float) ($validated['paid'] ?? 0)
             );
 
             // Create sale header
             $sale = Sale::create([
-                'reference'      => $reference,
-                'customer_id'    => $validated['customer_id'] ?? null,
-                'discount'       => $validated['discount'] ?? 0,
-                'grand_total'    => $grandTotal,
-                'paid'           => $paid,
-                'due'            => $due,
-                'cash_memo'      => $validated['cash_memo'] ?? null,
+                'reference' => $reference,
+                'customer_id' => $validated['customer_id'] ?? null,
+                'discount' => $validated['discount'] ?? 0,
+                'grand_total' => $grandTotal,
+                'paid' => $paid,
+                'due' => $due,
+                'cash_memo' => $validated['cash_memo'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
                 'payment_status' => $validated['payment_status'],
-                'status'         => 'success',
-                'note'           => $validated['note'] ?? null,
+                'status' => 'success',
+                'note' => $validated['note'] ?? null,
             ]);
 
             // Create items & deduct stock
             foreach ($itemsInput as $item) {
-                $product   = Product::findOrFail($item['product_id']);
-                $qty       = (float) $item['qty'];
-                $price     = (float) $item['price_on_sale'];
+                $product = Product::findOrFail($item['product_id']);
+                $qty = (float) $item['qty'];
+                $price = (float) $item['price_on_sale'];
                 $lineTotal = $qty * $price;
 
                 SaleItem::create([
-                    'sale_id'       => $sale->id,
-                    'product_id'    => $product->id,
-                    'qty'           => $qty,
+                    'sale_id' => $sale->id,
+                    'product_id' => $product->id,
+                    'qty' => $qty,
                     'price_on_sale' => $price,
-                    'line_total'    => $lineTotal,
+                    'line_total' => $lineTotal,
                 ]);
 
                 // Deduct stock
                 $stock = Stock::firstOrCreate(
                     ['product_id' => $product->id],
-                    ['stock_qty'  => 0]
+                    ['stock_qty' => 0]
                 );
                 $stock->decrement('stock_qty', $qty);
             }
@@ -142,7 +161,7 @@ class SaleController extends Controller
     {
         $sale->load('items.product');
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
-        $products  = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
+        $products = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
 
         return view('sales.edit', compact('sale', 'customers', 'products'));
     }
@@ -174,43 +193,43 @@ class SaleController extends Controller
             $sale->items()->delete();
 
             $itemsInput = $request->input('items', []);
-            $itemsTotal = collect($itemsInput)->sum(fn($i) => (float)$i['qty'] * (float)$i['price_on_sale']);
-            $grandTotal = $itemsTotal - (float)($validated['discount'] ?? 0);
+            $itemsTotal = collect($itemsInput)->sum(fn ($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
+            $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0);
 
             [$paid, $due] = $this->resolvePaymentAmounts(
                 $validated['payment_status'],
                 $grandTotal,
-                (float)($validated['paid'] ?? 0)
+                (float) ($validated['paid'] ?? 0)
             );
 
             $sale->update([
-                'customer_id'    => $validated['customer_id'] ?? null,
-                'discount'       => $validated['discount'] ?? 0,
-                'grand_total'    => $grandTotal,
-                'paid'           => $paid,
-                'due'            => $due,
-                'cash_memo'      => $validated['cash_memo'] ?? null,
+                'customer_id' => $validated['customer_id'] ?? null,
+                'discount' => $validated['discount'] ?? 0,
+                'grand_total' => $grandTotal,
+                'paid' => $paid,
+                'due' => $due,
+                'cash_memo' => $validated['cash_memo'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
                 'payment_status' => $validated['payment_status'],
-                'note'           => $validated['note'] ?? null,
+                'note' => $validated['note'] ?? null,
             ]);
 
             foreach ($itemsInput as $item) {
-                $product   = Product::findOrFail($item['product_id']);
-                $qty       = (float) $item['qty'];
-                $price     = (float) $item['price_on_sale'];
+                $product = Product::findOrFail($item['product_id']);
+                $qty = (float) $item['qty'];
+                $price = (float) $item['price_on_sale'];
 
                 SaleItem::create([
-                    'sale_id'       => $sale->id,
-                    'product_id'    => $product->id,
-                    'qty'           => $qty,
+                    'sale_id' => $sale->id,
+                    'product_id' => $product->id,
+                    'qty' => $qty,
                     'price_on_sale' => $price,
-                    'line_total'    => $qty * $price,
+                    'line_total' => $qty * $price,
                 ]);
 
                 $stock = Stock::firstOrCreate(
                     ['product_id' => $product->id],
-                    ['stock_qty'  => 0]
+                    ['stock_qty' => 0]
                 );
                 $stock->decrement('stock_qty', $qty);
             }
@@ -262,10 +281,10 @@ class SaleController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $fileName = 'sales-' . now()->format('Y-m-d-H-i-s') . '.csv';
+        $fileName = 'sales-'.now()->format('Y-m-d-H-i-s').'.csv';
 
         $sales = Sale::with(['customer', 'items.product'])
-            ->when($request->payment_status, fn($q) => $q->where('payment_status', $request->payment_status))
+            ->when($request->payment_status, fn ($q) => $q->where('payment_status', $request->payment_status))
             ->latest()->get();
 
         $callback = function () use ($sales) {
@@ -287,8 +306,7 @@ class SaleController extends Controller
 
             foreach ($sales as $sale) {
                 $productsSummary = $sale->items->map(
-                    fn($i) =>
-                    $i->product->product_name . ' x' . $i->qty . ' @' . $i->price_on_sale
+                    fn ($i) => $i->product->product_name.' x'.$i->qty.' @'.$i->price_on_sale
                 )->implode(' | ');
 
                 fputcsv($file, [
@@ -310,8 +328,8 @@ class SaleController extends Controller
         };
 
         return Response::stream($callback, 200, [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
     }
 
@@ -320,28 +338,28 @@ class SaleController extends Controller
     private function resolvePaymentAmounts(string $status, float $grandTotal, float $paidInput): array
     {
         return match ($status) {
-            'paid'    => [$grandTotal, 0],
-            'due'     => [0, $grandTotal],
+            'paid' => [$grandTotal, 0],
+            'due' => [0, $grandTotal],
             'partial' => [min($paidInput, $grandTotal), max(0, $grandTotal - $paidInput)],
-            default   => [0, $grandTotal],
+            default => [0, $grandTotal],
         };
     }
 
     private function validateSale(Request $request, ?int $saleId = null): array
     {
         $rules = [
-            'reference'        => 'nullable|string|max:50|unique:sales,reference,' . $saleId,
-            'customer_id'      => 'nullable|exists:customers,id',
-            'discount'         => 'nullable|numeric|min:0',
-            'cash_memo'        => 'nullable|string|max:100',
-            'payment_method'   => 'nullable|string|max:100',
-            'payment_status'   => 'required|in:due,paid,partial',
-            'paid'             => 'nullable|numeric|min:0',
-            'note'             => 'nullable|string|max:2000',
+            'reference' => 'nullable|string|max:50|unique:sales,reference,'.$saleId,
+            'customer_id' => 'nullable|exists:customers,id',
+            'discount' => 'nullable|numeric|min:0',
+            'cash_memo' => 'nullable|string|max:100',
+            'payment_method' => 'nullable|string|max:100',
+            'payment_status' => 'required|in:due,paid,partial',
+            'paid' => 'nullable|numeric|min:0',
+            'note' => 'nullable|string|max:2000',
             // items array
-            'items'            => 'required|array|min:1',
-            'items.*.product_id'    => 'required|exists:products,id',
-            'items.*.qty'           => 'required|numeric|min:0.01',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.qty' => 'required|numeric|min:0.01',
             'items.*.price_on_sale' => 'required|numeric|min:0',
         ];
 
