@@ -243,7 +243,7 @@
     }
 
     .qty-stepper button {
-        width: 28px;
+        width: 32px;
         height: 32px;
         font-size: 16px;
         font-weight: 600;
@@ -259,7 +259,7 @@
     }
 
     .qty-stepper input {
-        width: 40px;
+        width: 80px;
         height: 32px;
         border: none;
         border-left: 1px solid #e2e8f0;
