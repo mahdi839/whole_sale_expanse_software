@@ -138,17 +138,24 @@
                         </p>
                     </div>
 
+                    {{-- Products with per-unit price --}}
                     <div>
                         <p class="text-xs text-gray-400 mb-1">Products</p>
-                        <div class="text-xs text-gray-600 space-y-1">
+                        <div class="space-y-1.5">
                             @foreach ($sale->items->take(2) as $item)
-                                <div class="break-words">
-                                    {{ $item->product->product_name }} (x{{ $item->qty }})
+                                <div class="flex items-center justify-between gap-2 text-xs">
+                                    <span class="text-gray-700 break-words min-w-0">
+                                        {{ $item->product->product_name }}
+                                        <span class="text-gray-400">×{{ $item->qty }}</span>
+                                    </span>
+                                    <span class="shrink-0 text-gray-500 font-mono">
+                                        ৳{{ number_format($item->price_on_sale, 2) }}/pc
+                                    </span>
                                 </div>
                             @endforeach
 
                             @if ($sale->items->count() > 2)
-                                <div class="text-gray-400">
+                                <div class="text-xs text-gray-400">
                                     +{{ $sale->items->count() - 2 }} more
                                 </div>
                             @endif
@@ -224,6 +231,7 @@
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Reference</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Customer</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Products</th>
+                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Unit Price</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Grand Total</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Due</th>
@@ -245,16 +253,26 @@
 
                                 <td class="px-5 py-3">
                                     {{ $sale->customer?->full_name ?? '—' }}<br>
-                                    <span
-                                        class="text-xs text-gray-400">{{ $sale->created_at->format('d M Y') }}</span>
+                                    <span class="text-xs text-gray-400">{{ $sale->created_at->format('d M Y') }}</span>
                                 </td>
 
+                                {{-- Product names + qty --}}
                                 <td class="px-5 py-3 text-xs text-gray-600">
                                     @foreach ($sale->items->take(2) as $item)
-                                        {{ $item->product->product_name }} (x{{ $item->qty }})<br>
+                                        <div>{{ $item->product->product_name }} <span class="text-gray-400">(×{{ $item->qty }})</span></div>
                                     @endforeach
                                     @if ($sale->items->count() > 2)
-                                        +{{ $sale->items->count() - 2 }} more
+                                        <div class="text-gray-400">+{{ $sale->items->count() - 2 }} more</div>
+                                    @endif
+                                </td>
+
+                                {{-- Per-unit prices aligned with product rows --}}
+                                <td class="px-5 py-3 text-right text-xs">
+                                    @foreach ($sale->items->take(2) as $item)
+                                        <div class="text-gray-700 font-mono">৳{{ number_format($item->price_on_sale, 2) }}</div>
+                                    @endforeach
+                                    @if ($sale->items->count() > 2)
+                                        <div class="text-gray-300">—</div>
                                     @endif
                                 </td>
 
@@ -312,7 +330,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-5 py-20 text-center text-gray-400">
+                                <td colspan="10" class="px-5 py-20 text-center text-gray-400">
                                     No sales found.
                                     <a href="{{ route('sales.create') }}"
                                         class="text-blue-600 hover:underline">Create first sale</a>
