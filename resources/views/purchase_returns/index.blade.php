@@ -269,7 +269,7 @@
                                     @if($return->items->count() > 2)
                                         +{{ $return->items->count() - 2 }} more
                                     @endif
-                                    - ({{ number_format($item->price, 2) }})
+                                    - <strong>Unit Price: </strong>  ({{ number_format($item->price, 2) }})
                                 </td>
 
                                 <td class="px-5 py-3 text-right font-medium text-red-600">
