@@ -739,25 +739,44 @@ function renderCart() {
     cartItems.forEach((item, idx) => {
         const card = document.createElement('div');
         card.className = 'cart-card';
-        card.innerHTML = `
-            <input type="hidden" name="items[${idx}][product_id]" value="${item.product_id}">
-            <div class="prod-info">
-                <div class="prod-name">${escHtml(item.product_name)}</div>
-                <div class="prod-sku">${escHtml(item.sku)}</div>
-            </div>
-            <div class="qty-stepper">
-                <button type="button" class="btn-minus" data-idx="${idx}">−</button>
-                <input type="number" name="items[${idx}][qty]" class="item-qty" data-idx="${idx}" value="${item.qty}" step="0.01" min="0.01">
-                <button type="button" class="btn-plus" data-idx="${idx}">+</button>
-            </div>
-            <div class="price-col">
-                <input type="number" name="items[${idx}][price_on_sale]" class="price-edit item-price" data-idx="${idx}" value="${item.price_on_sale.toFixed(2)}" step="0.01" min="0" title="Unit price">
-                <div class="line-total item-total">৳${item.line_total.toFixed(2)}</div>
-            </div>
-            <button type="button" class="btn-remove" data-idx="${idx}" title="Remove">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </button>
-        `;
+       card.innerHTML = `
+    <input type="hidden" name="items[${idx}][product_id]" value="${item.product_id}">
+
+    <!-- Product -->
+    <div class="prod-info">
+        <div class="prod-name">${escHtml(item.product_name)}</div>
+        <div class="prod-sku">${escHtml(item.sku)}</div>
+    </div>
+
+    <!-- Qty -->
+    <div class="qty-stepper">
+        <button type="button" class="btn-minus" data-idx="${idx}">−</button>
+        <input type="number" name="items[${idx}][qty]" class="item-qty" data-idx="${idx}" value="${item.qty}" step="0.01" min="0.01">
+        <button type="button" class="btn-plus" data-idx="${idx}">+</button>
+    </div>
+
+    <!-- Price -->
+    <input type="number"
+           name="items[${idx}][price_on_sale]"
+           class="price-edit item-price"
+           data-idx="${idx}"
+           value="${item.price_on_sale.toFixed(2)}"
+           step="0.01"
+           min="0"
+           title="Unit price">
+
+    <!-- Total -->
+    <div class="line-total item-total">
+        ৳${item.line_total.toFixed(2)}
+    </div>
+
+    <!-- Remove -->
+    <button type="button" class="btn-remove" data-idx="${idx}" title="Remove">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+    </button>
+`;
         cartList.appendChild(card);
     });
 
