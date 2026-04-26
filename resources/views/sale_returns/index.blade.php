@@ -119,9 +119,9 @@
         {{-- Summary cards --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             @foreach ([
-                ['label' => 'Total Returns', 'value' => number_format($totals->total_returns ?? 0), 'color' => 'text-gray-800'],
-                ['label' => 'Total Qty Returned', 'value' => number_format($totals->total_qty ?? 0, 2), 'color' => 'text-gray-800'],
-                ['label' => 'Total Return Amount', 'value' => '৳' . number_format($totals->total_return_amount ?? 0, 2), 'color' => 'text-red-600']
+                ['label' => 'Total Returns',       'value' => number_format($totals->total_returns ?? 0),                          'color' => 'text-gray-800'],
+                ['label' => 'Total Subtotal',       'value' => '৳' . number_format($totals->total_subtotal ?? 0, 2),               'color' => 'text-gray-800'],
+                ['label' => 'Total Return Amount',  'value' => '৳' . number_format($totals->total_return_amount ?? 0, 2),          'color' => 'text-red-600'],
             ] as $card)
                 <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
                     <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">{{ $card['label'] }}</p>
@@ -142,7 +142,7 @@
                             >
                                 {{ $return->reference }}
                             </a>
-                            <p class="text-xs text-gray-400 mt-1">{{ optional($return->date)->format('d M Y') }}</p>
+                            <p class="text-xs text-gray-400 mt-1">{{ $return->created_at->format('d M Y') }}</p>
                         </div>
 
                         <div class="text-right shrink-0">
@@ -174,20 +174,29 @@
                         </p>
                     </div>
 
+                    {{-- Products with unit price --}}
                     <div>
-                        <p class="text-xs text-gray-400 mb-1">Products</p>
-                        <div class="space-y-2">
+                        <p class="text-xs text-gray-400 mb-1.5">Products</p>
+                        <div class="space-y-1.5">
                             @foreach ($return->items as $item)
-                                <div class="bg-gray-50 rounded-lg p-2 text-xs">
-                                    <p class="font-medium text-gray-800 break-words">
-                                        {{ $item->product?->product_name ?? '—' }}
-                                    </p>
-                                    <p class="mt-1 text-gray-500 break-all">
-                                        Code: {{ $item->product?->sku ?: '—' }}
-                                    </p>
-                                    <p class="mt-1 text-gray-500">
-                                        Qty: {{ number_format($item?->qty, 2) }}
-                                    </p>
+                                <div class="bg-gray-50 rounded-lg px-2.5 py-2 text-xs space-y-1">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="font-medium text-gray-800 break-words min-w-0">
+                                            {{ $item->product?->product_name ?? '—' }}
+                                        </span>
+                                        <span class="shrink-0 font-mono text-gray-500">
+                                            ৳{{ number_format($item->price_on_sale, 2) }}/pc
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-gray-400">
+                                        @if ($item->product?->sku)
+                                            <span class="font-mono break-all">{{ $item->product->sku }}</span>
+                                            <span>·</span>
+                                        @endif
+                                        <span>Qty: {{ number_format($item->qty, 2) }}</span>
+                                        <span>·</span>
+                                        <span class="text-gray-600 font-medium">৳{{ number_format($item->line_total, 2) }}</span>
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -198,16 +207,16 @@
                             'inline-flex items-center w-fit px-2 py-1 rounded-full text-xs font-medium',
                             'bg-green-50 text-green-700' => $return->return_status === 'approved',
                             'bg-amber-50 text-amber-700' => $return->return_status === 'pending',
-                            'bg-red-50 text-red-700' => $return->return_status === 'rejected',
+                            'bg-red-50 text-red-700'     => $return->return_status === 'rejected',
                         ])>
                             {{ ucfirst($return->return_status) }}
                         </span>
 
                         <span @class([
                             'inline-flex items-center w-fit px-2 py-1 rounded-full text-xs font-medium',
-                            'bg-blue-50 text-blue-700' => $return->return_type === 'refund',
+                            'bg-blue-50 text-blue-700'     => $return->return_type === 'refund',
                             'bg-purple-50 text-purple-700' => $return->return_type === 'exchange',
-                            'bg-gray-100 text-gray-600' => $return->return_type === 'credit',
+                            'bg-gray-100 text-gray-600'    => $return->return_type === 'credit',
                         ])>
                             {{ ucfirst($return->return_type) }}
                         </span>
@@ -289,6 +298,7 @@
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Original Sale</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Customer</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden lg:table-cell">Product</th>
+                            <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden lg:table-cell">Unit Price</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Amount</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Status</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Actions</th>
@@ -305,7 +315,7 @@
                                     >
                                         {{ $return->reference }}
                                     </a>
-                                    <p class="text-xs text-gray-400 mt-1">{{ optional($return->date)->format('d M Y') }}</p>
+                                    <p class="text-xs text-gray-400 mt-1">{{ $return->created_at->format('d M Y') }}</p>
                                 </td>
 
                                 <td class="px-5 py-3.5 align-top hidden md:table-cell">
@@ -325,17 +335,25 @@
                                     <p class="font-medium text-gray-800">{{ $return->customer?->full_name ?? '—' }}</p>
                                 </td>
 
-                                <td class="px-5 py-3.5 align-top hidden lg:table-cell">
+                                {{-- Product names + qty --}}
+                                <td class="px-5 py-3.5 align-top hidden lg:table-cell text-xs text-gray-700">
                                     @foreach ($return->items as $item)
-                                        <p class="font-medium text-gray-800">
-                                            <strong>Product:</strong> {{ $item->product?->product_name ?? '—' }}
-                                        </p>
-                                        <p class="text-xs mt-0.5">
-                                            <strong>Product Code:</strong> {{ $item->product?->sku ?: '—' }}
-                                        </p>
-                                        <p class="text-xs mt-0.5">
-                                            <strong>Quantity:</strong> {{ number_format($item?->qty, 2) }}
-                                        </p>
+                                        <div class="py-0.5">
+                                            <span class="font-medium">{{ $item->product?->product_name ?? '—' }}</span>
+                                            <span class="text-gray-400 ml-1">(×{{ number_format($item->qty, 2) }})</span>
+                                            @if ($item->product?->sku)
+                                                <div class="text-gray-400 font-mono text-xs">{{ $item->product->sku }}</div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </td>
+
+                                {{-- Per-unit prices aligned with product rows --}}
+                                <td class="px-5 py-3.5 align-top text-right hidden lg:table-cell text-xs">
+                                    @foreach ($return->items as $item)
+                                        <div class="py-0.5 font-mono text-gray-700">
+                                            ৳{{ number_format($item->price_on_sale, 2) }}
+                                        </div>
                                     @endforeach
                                 </td>
 
@@ -349,16 +367,16 @@
                                             'inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium',
                                             'bg-green-50 text-green-700' => $return->return_status === 'approved',
                                             'bg-amber-50 text-amber-700' => $return->return_status === 'pending',
-                                            'bg-red-50 text-red-700' => $return->return_status === 'rejected',
+                                            'bg-red-50 text-red-700'     => $return->return_status === 'rejected',
                                         ])>
                                             {{ ucfirst($return->return_status) }}
                                         </span>
 
                                         <span @class([
                                             'inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium',
-                                            'bg-blue-50 text-blue-700' => $return->return_type === 'refund',
+                                            'bg-blue-50 text-blue-700'     => $return->return_type === 'refund',
                                             'bg-purple-50 text-purple-700' => $return->return_type === 'exchange',
-                                            'bg-gray-100 text-gray-600' => $return->return_type === 'credit',
+                                            'bg-gray-100 text-gray-600'    => $return->return_type === 'credit',
                                         ])>
                                             {{ ucfirst($return->return_type) }}
                                         </span>
