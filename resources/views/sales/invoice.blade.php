@@ -284,8 +284,8 @@
     <div class="inv-header">
         <div class="company">
             <h1>Inaya Creation</h1>
-            <p> Dhaka, Bangladesh</p>
-            <p>Phone: +880 1XXXXXXXXX</p>
+            <p> Chista Market,Near Gawsia Market, Dhaka-1205</p>
+            <p>Phone: +880 01300665793</p>
         </div>
         <div class="inv-meta">
             <div class="label">Invoice</div>
