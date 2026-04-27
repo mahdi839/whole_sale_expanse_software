@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseReturn;
@@ -32,6 +33,11 @@ class DashboardController extends Controller
               ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo));
         };
 
+        $expenseScope = function ($q) use ($dateFrom, $dateTo) {
+            $q->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
+              ->when($dateTo,   fn($q) => $q->whereDate('date', '<=', $dateTo));
+        };
+
         $saleReturnScope = function ($q) use ($dateFrom, $dateTo) {
             $q->where('return_status', 'approved')
               ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
@@ -54,12 +60,13 @@ class DashboardController extends Controller
             'total_purchases'        => Purchase::where($purchaseScope)->sum('grand_total'),
             'total_purchase_returns' => PurchaseReturn::where($purchaseReturnScope)->sum('return_amount'),
             'total_purchase_due'     => Purchase::where($purchaseScope)->sum('due_amount'),
+            'total_expenses'         => Expense::where($expenseScope)->sum('amount'),
         ];
 
-        // ── Sales last 7 days OR within date range (chart) ──────────
-        $chartDays   = 6;
-        $chartStart  = $dateFrom ? \Carbon\Carbon::parse($dateFrom)->startOfDay() : now()->subDays($chartDays)->startOfDay();
-        $chartEnd    = $dateTo   ? \Carbon\Carbon::parse($dateTo)->endOfDay()     : now()->endOfDay();
+        // ── Sales last 7 days OR within date range chart ─────────────
+        $chartDays  = 6;
+        $chartStart = $dateFrom ? \Carbon\Carbon::parse($dateFrom)->startOfDay() : now()->subDays($chartDays)->startOfDay();
+        $chartEnd   = $dateTo   ? \Carbon\Carbon::parse($dateTo)->endOfDay()     : now()->endOfDay();
 
         $salesChart = Sale::selectRaw('DATE(created_at) as day, SUM(grand_total) as total')
             ->whereBetween('created_at', [$chartStart, $chartEnd])
@@ -68,13 +75,13 @@ class DashboardController extends Controller
             ->orderBy('day')
             ->pluck('total', 'day');
 
-        // Generate labels from chart start to end (max 30 days to avoid clutter)
         $chartLabels = [];
         $chartData   = [];
         $diff = $chartStart->diffInDays($chartEnd);
         $step = $diff > 30 ? (int) ceil($diff / 30) : 1;
 
         $cursor = $chartStart->copy();
+
         while ($cursor->lte($chartEnd)) {
             $date          = $cursor->toDateString();
             $chartLabels[] = $cursor->format('d M');
@@ -96,7 +103,6 @@ class DashboardController extends Controller
             ->get();
 
         // ── Top 7 customers ──────────────────────────────────────────
-        // When filters are active, rank by filtered sale totals; otherwise use stored totals
         if ($dateFrom || $dateTo || $paymentStatus) {
             $topCustomers = DB::table('sales')
                 ->join('customers', 'customers.id', '=', 'sales.customer_id')
@@ -114,7 +120,7 @@ class DashboardController extends Controller
                 ->get(['full_name', 'total_sale', 'total_paid', 'due']);
         }
 
-        // ── Low stock alerts (qty <= 10) — not date-filtered ─────────
+        // ── Low stock alerts ─────────────────────────────────────────
         $lowStock = Stock::with('product')
             ->where('stock_qty', '<=', 10)
             ->orderBy('stock_qty')
