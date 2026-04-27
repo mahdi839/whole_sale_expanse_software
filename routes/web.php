@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseController;
@@ -42,6 +43,9 @@ Route::middleware(['auth', 'verified','admin'])->group(function () {
     Route::resource('sale-returns', SaleReturnController::class);
     Route::post('sale-returns/{saleReturn}/approve', [SaleReturnController::class, 'approve'])->name('sale-returns.approve');
     Route::get('sale-returns-export', [SaleReturnController::class, 'exportCsv'])->name('sale-returns.export');
+
+    Route::get('expenses-export', [ExpenseController::class, 'exportCsv'])->name('expenses.export');
+Route::resource('expenses', ExpenseController::class);
 });
 
 Route::middleware('auth')->group(function () {
