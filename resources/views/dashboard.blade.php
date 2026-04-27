@@ -3,6 +3,81 @@
 
     <div class="space-y-5">
 
+        {{-- ── Filters ─────────────────────────────────────────────── --}}
+        <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
+            <form method="GET" action="{{ route('dashboard') }}">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-3">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 ml-0.5">From</label>
+                        <input
+                            type="date"
+                            name="date_from"
+                            value="{{ $filters['dateFrom'] }}"
+                            class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 ml-0.5">To</label>
+                        <input
+                            type="date"
+                            name="date_to"
+                            value="{{ $filters['dateTo'] }}"
+                            class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 ml-0.5">Payment Status</label>
+                        <select
+                            name="payment_status"
+                            class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full"
+                        >
+                            <option value="">All payments</option>
+                            <option value="paid"    @selected($filters['paymentStatus'] == 'paid')>Paid</option>
+                            <option value="due"     @selected($filters['paymentStatus'] == 'due')>Due</option>
+                            <option value="partial" @selected($filters['paymentStatus'] == 'partial')>Partial</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <button
+                        type="submit"
+                        class="h-10 px-5 bg-gray-800 text-white rounded-lg text-sm w-full sm:w-auto"
+                    >
+                        Apply
+                    </button>
+
+                    <a
+                        href="{{ route('dashboard') }}"
+                        class="h-10 px-5 bg-cyan-600 text-white rounded-lg text-sm inline-flex items-center justify-center w-full sm:w-auto"
+                    >
+                        Reset
+                    </a>
+
+                    {{-- Active filter badges --}}
+                    @if($filters['dateFrom'] || $filters['dateTo'] || $filters['paymentStatus'])
+                        <div class="flex flex-wrap items-center gap-2 sm:ml-2">
+                            @if($filters['dateFrom'] || $filters['dateTo'])
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs font-medium">
+                                    📅
+                                    {{ $filters['dateFrom'] ? \Carbon\Carbon::parse($filters['dateFrom'])->format('d M Y') : '…' }}
+                                    →
+                                    {{ $filters['dateTo'] ? \Carbon\Carbon::parse($filters['dateTo'])->format('d M Y') : 'today' }}
+                                </span>
+                            @endif
+                            @if($filters['paymentStatus'])
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-violet-50 text-violet-700 border border-violet-200 rounded-full text-xs font-medium">
+                                    {{ ucfirst($filters['paymentStatus']) }}
+                                </span>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            </form>
+        </div>
+
         {{-- ── Stat cards row 1 ────────────────────────────────────── --}}
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
 
@@ -35,7 +110,7 @@
                 <div>
                     <p class="text-xs text-gray-400 uppercase tracking-wide leading-tight">Total Sales</p>
                     <p class="text-xl font-medium mt-0.5 text-emerald-600">৳{{ number_format($stats['total_sales'], 2) }}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">All time</p>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ $filters['dateFrom'] || $filters['dateTo'] ? 'Filtered period' : 'All time' }}</p>
                 </div>
             </div>
 
@@ -73,7 +148,7 @@
                 <div>
                     <p class="text-xs text-gray-400 uppercase tracking-wide leading-tight">Purchases</p>
                     <p class="text-xl font-medium mt-0.5 text-violet-600">৳{{ number_format($stats['total_purchases'], 2) }}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">All time</p>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ $filters['dateFrom'] || $filters['dateTo'] ? 'Filtered period' : 'All time' }}</p>
                 </div>
             </div>
 
@@ -104,7 +179,16 @@
         {{-- ── Sales chart + Low stock ──────────────────────────────── --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div class="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-5">
-                <p class="text-xs text-gray-400 uppercase tracking-wide mb-4">Sales — last 7 days</p>
+                <p class="text-xs text-gray-400 uppercase tracking-wide mb-4">
+                    Sales —
+                    @if($filters['dateFrom'] || $filters['dateTo'])
+                        {{ $filters['dateFrom'] ? \Carbon\Carbon::parse($filters['dateFrom'])->format('d M Y') : '…' }}
+                        →
+                        {{ $filters['dateTo'] ? \Carbon\Carbon::parse($filters['dateTo'])->format('d M Y') : 'today' }}
+                    @else
+                        last 7 days
+                    @endif
+                </p>
                 <div style="position:relative;height:180px">
                     <canvas id="salesChart"></canvas>
                 </div>
@@ -197,7 +281,7 @@
         {{-- ── Recent 10 sales table ────────────────────────────────── --}}
         <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <p class="text-xs text-gray-400 uppercase tracking-wide">Recent 10 sales</p>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Recent sales</p>
                 <a href="{{ route('sales.index') }}" class="text-xs text-blue-600 hover:underline">View all →</a>
             </div>
             <div class="overflow-x-auto">
@@ -261,7 +345,9 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-5 py-12 text-center text-gray-400">No sales yet.</td>
+                                <td colspan="9" class="px-5 py-12 text-center text-gray-400">
+                                    No sales found for the selected filters.
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -296,7 +382,7 @@
                     scales: {
                         x: {
                             grid: { display: false },
-                            ticks: { font: { size: 12 } }
+                            ticks: { font: { size: 11 }, maxRotation: 45 }
                         },
                         y: {
                             grid: { color: 'rgba(0,0,0,0.05)' },

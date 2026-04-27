@@ -9,54 +9,112 @@ use App\Models\PurchaseReturn;
 use App\Models\Sale;
 use App\Models\SaleReturn;
 use App\Models\Stock;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $dateFrom      = $request->input('date_from');
+        $dateTo        = $request->input('date_to');
+        $paymentStatus = $request->input('payment_status');
+
+        // ── Base query scopes ────────────────────────────────────────
+        $saleScope = function ($q) use ($dateFrom, $dateTo, $paymentStatus) {
+            $q->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
+              ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo))
+              ->when($paymentStatus, fn($q) => $q->where('payment_status', $paymentStatus));
+        };
+
+        $purchaseScope = function ($q) use ($dateFrom, $dateTo) {
+            $q->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
+              ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo));
+        };
+
+        $saleReturnScope = function ($q) use ($dateFrom, $dateTo) {
+            $q->where('return_status', 'approved')
+              ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
+              ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo));
+        };
+
+        $purchaseReturnScope = function ($q) use ($dateFrom, $dateTo) {
+            $q->where('return_status', 'approved')
+              ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
+              ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo));
+        };
+
         // ── Summary cards ────────────────────────────────────────────
         $stats = [
-            'total_products'        => Product::count(),
-            'total_customers'       => Customer::count(),
-            'total_sales'           => Sale::sum('grand_total'),
-            'total_sales_due'       => Sale::sum('due'),
-            'total_sale_returns'    => SaleReturn::where('return_status', 'approved')->sum('return_amount'),
-            'total_purchases'       => Purchase::sum('grand_total'),
-            'total_purchase_returns'=> PurchaseReturn::where('return_status', 'approved')->sum('return_amount'),
-            'total_purchase_due'    => Purchase::sum('due_amount'),
+            'total_products'         => Product::count(),
+            'total_customers'        => Customer::count(),
+            'total_sales'            => Sale::where($saleScope)->sum('grand_total'),
+            'total_sales_due'        => Sale::where($saleScope)->sum('due'),
+            'total_sale_returns'     => SaleReturn::where($saleReturnScope)->sum('return_amount'),
+            'total_purchases'        => Purchase::where($purchaseScope)->sum('grand_total'),
+            'total_purchase_returns' => PurchaseReturn::where($purchaseReturnScope)->sum('return_amount'),
+            'total_purchase_due'     => Purchase::where($purchaseScope)->sum('due_amount'),
         ];
 
-        // ── Sales last 7 days (chart) ────────────────────────────────
+        // ── Sales last 7 days OR within date range (chart) ──────────
+        $chartDays   = 6;
+        $chartStart  = $dateFrom ? \Carbon\Carbon::parse($dateFrom)->startOfDay() : now()->subDays($chartDays)->startOfDay();
+        $chartEnd    = $dateTo   ? \Carbon\Carbon::parse($dateTo)->endOfDay()     : now()->endOfDay();
+
         $salesChart = Sale::selectRaw('DATE(created_at) as day, SUM(grand_total) as total')
-            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
+            ->whereBetween('created_at', [$chartStart, $chartEnd])
+            ->when($paymentStatus, fn($q) => $q->where('payment_status', $paymentStatus))
             ->groupBy('day')
             ->orderBy('day')
             ->pluck('total', 'day');
 
+        // Generate labels from chart start to end (max 30 days to avoid clutter)
         $chartLabels = [];
         $chartData   = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date           = now()->subDays($i)->toDateString();
-            $chartLabels[]  = now()->subDays($i)->format('D');
-            $chartData[]    = (float) ($salesChart[$date] ?? 0);
+        $diff = $chartStart->diffInDays($chartEnd);
+        $step = $diff > 30 ? (int) ceil($diff / 30) : 1;
+
+        $cursor = $chartStart->copy();
+        while ($cursor->lte($chartEnd)) {
+            $date          = $cursor->toDateString();
+            $chartLabels[] = $cursor->format('d M');
+            $chartData[]   = (float) ($salesChart[$date] ?? 0);
+            $cursor->addDays($step);
         }
 
         // ── Top 10 selling products ──────────────────────────────────
         $topProducts = DB::table('sale_items')
             ->join('products', 'products.id', '=', 'sale_items.product_id')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->selectRaw('products.product_name, SUM(sale_items.qty) as total_qty, SUM(sale_items.line_total) as total_revenue')
+            ->when($dateFrom, fn($q) => $q->whereDate('sales.created_at', '>=', $dateFrom))
+            ->when($dateTo,   fn($q) => $q->whereDate('sales.created_at', '<=', $dateTo))
+            ->when($paymentStatus, fn($q) => $q->where('sales.payment_status', $paymentStatus))
             ->groupBy('products.id', 'products.product_name')
             ->orderByDesc('total_qty')
             ->limit(10)
             ->get();
 
         // ── Top 7 customers ──────────────────────────────────────────
-        $topCustomers = Customer::orderByDesc('total_sale')
-            ->limit(7)
-            ->get(['full_name', 'total_sale', 'total_paid', 'due']);
+        // When filters are active, rank by filtered sale totals; otherwise use stored totals
+        if ($dateFrom || $dateTo || $paymentStatus) {
+            $topCustomers = DB::table('sales')
+                ->join('customers', 'customers.id', '=', 'sales.customer_id')
+                ->selectRaw('customers.full_name, SUM(sales.grand_total) as total_sale, SUM(sales.paid) as total_paid, SUM(sales.due) as due')
+                ->when($dateFrom,      fn($q) => $q->whereDate('sales.created_at', '>=', $dateFrom))
+                ->when($dateTo,        fn($q) => $q->whereDate('sales.created_at', '<=', $dateTo))
+                ->when($paymentStatus, fn($q) => $q->where('sales.payment_status', $paymentStatus))
+                ->groupBy('customers.id', 'customers.full_name')
+                ->orderByDesc('total_sale')
+                ->limit(7)
+                ->get();
+        } else {
+            $topCustomers = Customer::orderByDesc('total_sale')
+                ->limit(7)
+                ->get(['full_name', 'total_sale', 'total_paid', 'due']);
+        }
 
-        // ── Low stock alerts (qty <= 10) ─────────────────────────────
+        // ── Low stock alerts (qty <= 10) — not date-filtered ─────────
         $lowStock = Stock::with('product')
             ->where('stock_qty', '<=', 10)
             ->orderBy('stock_qty')
@@ -65,9 +123,14 @@ class DashboardController extends Controller
 
         // ── Recent 10 sales ──────────────────────────────────────────
         $recentSales = Sale::with(['customer', 'items'])
+            ->when($dateFrom,      fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
+            ->when($dateTo,        fn($q) => $q->whereDate('created_at', '<=', $dateTo))
+            ->when($paymentStatus, fn($q) => $q->where('payment_status', $paymentStatus))
             ->latest()
             ->limit(10)
             ->get();
+
+        $filters = compact('dateFrom', 'dateTo', 'paymentStatus');
 
         return view('dashboard', compact(
             'stats',
@@ -77,6 +140,7 @@ class DashboardController extends Controller
             'topCustomers',
             'lowStock',
             'recentSales',
+            'filters',
         ));
     }
 }

@@ -275,7 +275,7 @@
                                 <td class="px-4 py-3">
                                     <div class="flex flex-col gap-0.5 text-xs">
                                         @if($sale->cash_memo)
-                                            <span class="text-gray-500 font-mono" title="Cash Memo">📄 {{ $sale->cash_memo }}</span>
+                                            <span class="text-gray-500 font-mono" title="Cash Memo">Cash Memo: {{ $sale->cash_memo }}</span>
                                         @endif
                                         @if($sale->bill_no)
                                             <span class="text-blue-600 font-mono" title="Bill No">Bill No:  {{ $sale->bill_no }}</span>
