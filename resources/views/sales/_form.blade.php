@@ -6,12 +6,12 @@
     if ($sale && $sale->relationLoaded('items') && $sale->items->count()) {
         $initialCart = $sale->items
             ->map(fn($item) => [
-                'product_id'   => $item->product_id,
-                'product_name' => $item->product->product_name ?? 'Unknown',
-                'sku'          => $item->product->sku ?? '',
-                'qty'          => (float) $item->qty,
-                'price_on_sale'=> (float) $item->price_on_sale,
-                'line_total'   => (float) $item->line_total,
+                'product_id'    => $item->product_id,
+                'product_name'  => $item->product->product_name ?? 'Unknown',
+                'sku'           => $item->product->sku ?? '',
+                'qty'           => (float) $item->qty,
+                'price_on_sale' => (float) $item->price_on_sale,
+                'line_total'    => (float) $item->line_total,
             ])
             ->values()
             ->toArray();
@@ -28,20 +28,11 @@
     }
 
     @media (max-width: 900px) {
-        .pos-wrap {
-            grid-template-columns: 1fr;
-        }
-
-        .pos-sidebar {
-            border-left: none !important;
-            border-top: 1px solid #e5e7eb;
-        }
+        .pos-wrap { grid-template-columns: 1fr; }
+        .pos-sidebar { border-left: none !important; border-top: 1px solid #e5e7eb; }
     }
 
-    .pos-left,
-    .pos-sidebar {
-        min-width: 0;
-    }
+    .pos-left, .pos-sidebar { min-width: 0; }
 
     .pos-left {
         padding: 24px;
@@ -60,16 +51,11 @@
     }
 
     @media (max-width: 640px) {
-        .pos-left,
-        .pos-sidebar {
-            padding: 16px;
-        }
+        .pos-left, .pos-sidebar { padding: 16px; }
     }
 
     /* Search */
-    .search-wrap {
-        position: relative;
-    }
+    .search-wrap { position: relative; }
 
     .search-wrap input {
         width: 100%;
@@ -100,8 +86,7 @@
     .search-dropdown {
         position: absolute;
         top: calc(100% + 6px);
-        left: 0;
-        right: 0;
+        left: 0; right: 0;
         background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 10px;
@@ -112,9 +97,7 @@
         display: none;
     }
 
-    .search-dropdown.open {
-        display: block;
-    }
+    .search-dropdown.open { display: block; }
 
     .search-option {
         display: flex;
@@ -127,13 +110,8 @@
         transition: background .1s;
     }
 
-    .search-option:last-child {
-        border-bottom: none;
-    }
-
-    .search-option:hover {
-        background: #f0f9ff;
-    }
+    .search-option:last-child { border-bottom: none; }
+    .search-option:hover { background: #f0f9ff; }
 
     .search-option .sku {
         font-size: 11px;
@@ -142,7 +120,7 @@
         word-break: break-all;
     }
 
-    /* Cart items */
+    /* Cart */
     .cart-empty {
         flex: 1;
         display: flex;
@@ -158,11 +136,7 @@
         text-align: center;
     }
 
-    .cart-list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
+    .cart-list { display: flex; flex-direction: column; gap: 10px; }
 
     .cart-card {
         display: flex;
@@ -178,13 +152,10 @@
 
     @keyframes slideIn {
         from { opacity: 0; transform: translateY(-6px); }
-        to { opacity: 1; transform: none; }
+        to   { opacity: 1; transform: none; }
     }
 
-    .cart-card .prod-info {
-        flex: 1;
-        min-width: 0;
-    }
+    .cart-card .prod-info { flex: 1; min-width: 0; }
 
     .cart-card .prod-name {
         font-size: 13px;
@@ -226,16 +197,12 @@
         text-align: right;
     }
 
-    .price-edit:focus {
-        outline: none;
-        border-color: #3b82f6;
-    }
+    .price-edit:focus { outline: none; border-color: #3b82f6; }
 
     /* Qty stepper */
     .qty-stepper {
         display: flex;
         align-items: center;
-        gap: 0;
         border: 1px solid #e2e8f0;
         border-radius: 7px;
         overflow: hidden;
@@ -243,123 +210,69 @@
     }
 
     .qty-stepper button {
-        width: 32px;
-        height: 32px;
-        font-size: 16px;
-        font-weight: 600;
+        width: 32px; height: 32px;
+        font-size: 16px; font-weight: 600;
         background: #f8fafc;
-        border: none;
-        cursor: pointer;
+        border: none; cursor: pointer;
         color: #475569;
         transition: background .12s;
     }
 
-    .qty-stepper button:hover {
-        background: #e2e8f0;
-    }
+    .qty-stepper button:hover { background: #e2e8f0; }
 
     .qty-stepper input {
-        width: 80px;
-        height: 32px;
+        width: 80px; height: 32px;
         border: none;
         border-left: 1px solid #e2e8f0;
         border-right: 1px solid #e2e8f0;
         text-align: center;
-        font-size: 13px;
-        font-weight: 600;
+        font-size: 13px; font-weight: 600;
         outline: none;
-        background: #fff;
-        color: #0f172a;
+        background: #fff; color: #0f172a;
     }
 
     .qty-stepper input::-webkit-inner-spin-button,
-    .qty-stepper input::-webkit-outer-spin-button {
-        -webkit-appearance: none;
-    }
+    .qty-stepper input::-webkit-outer-spin-button { -webkit-appearance: none; }
 
     .btn-remove {
-        width: 28px;
-        height: 28px;
-        border-radius: 6px;
-        border: none;
-        background: #fef2f2;
-        color: #ef4444;
-        cursor: pointer;
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        width: 28px; height: 28px;
+        border-radius: 6px; border: none;
+        background: #fef2f2; color: #ef4444;
+        cursor: pointer; font-size: 14px;
+        display: flex; align-items: center; justify-content: center;
         transition: background .12s;
         flex-shrink: 0;
     }
 
-    .btn-remove:hover {
-        background: #fee2e2;
-    }
+    .btn-remove:hover { background: #fee2e2; }
 
     @media (max-width: 640px) {
-        .cart-card {
-            flex-wrap: wrap;
-            align-items: flex-start;
-            padding: 12px;
-        }
-
-        .cart-card .prod-info {
-            width: 100%;
-        }
-
-        .cart-card .prod-name {
-            white-space: normal;
-            overflow: visible;
-            text-overflow: unset;
-            word-break: break-word;
-        }
-
-        .qty-stepper {
-            order: 2;
-        }
-
-        .cart-card .price-col {
-            order: 3;
-            width: calc(100% - 44px);
-            align-items: stretch;
-        }
-
-        .price-edit {
-            width: 100%;
-        }
-
-        .btn-remove {
-            order: 4;
-            margin-left: auto;
-        }
+        .cart-card { flex-wrap: wrap; align-items: flex-start; padding: 12px; }
+        .cart-card .prod-info { width: 100%; }
+        .cart-card .prod-name { white-space: normal; overflow: visible; text-overflow: unset; word-break: break-word; }
+        .qty-stepper { order: 2; }
+        .cart-card .price-col { order: 3; width: calc(100% - 44px); align-items: stretch; }
+        .price-edit { width: 100%; }
+        .btn-remove { order: 4; margin-left: auto; }
     }
 
     /* Sidebar fields */
-    .field-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        min-width: 0;
-    }
+    .field-group { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 
     .field-label {
-        font-size: 11px;
-        font-weight: 600;
+        font-size: 11px; font-weight: 600;
         color: #64748b;
         text-transform: uppercase;
         letter-spacing: .04em;
     }
 
     .field-input {
-        width: 100%;
-        height: 38px;
+        width: 100%; height: 38px;
         padding: 0 12px;
         border: 1.5px solid #e2e8f0;
         border-radius: 8px;
         font-size: 13px;
-        background: #fff;
-        outline: none;
+        background: #fff; outline: none;
         transition: border .15s, box-shadow .15s;
         min-width: 0;
     }
@@ -369,27 +282,11 @@
         box-shadow: 0 0 0 3px rgba(59,130,246,.1);
     }
 
-    .field-input[readonly] {
-        background: #f1f5f9;
-        color: #64748b;
-        cursor: default;
-    }
+    .field-input[readonly] { background: #f1f5f9; color: #64748b; cursor: default; }
+    select.field-input { cursor: pointer; }
+    textarea.field-input { height: auto; padding: 8px 12px; resize: vertical; }
 
-    select.field-input {
-        cursor: pointer;
-    }
-
-    textarea.field-input {
-        height: auto;
-        padding: 8px 12px;
-        resize: vertical;
-    }
-
-    .divider {
-        border: none;
-        border-top: 1px solid #e5e7eb;
-        margin: 0;
-    }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 0; }
 
     /* Totals */
     .totals-row {
@@ -400,56 +297,27 @@
         font-size: 13px;
     }
 
-    .totals-row.grand {
-        font-size: 16px;
-        font-weight: 700;
-        margin-top: 4px;
-    }
-
-    .totals-row .label {
-        color: #64748b;
-    }
-
-    .totals-row .val {
-        color: #1e293b;
-        text-align: right;
-        word-break: break-word;
-    }
-
-    .totals-row.grand .val {
-        color: #16a34a;
-        font-size: 20px;
-    }
-
-    /* Badge status */
-    .payment-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 600;
-    }
+    .totals-row.grand { font-size: 16px; font-weight: 700; margin-top: 4px; }
+    .totals-row .label { color: #64748b; }
+    .totals-row .val { color: #1e293b; text-align: right; word-break: break-word; }
+    .totals-row.grand .val { color: #16a34a; font-size: 20px; }
 
     @media (max-width: 640px) {
-        .customer-select-row {
-            flex-direction: column;
-        }
+        .customer-select-row { flex-direction: column; }
+        .customer-select-row > button { width: 100% !important; height: 40px !important; }
+        .customer-modal-actions { flex-direction: column-reverse; }
+        .customer-modal-actions button { width: 100%; justify-content: center; }
+    }
 
-        .customer-select-row > button {
-            width: 100% !important;
-            height: 40px !important;
-        }
+    /* Two-column grid for reference fields */
+    .field-row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
 
-        .customer-modal-actions {
-            flex-direction: column-reverse;
-        }
-
-        .customer-modal-actions button {
-            width: 100%;
-            justify-content: center;
-        }
+    @media (max-width: 480px) {
+        .field-row-2 { grid-template-columns: 1fr; }
     }
 </style>
 
@@ -511,7 +379,7 @@
                     <option value="">Walk-in / No customer</option>
                     @foreach ($customers as $customer)
                         <option value="{{ $customer->id }}" @selected(old('customer_id', $sale?->customer_id) == $customer->id)>
-                            {{ $customer->full_name }}{{ $customer->phone ? ' · '.$customer->phone : '' }}
+                            {{ $customer->full_name }}{{ $customer->phone ? ' · ' . $customer->phone : '' }}
                         </option>
                     @endforeach
                 </select>
@@ -520,9 +388,7 @@
                     onclick="openCustomerModal()"
                     title="Add customer"
                     style="width:38px;height:38px;flex-shrink:0;border-radius:8px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#2563eb;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background .12s"
-                >
-                    +
-                </button>
+                >+</button>
             </div>
         </div>
 
@@ -584,12 +450,43 @@
 
         <hr class="divider">
 
-        {{-- Extra --}}
-        <div class="field-group">
-            <div class="field-label">Cash Memo #</div>
-            <input type="text" name="cash_memo" value="{{ old('cash_memo', $sale?->cash_memo) }}" class="field-input">
+        {{-- Reference Numbers --}}
+        <div class="field-row-2">
+            <div class="field-group">
+                <div class="field-label">Cash Memo #</div>
+                <input type="text" name="cash_memo"
+                       value="{{ old('cash_memo', $sale?->cash_memo) }}"
+                       placeholder="e.g. CM-001"
+                       class="field-input">
+            </div>
+            <div class="field-group">
+                <div class="field-label">Bill No</div>
+                <input type="text" name="bill_no"
+                       value="{{ old('bill_no', $sale?->bill_no) }}"
+                       placeholder="e.g. B-1001"
+                       class="field-input">
+            </div>
         </div>
 
+        {{-- Bell No with helper hint --}}
+        <div class="field-group">
+            <div class="field-label" style="display:flex;align-items:center;gap:5px">
+                Bell No
+                <span
+                    title="Bell No is the counter/token number called at the shop — like a queue token used in cash counters."
+                    style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#e2e8f0;color:#64748b;font-size:9px;font-weight:700;cursor:help;flex-shrink:0"
+                >?</span>
+            </div>
+            <input type="text" name="bell_no"
+                   value="{{ old('bell_no', $sale?->bell_no) }}"
+                   placeholder="e.g. Token 42"
+                   class="field-input">
+            <p style="font-size:11px;color:#94a3b8;margin:0;line-height:1.4">
+                Counter/token number — like a queue bell number used at cash counters.
+            </p>
+        </div>
+
+        {{-- Note --}}
         <div class="field-group">
             <div class="field-label">Note</div>
             <textarea name="note" rows="2" class="field-input">{{ old('note', $sale?->note) }}</textarea>
@@ -598,7 +495,7 @@
     </div>
 </div>
 
-{{-- Hidden --}}
+{{-- Hidden reference --}}
 <input type="hidden" name="reference" value="{{ $nextReference ?? $sale?->reference }}">
 
 {{-- ============ Customer Modal ============ --}}
@@ -628,16 +525,12 @@
                 type="button"
                 onclick="closeCustomerModal()"
                 style="height:36px;padding:0 16px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer;background:#fff"
-            >
-                Cancel
-            </button>
+            >Cancel</button>
             <button
                 type="button"
                 id="save-customer-btn"
                 style="height:36px;padding:0 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:#2563eb;color:#fff;cursor:pointer"
-            >
-                Save
-            </button>
+            >Save</button>
         </div>
     </div>
 </div>
@@ -649,7 +542,6 @@
 // ============================================================
 let cartItems = @json($initialCart);
 
-// All products for search
 const ALL_PRODUCTS = [
     @foreach($products as $p)
     { id: "{{ $p->id }}", name: @json($p->product_name), sku: "{{ $p->sku }}", price: {{ $p->selling_price ?? 0 }} },
@@ -677,10 +569,7 @@ const dueInput      = document.getElementById('due');
 // ============================================================
 searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
-    if (!q) {
-        dropdown.classList.remove('open');
-        return;
-    }
+    if (!q) { dropdown.classList.remove('open'); return; }
 
     const matches = ALL_PRODUCTS.filter(p =>
         p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
@@ -703,9 +592,7 @@ searchInput.addEventListener('input', () => {
 
 document.addEventListener('click', e => {
     const wrap = document.getElementById('search-wrap');
-    if (wrap && !wrap.contains(e.target)) {
-        dropdown.classList.remove('open');
-    }
+    if (wrap && !wrap.contains(e.target)) dropdown.classList.remove('open');
 });
 
 function attachDropdownEvents() {
@@ -739,44 +626,29 @@ function renderCart() {
     cartItems.forEach((item, idx) => {
         const card = document.createElement('div');
         card.className = 'cart-card';
-       card.innerHTML = `
+        card.innerHTML = `
     <input type="hidden" name="items[${idx}][product_id]" value="${item.product_id}">
-
-    <!-- Product -->
     <div class="prod-info">
         <div class="prod-name">${escHtml(item.product_name)}</div>
         <div class="prod-sku">${escHtml(item.sku)}</div>
     </div>
-
-    <!-- Qty -->
     <div class="qty-stepper">
         <button type="button" class="btn-minus" data-idx="${idx}">−</button>
         <input type="number" name="items[${idx}][qty]" class="item-qty" data-idx="${idx}" value="${item.qty}" step="0.01" min="0.01">
         <button type="button" class="btn-plus" data-idx="${idx}">+</button>
     </div>
-
-    <!-- Price -->
     <input type="number"
            name="items[${idx}][price_on_sale]"
            class="price-edit item-price"
            data-idx="${idx}"
            value="${item.price_on_sale.toFixed(2)}"
-           step="0.01"
-           min="0"
-           title="Unit price">
-
-    <!-- Total -->
-    <div class="line-total item-total">
-        ৳${item.line_total.toFixed(2)}
-    </div>
-
-    <!-- Remove -->
+           step="0.01" min="0" title="Unit price">
+    <div class="line-total item-total">৳${item.line_total.toFixed(2)}</div>
     <button type="button" class="btn-remove" data-idx="${idx}" title="Remove">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path d="M18 6 6 18M6 6l12 12"/>
         </svg>
-    </button>
-`;
+    </button>`;
         cartList.appendChild(card);
     });
 
@@ -787,12 +659,8 @@ function renderCart() {
 function attachCardEvents() {
     cartList.querySelectorAll('.btn-minus').forEach(b => b.addEventListener('click', e => {
         const i = +e.currentTarget.dataset.idx;
-        if (cartItems[i].qty > 1) {
-            cartItems[i].qty -= 1;
-            updateItem(i);
-        } else {
-            removeItem(i);
-        }
+        if (cartItems[i].qty > 1) { cartItems[i].qty -= 1; updateItem(i); }
+        else removeItem(i);
     }));
 
     cartList.querySelectorAll('.btn-plus').forEach(b => b.addEventListener('click', e => {
@@ -821,13 +689,10 @@ function attachCardEvents() {
 
 function updateItem(idx) {
     cartItems[idx].line_total = cartItems[idx].qty * cartItems[idx].price_on_sale;
-
     const qtyInp = cartList.querySelector(`.item-qty[data-idx="${idx}"]`);
     if (qtyInp) qtyInp.value = cartItems[idx].qty;
-
     const totalEl = cartList.querySelectorAll('.item-total')[idx];
     if (totalEl) totalEl.textContent = '৳' + cartItems[idx].line_total.toFixed(2);
-
     recalc();
 }
 
@@ -840,8 +705,8 @@ function removeItem(idx) {
 //  Totals
 // ============================================================
 function recalc() {
-    const sub = cartItems.reduce((s, i) => s + i.line_total, 0);
-    const disc = parseFloat(discountInput.value) || 0;
+    const sub   = cartItems.reduce((s, i) => s + i.line_total, 0);
+    const disc  = parseFloat(discountInput.value) || 0;
     const grand = Math.max(0, sub - disc);
 
     subtotalSpan.textContent = '৳' + sub.toFixed(2);
@@ -856,10 +721,10 @@ function updatePayment(grand) {
 
     if (s === 'paid') {
         paidInput.value = grand.toFixed(2);
-        dueInput.value = '0.00';
+        dueInput.value  = '0.00';
     } else if (s === 'due') {
         paidInput.value = '0.00';
-        dueInput.value = grand.toFixed(2);
+        dueInput.value  = grand.toFixed(2);
     } else {
         let paid = Math.min(parseFloat(paidInput.value) || 0, grand);
         paidInput.value = paid.toFixed(2);
@@ -872,7 +737,7 @@ payStatus.addEventListener('change', recalc);
 paidInput.addEventListener('input', () => {
     if (payStatus.value === 'partial') {
         const g = getGrand();
-        let p = Math.min(parseFloat(paidInput.value) || 0, g);
+        let p   = Math.min(parseFloat(paidInput.value) || 0, g);
         dueInput.value = (g - p).toFixed(2);
     }
 });
@@ -903,11 +768,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
     const phone = document.getElementById('new_customer_phone').value.trim();
     const err   = document.getElementById('modal-error');
 
-    if (!name) {
-        err.textContent = 'Name is required';
-        err.classList.remove('hidden');
-        return;
-    }
+    if (!name) { err.textContent = 'Name is required'; err.classList.remove('hidden'); return; }
 
     err.classList.add('hidden');
     const btn = document.getElementById('save-customer-btn');
@@ -932,7 +793,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
         sel.value = data.id;
 
         closeCustomerModal();
-        document.getElementById('new_customer_name').value = '';
+        document.getElementById('new_customer_name').value  = '';
         document.getElementById('new_customer_phone').value = '';
     } catch (ex) {
         err.textContent = ex.message;

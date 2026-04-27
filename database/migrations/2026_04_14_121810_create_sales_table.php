@@ -13,13 +13,15 @@ return new class extends Migration
     {
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
-             $table->string('reference')->unique();
+            $table->string('reference')->unique();
             $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
             $table->decimal('discount', 12, 2)->default(0);  // overall order discount
             $table->decimal('grand_total', 12, 2)->default(0);
             $table->decimal('paid', 12, 2)->default(0);
             $table->decimal('due', 12, 2)->default(0);
             $table->string('cash_memo')->nullable();
+            $table->string('bill_no')->nullable();
+            $table->string('bell_no')->nullable();
             $table->string('payment_method')->nullable();
             $table->string('payment_status')->default('due'); // due, paid, partial
             $table->string('status')->nullable();             // success, cancelled, etc.

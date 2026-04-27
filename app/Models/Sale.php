@@ -17,6 +17,8 @@ class Sale extends Model
         'paid',
         'due',
         'cash_memo',
+        'bill_no',
+        'bell_no',
         'payment_method',
         'payment_status',
         'status',

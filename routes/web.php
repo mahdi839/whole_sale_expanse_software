@@ -37,6 +37,7 @@ Route::middleware(['auth', 'verified','admin'])->group(function () {
 
     Route::resource('sales', SaleController::class);
     Route::get('sales-export', [SaleController::class, 'exportCsv'])->name('sales.export');
+    Route::get('sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
 
     Route::resource('sale-returns', SaleReturnController::class);
     Route::post('sale-returns/{saleReturn}/approve', [SaleReturnController::class, 'approve'])->name('sale-returns.approve');
