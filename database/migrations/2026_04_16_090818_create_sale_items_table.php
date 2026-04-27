@@ -18,6 +18,9 @@ return new class extends Migration
             $table->decimal('qty', 12, 2);
             $table->decimal('price_on_sale', 12, 2);   // price at time of sale
             $table->decimal('line_total', 12, 2);       // qty * price_on_sale
+              $table->decimal('cost_price', 12, 2)->default(0);
+            $table->decimal('profit', 12, 2)->default(0);
+            $table->decimal('line_profit', 12, 2)->default(0);
             $table->timestamps();
         });
     }

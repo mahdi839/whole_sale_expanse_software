@@ -25,8 +25,8 @@ class SaleController extends Controller
 
         $sales = Sale::query()
             ->with(['customer', 'items.product'])
-            ->when($filters['payment_status'], fn ($q) => $q->where('payment_status', $filters['payment_status']))
-            ->when($filters['status'], fn ($q) => $q->where('status', $filters['status']))
+            ->when($filters['payment_status'], fn($q) => $q->where('payment_status', $filters['payment_status']))
+            ->when($filters['status'], fn($q) => $q->where('status', $filters['status']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
                 $q->where(function ($sub) use ($s) {
@@ -34,19 +34,19 @@ class SaleController extends Controller
                         ->orWhere('cash_memo', 'like', "%{$s}%")
                         ->orWhere('bill_no', 'like', "%{$s}%")
                         ->orWhere('bell_no', 'like', "%{$s}%")
-                        ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', "%{$s}%"))
-                        ->orWhereHas('items.product', fn ($p) => $p->where('product_name', 'like', "%{$s}%"));
+                        ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
+                        ->orWhereHas('items.product', fn($p) => $p->where('product_name', 'like', "%{$s}%"));
                 });
             })
-            ->when($filters['date_from'], fn ($q) => $q->whereDate('created_at', '>=', $filters['date_from']))
-            ->when($filters['date_to'], fn ($q) => $q->whereDate('created_at', '<=', $filters['date_to']))
+            ->when($filters['date_from'], fn($q) => $q->whereDate('created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn($q) => $q->whereDate('created_at', '<=', $filters['date_to']))
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
         $totalsQuery = Sale::query()
-            ->when($filters['payment_status'], fn ($q) => $q->where('payment_status', $filters['payment_status']))
-            ->when($filters['status'], fn ($q) => $q->where('status', $filters['status']))
+            ->when($filters['payment_status'], fn($q) => $q->where('payment_status', $filters['payment_status']))
+            ->when($filters['status'], fn($q) => $q->where('status', $filters['status']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
                 $q->where(function ($sub) use ($s) {
@@ -54,12 +54,12 @@ class SaleController extends Controller
                         ->orWhere('cash_memo', 'like', "%{$s}%")
                         ->orWhere('bill_no', 'like', "%{$s}%")
                         ->orWhere('bell_no', 'like', "%{$s}%")
-                        ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', "%{$s}%"))
-                        ->orWhereHas('items.product', fn ($p) => $p->where('product_name', 'like', "%{$s}%"));
+                        ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
+                        ->orWhereHas('items.product', fn($p) => $p->where('product_name', 'like', "%{$s}%"));
                 });
             })
-            ->when($filters['date_from'], fn ($q) => $q->whereDate('created_at', '>=', $filters['date_from']))
-            ->when($filters['date_to'], fn ($q) => $q->whereDate('created_at', '<=', $filters['date_to']));
+            ->when($filters['date_from'], fn($q) => $q->whereDate('created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn($q) => $q->whereDate('created_at', '<=', $filters['date_to']));
 
         $totals = $totalsQuery->selectRaw('
             count(*)         as total_sales,
@@ -88,7 +88,7 @@ class SaleController extends Controller
 
             $reference  = $validated['reference'] ?? Sale::generateReference();
             $itemsInput = $request->input('items', []);
-            $itemsTotal = collect($itemsInput)->sum(fn ($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
+            $itemsTotal = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
             $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0);
 
             [$paid, $due] = $this->resolvePaymentAmounts(
@@ -118,13 +118,19 @@ class SaleController extends Controller
                 $qty       = (float) $item['qty'];
                 $price     = (float) $item['price_on_sale'];
                 $lineTotal = $qty * $price;
+                $costPrice  = $this->getProductCostPrice($product->id);
+                $profit     = $price - $costPrice;
+                $lineProfit = $profit * $qty;
 
                 SaleItem::create([
                     'sale_id'       => $sale->id,
                     'product_id'    => $product->id,
                     'qty'           => $qty,
                     'price_on_sale' => $price,
+                    'cost_price'    => $costPrice,
+                    'profit'        => $profit,
                     'line_total'    => $lineTotal,
+                    'line_profit'   => $lineProfit,
                 ]);
 
                 $stock = Stock::firstOrCreate(
@@ -191,7 +197,7 @@ class SaleController extends Controller
             $sale->items()->delete();
 
             $itemsInput = $request->input('items', []);
-            $itemsTotal = collect($itemsInput)->sum(fn ($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
+            $itemsTotal = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
             $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0);
 
             [$paid, $due] = $this->resolvePaymentAmounts(
@@ -219,14 +225,20 @@ class SaleController extends Controller
                 $qty     = (float) $item['qty'];
                 $price   = (float) $item['price_on_sale'];
 
+                $costPrice  = $this->getProductCostPrice($product->id);
+                $profit     = $price - $costPrice;
+                $lineProfit = $profit * $qty;
+
                 SaleItem::create([
                     'sale_id'       => $sale->id,
                     'product_id'    => $product->id,
                     'qty'           => $qty,
                     'price_on_sale' => $price,
+                    'cost_price'    => $costPrice,
+                    'profit'        => $profit,
                     'line_total'    => $qty * $price,
+                    'line_profit'   => $lineProfit,
                 ]);
-
                 $stock = Stock::firstOrCreate(
                     ['product_id' => $product->id],
                     ['stock_qty' => 0]
@@ -291,7 +303,7 @@ class SaleController extends Controller
         $fileName = 'sales-' . now()->format('Y-m-d-H-i-s') . '.csv';
 
         $sales = Sale::with(['customer', 'items.product'])
-            ->when($request->payment_status, fn ($q) => $q->where('payment_status', $request->payment_status))
+            ->when($request->payment_status, fn($q) => $q->where('payment_status', $request->payment_status))
             ->latest()->get();
 
         $callback = function () use ($sales) {
@@ -315,7 +327,7 @@ class SaleController extends Controller
 
             foreach ($sales as $sale) {
                 $productsSummary = $sale->items->map(
-                    fn ($i) => $i->product->product_name . ' x' . $i->qty . ' @' . $i->price_on_sale
+                    fn($i) => $i->product->product_name . ' x' . $i->qty . ' @' . $i->price_on_sale
                 )->implode(' | ');
 
                 fputcsv($file, [
@@ -356,6 +368,15 @@ class SaleController extends Controller
         };
     }
 
+    private function getProductCostPrice(int $productId): float
+    {
+        $latestPurchasePrice = DB::table('purchase_items')
+            ->where('product_id', $productId)
+            ->latest('id')
+            ->value('price');
+
+        return (float) ($latestPurchasePrice ?? 0);
+    }
     private function validateSale(Request $request, ?int $saleId = null): array
     {
         return $request->validate([

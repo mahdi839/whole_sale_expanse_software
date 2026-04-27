@@ -6,18 +6,24 @@ use Illuminate\Database\Eloquent\Model;
 
 class SaleItem extends Model
 {
-    protected $fillable = [
+   protected $fillable = [
         'sale_id',
         'product_id',
         'qty',
         'price_on_sale',
+        'cost_price',
+        'profit',
         'line_total',
+        'line_profit',
     ];
 
     protected $casts = [
         'qty'           => 'decimal:2',
         'price_on_sale' => 'decimal:2',
+        'cost_price'    => 'decimal:2',
+        'profit'        => 'decimal:2',
         'line_total'    => 'decimal:2',
+        'line_profit'   => 'decimal:2',
     ];
 
     public function sale()

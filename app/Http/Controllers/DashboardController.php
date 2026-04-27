@@ -24,30 +24,30 @@ class DashboardController extends Controller
         // ── Base query scopes ────────────────────────────────────────
         $saleScope = function ($q) use ($dateFrom, $dateTo, $paymentStatus) {
             $q->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
-              ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo))
-              ->when($paymentStatus, fn($q) => $q->where('payment_status', $paymentStatus));
+                ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo))
+                ->when($paymentStatus, fn($q) => $q->where('payment_status', $paymentStatus));
         };
 
         $purchaseScope = function ($q) use ($dateFrom, $dateTo) {
             $q->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
-              ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo));
+                ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo));
         };
 
         $expenseScope = function ($q) use ($dateFrom, $dateTo) {
             $q->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
-              ->when($dateTo,   fn($q) => $q->whereDate('date', '<=', $dateTo));
+                ->when($dateTo,   fn($q) => $q->whereDate('date', '<=', $dateTo));
         };
 
         $saleReturnScope = function ($q) use ($dateFrom, $dateTo) {
             $q->where('return_status', 'approved')
-              ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
-              ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo));
+                ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
+                ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo));
         };
 
         $purchaseReturnScope = function ($q) use ($dateFrom, $dateTo) {
             $q->where('return_status', 'approved')
-              ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
-              ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo));
+                ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
+                ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo));
         };
 
         // ── Summary cards ────────────────────────────────────────────
@@ -61,8 +61,24 @@ class DashboardController extends Controller
             'total_purchase_returns' => PurchaseReturn::where($purchaseReturnScope)->sum('return_amount'),
             'total_purchase_due'     => Purchase::where($purchaseScope)->sum('due_amount'),
             'total_expenses'         => Expense::where($expenseScope)->sum('amount'),
+            'total_item_profit' => 0,
+            'net_profit'        => 0,
         ];
 
+        $totalItemProfit = DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->when($dateFrom, fn($q) => $q->whereDate('sales.created_at', '>=', $dateFrom))
+            ->when($dateTo, fn($q) => $q->whereDate('sales.created_at', '<=', $dateTo))
+            ->when($paymentStatus, fn($q) => $q->where('sales.payment_status', $paymentStatus))
+            ->selectRaw('COALESCE(SUM(sale_items.line_profit), 0) as total_profit')
+            ->value('total_profit');
+
+        $stats['total_item_profit'] = (float) $totalItemProfit;
+
+        $stats['net_profit'] =
+            (float) $stats['total_item_profit']
+            - (float) $stats['total_expenses']
+            - (float) $stats['total_sale_returns'];
         // ── Sales last 7 days OR within date range chart ─────────────
         $chartDays  = 6;
         $chartStart = $dateFrom ? \Carbon\Carbon::parse($dateFrom)->startOfDay() : now()->subDays($chartDays)->startOfDay();
