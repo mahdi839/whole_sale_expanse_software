@@ -283,8 +283,8 @@
     {{-- Header --}}
     <div class="inv-header">
         <div class="company">
-            <h1>Your Business Name</h1>
-            <p>123 Street, Dhaka, Bangladesh</p>
+            <h1>Inaya Creation</h1>
+            <p> Dhaka, Bangladesh</p>
             <p>Phone: +880 1XXXXXXXXX</p>
         </div>
         <div class="inv-meta">

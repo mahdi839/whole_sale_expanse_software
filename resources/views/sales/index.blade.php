@@ -278,10 +278,10 @@
                                             <span class="text-gray-500 font-mono" title="Cash Memo">📄 {{ $sale->cash_memo }}</span>
                                         @endif
                                         @if($sale->bill_no)
-                                            <span class="text-blue-600 font-mono" title="Bill No">🧾 {{ $sale->bill_no }}</span>
+                                            <span class="text-blue-600 font-mono" title="Bill No">Bill No:  {{ $sale->bill_no }}</span>
                                         @endif
                                         @if($sale->bell_no)
-                                            <span class="text-amber-600 font-mono" title="Bell No">🔔 {{ $sale->bell_no }}</span>
+                                            <span class="text-amber-600 font-mono" title="Bell No">Bell No:  {{ $sale->bell_no }}</span>
                                         @endif
                                         @if(!$sale->cash_memo && !$sale->bill_no && !$sale->bell_no)
                                             <span class="text-gray-300">—</span>
