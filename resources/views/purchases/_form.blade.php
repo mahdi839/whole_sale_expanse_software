@@ -667,7 +667,7 @@
                 <span class="val" id="subtotal-display">৳0.00</span>
             </div>
 
-            <div class="field-group">
+            {{-- <div class="field-group">
                 <div class="field-label">Discount (৳)</div>
                 <input type="number" name="discount" id="discount"
                        value="{{ old('discount', $purchase?->discount ?? 0) }}"
@@ -675,17 +675,7 @@
                 @error('discount')
                     <p class="text-error">{{ $message }}</p>
                 @enderror
-            </div>
-
-            <div class="field-group">
-                <div class="field-label">Other Cost (৳)</div>
-                <input type="number" name="other_cost" id="other_cost"
-                       value="{{ old('other_cost', $purchase?->other_cost ?? 0) }}"
-                       step="0.01" min="0" class="field-input">
-                @error('other_cost')
-                    <p class="text-error">{{ $message }}</p>
-                @enderror
-            </div>
+            </div> --}}
 
             <div class="totals-row grand" style="padding-top:4px;border-top:1px solid #e5e7eb;margin-top:4px">
                 <span class="label">Grand Total</span>
