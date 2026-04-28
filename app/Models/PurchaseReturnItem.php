@@ -13,6 +13,7 @@ class PurchaseReturnItem extends Model
         'purchase_return_id',
         'purchase_item_id',
         'product_id',
+        'bale_no',
         'qty',
         'price',
         'line_total',

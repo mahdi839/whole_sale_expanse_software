@@ -13,6 +13,7 @@ class Purchase extends Model
         'reference',
         'supplier_id',
         'seller_store_name',
+        'bill_no',
         'purchased_by',
         'discount',
         'other_cost',

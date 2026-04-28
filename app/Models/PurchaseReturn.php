@@ -13,6 +13,7 @@ class PurchaseReturn extends Model
         'reference',
         'purchase_id',
         'supplier_id',
+        'bill_no',
         'discount',
         'subtotal',
         'return_amount',

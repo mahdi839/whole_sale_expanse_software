@@ -275,10 +275,11 @@
 
                                 <td class="px-5 py-3 text-xs text-gray-600">
                                     @foreach ($purchase->items->take(2) as $item)
-                                        <div>
+                                        <div class="bg-blue-100 p-2 rounded-md ">
                                             {{ $item->product->product_name ?? 'Unknown' }}
                                             (x{{ number_format($item->qty, 2) }}) - 
-                                            Unit Price: {{ number_format($item->price, 2) }}
+                                            Unit Price: {{ number_format($item->price, 2) }}<br />
+                                            Bale No: {{ $item->bale_no ?? '—' }}
                                         </div>
                                     @endforeach
 

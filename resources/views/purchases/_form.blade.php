@@ -12,6 +12,7 @@
                     'qty' => (float) $item->qty,
                     'price' => (float) $item->price,
                     'line_total' => (float) $item->line_total,
+                    'bale_no' => $item->bale_no ?? '',
                 ],
             )
             ->values()
@@ -174,6 +175,7 @@
         padding: 12px 14px;
         animation: slideIn .18s ease;
         min-width: 0;
+        flex-wrap: wrap;
     }
 
     @keyframes slideIn {
@@ -224,11 +226,52 @@
         text-align: right;
     }
 
+    /* Bale No row — full width below main row */
+    .cart-card .bale-row {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 2px;
+    }
+
+    .cart-card .bale-row label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .bale-input {
+        flex: 1;
+        height: 32px;
+        padding: 0 10px;
+        font-size: 13px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 7px;
+        background: #fff;
+        outline: none;
+        transition: border .15s, box-shadow .15s;
+        min-width: 0;
+    }
+
+    .bale-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .1);
+    }
+
     .price-edit {
         width: 110px;
         height: 38px;
         font-size: 14px;
         padding: 0 10px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 7px;
     }
 
     .price-edit:focus {
@@ -302,16 +345,6 @@
     }
 
     @media (max-width: 640px) {
-        .cart-card {
-            flex-wrap: wrap;
-            align-items: flex-start;
-            padding: 12px;
-        }
-
-        .cart-card .prod-info {
-            width: 100%;
-        }
-
         .cart-card .prod-name {
             white-space: normal;
             overflow: visible;
@@ -336,6 +369,10 @@
         .btn-remove {
             order: 4;
             margin-left: auto;
+        }
+
+        .cart-card .bale-row {
+            order: 5;
         }
     }
 
@@ -660,6 +697,16 @@
             @enderror
         </div>
 
+        {{-- ↓ NEW: Bill No --}}
+        <div class="field-group">
+            <div class="field-label">Bill No</div>
+            <input type="text" name="bill_no" value="{{ old('bill_no', $purchase?->bill_no) }}"
+                class="field-input" placeholder="Supplier bill / invoice number">
+            @error('bill_no')
+                <p class="text-error">{{ $message }}</p>
+            @enderror
+        </div>
+
         <hr class="divider">
 
         <div style="display:flex;flex-direction:column;gap:8px">
@@ -667,16 +714,6 @@
                 <span class="label">Items Total</span>
                 <span class="val" id="subtotal-display">৳0.00</span>
             </div>
-
-            {{-- <div class="field-group">
-                <div class="field-label">Discount (৳)</div>
-                <input type="number" name="discount" id="discount"
-                       value="{{ old('discount', $purchase?->discount ?? 0) }}"
-                       step="0.01" min="0" class="field-input">
-                @error('discount')
-                    <p class="text-error">{{ $message }}</p>
-                @enderror
-            </div> --}}
 
             <div class="totals-row grand" style="padding-top:4px;border-top:1px solid #e5e7eb;margin-top:4px">
                 <span class="label">Grand Total</span>
@@ -824,48 +861,45 @@
         // DOM refs — product search
         // ─────────────────────────────────────────────────────────────
         const searchInput = document.getElementById('product-search');
-        const dropdown = document.getElementById('search-dropdown');
-        const cartList = document.getElementById('cart-list');
-        const cartEmpty = document.getElementById('cart-empty');
-        const discountInput = document.getElementById('discount');
+        const dropdown    = document.getElementById('search-dropdown');
+        const cartList    = document.getElementById('cart-list');
+        const cartEmpty   = document.getElementById('cart-empty');
+        const discountInput  = document.getElementById('discount');
         const otherCostInput = document.getElementById('other_cost');
-        const subtotalSpan = document.getElementById('subtotal-display');
-        const grandSpan = document.getElementById('grand-total-display');
-        const payStatus = document.getElementById('payment_status');
-        const paidField = document.getElementById('paid-field');
-        const dueField = document.getElementById('due-field');
-        const paidInput = document.getElementById('paid_amount');
-        const dueInput = document.getElementById('due_amount');
+        const subtotalSpan   = document.getElementById('subtotal-display');
+        const grandSpan      = document.getElementById('grand-total-display');
+        const payStatus  = document.getElementById('payment_status');
+        const paidField  = document.getElementById('paid-field');
+        const dueField   = document.getElementById('due-field');
+        const paidInput  = document.getElementById('paid_amount');
+        const dueInput   = document.getElementById('due_amount');
 
         // ─────────────────────────────────────────────────────────────
         // Product search
         // ─────────────────────────────────────────────────────────────
         searchInput?.addEventListener('input', () => {
             const q = searchInput.value.trim().toLowerCase();
-            if (!q) {
-                dropdown.classList.remove('open');
-                return;
-            }
+            if (!q) { dropdown.classList.remove('open'); return; }
 
             const matches = ALL_PRODUCTS.filter(p =>
                 p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
             );
 
-            dropdown.innerHTML = matches.length ?
-                matches.slice(0, 12).map(p => `
-            <div class="search-option"
-                 data-id="${p.id}"
-                 data-name="${escHtml(p.name)}"
-                 data-sku="${escHtml(p.sku)}"
-                 data-price="${p.price}">
-                <div style="flex:1;min-width:0">
-                    <div style="font-weight:600;color:#1e293b;word-break:break-word">${escHtml(p.name)}</div>
-                    <div class="sku">${escHtml(p.sku)}</div>
-                </div>
-                <div style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">৳${Number(p.price).toFixed(2)}</div>
-            </div>
-        `).join('') :
-                '<div style="padding:14px 16px;font-size:13px;color:#94a3b8">No products found</div>';
+            dropdown.innerHTML = matches.length
+                ? matches.slice(0, 12).map(p => `
+                    <div class="search-option"
+                         data-id="${p.id}"
+                         data-name="${escHtml(p.name)}"
+                         data-sku="${escHtml(p.sku)}"
+                         data-price="${p.price}">
+                        <div style="flex:1;min-width:0">
+                            <div style="font-weight:600;color:#1e293b;word-break:break-word">${escHtml(p.name)}</div>
+                            <div class="sku">${escHtml(p.sku)}</div>
+                        </div>
+                        <div style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">৳${Number(p.price).toFixed(2)}</div>
+                    </div>
+                `).join('')
+                : '<div style="padding:14px 16px;font-size:13px;color:#94a3b8">No products found</div>';
 
             dropdown.classList.add('open');
             attachDropdownEvents();
@@ -879,8 +913,7 @@
         function attachDropdownEvents() {
             dropdown.querySelectorAll('.search-option').forEach(opt => {
                 opt.addEventListener('click', () => {
-                    addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, parseFloat(opt.dataset
-                        .price));
+                    addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, parseFloat(opt.dataset.price));
                     searchInput.value = '';
                     dropdown.classList.remove('open');
                 });
@@ -902,7 +935,8 @@
                     sku: sku || '',
                     qty: 1,
                     price,
-                    line_total: price
+                    line_total: price,
+                    bale_no: ''       // ← NEW
                 });
             }
             renderCart();
@@ -916,26 +950,45 @@
                 const card = document.createElement('div');
                 card.className = 'cart-card';
                 card.innerHTML = `
-            <input type="hidden" name="items[${idx}][product_id]" value="${item.product_id}">
-            <div class="prod-info">
-                <div class="prod-name">${escHtml(item.product_name)}</div>
-                <div class="prod-sku">${escHtml(item.sku)}</div>
-            </div>
-            <div class="qty-stepper">
-                <button type="button" class="btn-minus" data-idx="${idx}">−</button>
-                <input type="number" name="items[${idx}][qty]" class="item-qty" data-idx="${idx}" value="${item.qty}" step="0.01" min="0.01">
-                <button type="button" class="btn-plus" data-idx="${idx}">+</button>
-            </div>
-            <div class="price-col">
-                <input type="number" name="items[${idx}][price]" class="price-edit item-price" data-idx="${idx}" value="${Number(item.price).toFixed(2)}" step="0.01" min="0" title="Unit price">
-                <div class="line-total item-total">৳${Number(item.line_total).toFixed(2)}</div>
-            </div>
-            <button type="button" class="btn-remove" data-idx="${idx}" title="Remove">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path d="M18 6 6 18M6 6l12 12"/>
-                </svg>
-            </button>
-        `;
+                    <input type="hidden" name="items[${idx}][product_id]" value="${item.product_id}">
+
+                    <div class="prod-info">
+                        <div class="prod-name">${escHtml(item.product_name)}</div>
+                        <div class="prod-sku">${escHtml(item.sku)}</div>
+                    </div>
+
+                    <div class="qty-stepper">
+                        <button type="button" class="btn-minus" data-idx="${idx}">−</button>
+                        <input type="number" name="items[${idx}][qty]" class="item-qty" data-idx="${idx}"
+                               value="${item.qty}" step="0.01" min="0.01">
+                        <button type="button" class="btn-plus" data-idx="${idx}">+</button>
+                    </div>
+
+                    <div class="price-col">
+                        <input type="number" name="items[${idx}][price]" class="price-edit item-price"
+                               data-idx="${idx}" value="${Number(item.price).toFixed(2)}"
+                               step="0.01" min="0" title="Unit price">
+                        <div class="line-total item-total">৳${Number(item.line_total).toFixed(2)}</div>
+                    </div>
+
+                    <button type="button" class="btn-remove" data-idx="${idx}" title="Remove">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+
+                    {{-- ↓ NEW: Bale No row --}}
+                    <div class="bale-row">
+                        <label for="bale_no_${idx}">Bale No</label>
+                        <input type="text"
+                               id="bale_no_${idx}"
+                               name="items[${idx}][bale_no]"
+                               class="bale-input item-bale"
+                               data-idx="${idx}"
+                               value="${escHtml(item.bale_no || '')}"
+                               placeholder="Optional bale / bundle number">
+                    </div>
+                `;
                 cartList.appendChild(card);
             });
 
@@ -964,6 +1017,11 @@
                 cartItems[i].price = parseFloat(e.target.value) || 0;
                 updateItem(i);
             }));
+            // ↓ NEW: keep bale_no in state so it survives re-renders
+            cartList.querySelectorAll('.item-bale').forEach(inp => inp.addEventListener('input', e => {
+                const i = +e.target.dataset.idx;
+                cartItems[i].bale_no = e.target.value;
+            }));
             cartList.querySelectorAll('.btn-remove').forEach(b => b.addEventListener('click', e => {
                 removeItem(+e.currentTarget.dataset.idx);
             }));
@@ -987,31 +1045,31 @@
         // Totals
         // ─────────────────────────────────────────────────────────────
         function recalc() {
-            const sub = cartItems.reduce((s, i) => s + i.line_total, 0);
-            const disc = parseFloat(discountInput?.value) || 0;
+            const sub   = cartItems.reduce((s, i) => s + i.line_total, 0);
+            const disc  = parseFloat(discountInput?.value)  || 0;
             const other = parseFloat(otherCostInput?.value) || 0;
             const grand = Math.max(0, sub + other - disc);
 
             subtotalSpan.textContent = '৳' + sub.toFixed(2);
-            grandSpan.textContent = '৳' + grand.toFixed(2);
+            grandSpan.textContent    = '৳' + grand.toFixed(2);
             updatePayment(grand);
         }
 
         function updatePayment(grand) {
             const s = payStatus.value;
             paidField.style.display = (s === 'paid' || s === 'partial') ? 'flex' : 'none';
-            dueField.style.display = (s === 'due' || s === 'partial') ? 'flex' : 'none';
+            dueField.style.display  = (s === 'due'  || s === 'partial') ? 'flex' : 'none';
 
             if (s === 'paid') {
                 paidInput.value = grand.toFixed(2);
-                dueInput.value = '0.00';
+                dueInput.value  = '0.00';
             } else if (s === 'due') {
                 paidInput.value = '0.00';
-                dueInput.value = grand.toFixed(2);
+                dueInput.value  = grand.toFixed(2);
             } else {
                 const paid = Math.min(parseFloat(paidInput.value) || 0, grand);
                 paidInput.value = paid.toFixed(2);
-                dueInput.value = (grand - paid).toFixed(2);
+                dueInput.value  = (grand - paid).toFixed(2);
             }
         }
 
@@ -1020,7 +1078,7 @@
                 0,
                 cartItems.reduce((s, i) => s + i.line_total, 0) +
                 (parseFloat(otherCostInput?.value) || 0) -
-                (parseFloat(discountInput?.value) || 0)
+                (parseFloat(discountInput?.value)  || 0)
             );
         }
 
@@ -1038,14 +1096,14 @@
         // ─────────────────────────────────────────────────────────────
         // Supplier searchable dropdown
         // ─────────────────────────────────────────────────────────────
-        (function() {
-            const supDisplay = document.getElementById('sup-display');
-            const supHidden = document.getElementById('supplier_id');
+        (function () {
+            const supDisplay  = document.getElementById('sup-display');
+            const supHidden   = document.getElementById('supplier_id');
             const supDropdown = document.getElementById('sup-dropdown');
-            const supChevron = document.getElementById('sup-chevron');
-            const supSearch = document.getElementById('sup-search');
-            const supList = document.getElementById('sup-list');
-            const supWrap = document.getElementById('sup-wrap');
+            const supChevron  = document.getElementById('sup-chevron');
+            const supSearch   = document.getElementById('sup-search');
+            const supList     = document.getElementById('sup-list');
+            const supWrap     = document.getElementById('sup-wrap');
 
             if (!supDisplay) return;
 
@@ -1080,8 +1138,7 @@
 
                 hits.forEach(s => {
                     const d = document.createElement('div');
-                    d.className = 'sup-option' + (supHidden.value && String(s.id) === String(supHidden.value) ?
-                        ' sup-selected' : '');
+                    d.className = 'sup-option' + (supHidden.value && String(s.id) === String(supHidden.value) ? ' sup-selected' : '');
                     d.innerHTML = `<span class="sup-name">${escHtml(s.name)}</span>` +
                         (s.phone ? `<span class="sup-phone">${escHtml(s.phone)}</span>` : '');
                     d.addEventListener('click', () => pickSupplier(s));
@@ -1092,10 +1149,10 @@
             function pickSupplier(s) {
                 if (s) {
                     supDisplay.value = s.name + (s.phone ? ' · ' + s.phone : '');
-                    supHidden.value = s.id;
+                    supHidden.value  = s.id;
                 } else {
                     supDisplay.value = '';
-                    supHidden.value = '';
+                    supHidden.value  = '';
                 }
                 closeSupDropdown();
             }
@@ -1128,15 +1185,9 @@
         // Helpers
         // ─────────────────────────────────────────────────────────────
         function escHtml(s) {
-            return String(s).replace(/[&<>"']/g, c =>
-                ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#39;'
-                } [c])
-            );
+            return String(s).replace(/[&<>"']/g, c => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+            ));
         }
 
         // ─────────────────────────────────────────────────────────────

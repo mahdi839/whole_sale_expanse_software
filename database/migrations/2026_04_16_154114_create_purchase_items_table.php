@@ -21,7 +21,7 @@ return new class extends Migration
             $table->foreignId('product_id')
                 ->constrained('products')
                 ->restrictOnDelete();
-
+            $table->string('bale_no')->nullable();
             $table->decimal('qty', 12, 2);
             $table->decimal('price', 12, 2);
             $table->decimal('line_total', 12, 2);
