@@ -4,14 +4,16 @@
     $initialCart = [];
     if ($purchase && $purchase->relationLoaded('items') && $purchase->items->count()) {
         $initialCart = $purchase->items
-            ->map(fn($item) => [
-                'product_id' => $item->product_id,
-                'product_name' => $item->product->product_name ?? 'Unknown',
-                'sku' => $item->product->sku ?? '',
-                'qty' => (float) $item->qty,
-                'price' => (float) $item->price,
-                'line_total' => (float) $item->line_total,
-            ])
+            ->map(
+                fn($item) => [
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product->product_name ?? 'Unknown',
+                    'sku' => $item->product->sku ?? '',
+                    'qty' => (float) $item->qty,
+                    'price' => (float) $item->price,
+                    'line_total' => (float) $item->line_total,
+                ],
+            )
             ->values()
             ->toArray();
     }
@@ -58,6 +60,7 @@
     }
 
     @media (max-width: 640px) {
+
         .pos-left,
         .pos-sidebar {
             padding: 16px;
@@ -83,7 +86,7 @@
 
     .search-wrap input:focus {
         border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
     }
 
     .search-icon {
@@ -103,7 +106,7 @@
         background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 10px;
-        box-shadow: 0 8px 24px rgba(0,0,0,.09);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .09);
         max-height: 240px;
         overflow-y: auto;
         z-index: 50;
@@ -174,8 +177,15 @@
     }
 
     @keyframes slideIn {
-        from { opacity: 0; transform: translateY(-6px); }
-        to { opacity: 1; transform: none; }
+        from {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
     }
 
     .cart-card .prod-info {
@@ -201,26 +211,24 @@
 
     .cart-card .price-col {
         display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 2px;
+        align-items: center;
+        gap: 10px;
         flex-shrink: 0;
     }
 
     .cart-card .line-total {
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 700;
         color: #16a34a;
+        min-width: 80px;
+        text-align: right;
     }
 
     .price-edit {
-        width: 90px;
-        height: 32px;
-        padding: 0 8px;
-        font-size: 12px;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        text-align: right;
+        width: 110px;
+        height: 38px;
+        font-size: 14px;
+        padding: 0 10px;
     }
 
     .price-edit:focus {
@@ -239,9 +247,9 @@
     }
 
     .qty-stepper button {
-        width: 28px;
-        height: 32px;
-        font-size: 16px;
+        width: 34px;
+        height: 38px;
+        font-size: 18px;
         font-weight: 600;
         background: #f8fafc;
         border: none;
@@ -255,13 +263,13 @@
     }
 
     .qty-stepper input {
-        width: 40px;
-        height: 32px;
+        width: 60px;
+        height: 38px;
+        font-size: 14px;
         border: none;
         border-left: 1px solid #e2e8f0;
         border-right: 1px solid #e2e8f0;
         text-align: center;
-        font-size: 13px;
         font-weight: 600;
         outline: none;
         background: #fff;
@@ -362,7 +370,7 @@
 
     .field-input:focus {
         border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .1);
     }
 
     .field-input[readonly] {
@@ -409,7 +417,7 @@
     .sup-display:focus,
     .sup-display.open {
         border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .1);
     }
 
     .sup-display::placeholder {
@@ -438,7 +446,7 @@
         background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 10px;
-        box-shadow: 0 8px 24px rgba(0,0,0,.09);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .09);
         z-index: 100;
         display: none;
         flex-direction: column;
@@ -572,23 +580,24 @@
         <div>
             <div class="field-label mb-2">Search Products</div>
             <div class="search-wrap" id="search-wrap">
-                <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="m21 21-4.35-4.35"/>
+                <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                    viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
                 </svg>
                 <input type="text" id="product-search" placeholder="Search by name or SKU…" autocomplete="off">
                 <div class="search-dropdown" id="search-dropdown">
                     @foreach ($products as $product)
-                        <div class="search-option"
-                             data-id="{{ $product->id }}"
-                             data-name="{{ $product->product_name }}"
-                             data-sku="{{ $product->sku }}"
-                             data-price="{{ $product->buying_price ?? 0 }}">
+                        <div class="search-option" data-id="{{ $product->id }}"
+                            data-name="{{ $product->product_name }}" data-sku="{{ $product->sku }}"
+                            data-price="{{ $product->buying_price ?? 0 }}">
                             <div style="flex:1;min-width:0">
-                                <div style="font-weight:600;color:#1e293b;word-break:break-word">{{ $product->product_name }}</div>
+                                <div style="font-weight:600;color:#1e293b;word-break:break-word">
+                                    {{ $product->product_name }}</div>
                                 <div class="sku">{{ $product->sku }}</div>
                             </div>
-                            <div style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">৳{{ number_format($product->buying_price ?? 0, 2) }}</div>
+                            <div style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">
+                                ৳{{ number_format($product->buying_price ?? 0, 2) }}</div>
                         </div>
                     @endforeach
                 </div>
@@ -601,10 +610,11 @@
         <div id="cart-container" style="flex:1; display:flex; flex-direction:column; gap:10px; min-width:0;">
             <div class="field-label">Purchase Items</div>
             <div id="cart-empty" class="cart-empty">
-                <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
-                    <path d="M3 6h18"/>
-                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5"
+                    viewBox="0 0 24 24">
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                    <path d="M3 6h18" />
+                    <path d="M16 10a4 4 0 0 1-8 0" />
                 </svg>
                 <span>No items added yet.<br>Search and select a product above.</span>
             </div>
@@ -618,18 +628,12 @@
         <div class="field-group">
             <div class="field-label">Supplier</div>
             <div class="sup-wrap" id="sup-wrap">
-                <input type="text"
-                       id="sup-display"
-                       class="sup-display"
-                       placeholder="— Select supplier —"
-                       readonly>
-                <input type="hidden"
-                       name="supplier_id"
-                       id="supplier_id"
-                       value="{{ old('supplier_id', $purchase?->supplier_id) }}">
-                <svg class="sup-chevron" id="sup-chevron"
-                     width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path d="m6 9 6 6 6-6"/>
+                <input type="text" id="sup-display" class="sup-display" placeholder="— Select supplier —" readonly>
+                <input type="hidden" name="supplier_id" id="supplier_id"
+                    value="{{ old('supplier_id', $purchase?->supplier_id) }}">
+                <svg class="sup-chevron" id="sup-chevron" width="14" height="14" fill="none"
+                    stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path d="m6 9 6 6 6-6" />
                 </svg>
                 <div class="sup-dropdown" id="sup-dropdown">
                     <div class="sup-search-box">
@@ -643,17 +647,14 @@
         <div class="field-group">
             <div class="field-label">Seller / Store Name</div>
             <input type="text" name="seller_store_name"
-                   value="{{ old('seller_store_name', $purchase?->seller_store_name) }}"
-                   class="field-input"
-                   placeholder="Optional store name">
+                value="{{ old('seller_store_name', $purchase?->seller_store_name) }}" class="field-input"
+                placeholder="Optional store name">
         </div>
 
         <div class="field-group">
             <div class="field-label">Purchased By</div>
-            <input type="text" name="purchased_by"
-                   value="{{ old('purchased_by', $purchase?->purchased_by) }}"
-                   class="field-input"
-                   placeholder="Enter purchaser name">
+            <input type="text" name="purchased_by" value="{{ old('purchased_by', $purchase?->purchased_by) }}"
+                class="field-input" placeholder="Enter purchaser name">
             @error('purchased_by')
                 <p class="text-error">{{ $message }}</p>
             @enderror
@@ -689,9 +690,9 @@
             <div class="field-label">Purchase Status</div>
             <select name="purchase_status" class="field-input">
                 <option value="received" @selected(old('purchase_status', $purchase?->purchase_status) === 'received')>Received</option>
-                <option value="partial"  @selected(old('purchase_status', $purchase?->purchase_status) === 'partial')>Partial</option>
-                <option value="pending"  @selected(old('purchase_status', $purchase?->purchase_status ?? 'pending') === 'pending')>Pending</option>
-                <option value="ordered"  @selected(old('purchase_status', $purchase?->purchase_status) === 'ordered')>Ordered</option>
+                <option value="partial" @selected(old('purchase_status', $purchase?->purchase_status) === 'partial')>Partial</option>
+                <option value="pending" @selected(old('purchase_status', $purchase?->purchase_status ?? 'pending') === 'pending')>Pending</option>
+                <option value="ordered" @selected(old('purchase_status', $purchase?->purchase_status) === 'ordered')>Ordered</option>
             </select>
             @error('purchase_status')
                 <p class="text-error">{{ $message }}</p>
@@ -701,8 +702,8 @@
         <div class="field-group">
             <div class="field-label">Payment Status</div>
             <select name="payment_status" id="payment_status" class="field-input">
-                <option value="due"     @selected(old('payment_status', $purchase?->payment_status ?? 'due') === 'due')>Due</option>
-                <option value="paid"    @selected(old('payment_status', $purchase?->payment_status) === 'paid')>Paid</option>
+                <option value="due" @selected(old('payment_status', $purchase?->payment_status ?? 'due') === 'due')>Due</option>
+                <option value="paid" @selected(old('payment_status', $purchase?->payment_status) === 'paid')>Paid</option>
                 <option value="partial" @selected(old('payment_status', $purchase?->payment_status) === 'partial')>Partial</option>
             </select>
             @error('payment_status')
@@ -713,8 +714,8 @@
         <div id="paid-field" class="field-group" style="display:none">
             <div class="field-label">Paid Amount (৳)</div>
             <input type="number" name="paid_amount" id="paid_amount"
-                   value="{{ old('paid_amount', $purchase?->paid_amount ?? 0) }}"
-                   step="0.01" min="0" class="field-input">
+                value="{{ old('paid_amount', $purchase?->paid_amount ?? 0) }}" step="0.01" min="0"
+                class="field-input">
             @error('paid_amount')
                 <p class="text-error">{{ $message }}</p>
             @enderror
@@ -723,15 +724,15 @@
         <div id="due-field" class="field-group" style="display:none">
             <div class="field-label">Due Amount (৳)</div>
             <input type="number" name="due_amount" id="due_amount"
-                   value="{{ old('due_amount', $purchase?->due_amount ?? 0) }}"
-                   step="0.01" min="0" readonly class="field-input">
+                value="{{ old('due_amount', $purchase?->due_amount ?? 0) }}" step="0.01" min="0" readonly
+                class="field-input">
         </div>
 
         <div class="field-group">
             <div class="field-label">Payment Method</div>
             <select name="payment_method" class="field-input">
                 <option value="">— Select —</option>
-                @foreach (['Cash','Bank','Bkash','Nagad','Card'] as $method)
+                @foreach (['Cash', 'Bank', 'Bkash', 'Nagad', 'Card'] as $method)
                     <option value="{{ $method }}" @selected(old('payment_method', $purchase?->payment_method) == $method)>{{ $method }}</option>
                 @endforeach
             </select>
@@ -744,9 +745,8 @@
 
         <div class="field-group">
             <div class="field-label">Cash Memo #</div>
-            <input type="text" name="cash_memo"
-                   value="{{ old('cash_memo', $purchase?->cash_memo) }}"
-                   class="field-input">
+            <input type="text" name="cash_memo" value="{{ old('cash_memo', $purchase?->cash_memo) }}"
+                class="field-input">
             @error('cash_memo')
                 <p class="text-error">{{ $message }}</p>
             @enderror
@@ -755,8 +755,8 @@
         <div class="field-group">
             <div class="field-label">Date</div>
             <input type="date" name="date"
-                   value="{{ old('date', optional($purchase?->date)->format('Y-m-d') ?? now()->format('Y-m-d')) }}"
-                   class="field-input">
+                value="{{ old('date', optional($purchase?->date)->format('Y-m-d') ?? now()->format('Y-m-d')) }}"
+                class="field-input">
             @error('date')
                 <p class="text-error">{{ $message }}</p>
             @enderror
@@ -765,8 +765,9 @@
         <div class="field-group">
             <div class="field-label">Document</div>
             <input type="file" name="document" class="field-input" style="padding:6px 10px;height:auto">
-            @if($purchase?->document)
-                <a href="{{ asset('storage/'.$purchase->document) }}" target="_blank" class="text-xs text-blue-600 hover:underline break-all">
+            @if ($purchase?->document)
+                <a href="{{ asset('storage/' . $purchase->document) }}" target="_blank"
+                    class="text-xs text-blue-600 hover:underline break-all">
                     View current file
                 </a>
             @endif
@@ -789,66 +790,69 @@
 <input type="hidden" name="reference" value="{{ $nextReference ?? $purchase?->reference }}">
 
 @push('scripts')
-<script>
-// ─────────────────────────────────────────────────────────────
-// Cart state
-// ─────────────────────────────────────────────────────────────
-let cartItems = @json($initialCart);
+    <script>
+        // ─────────────────────────────────────────────────────────────
+        // Cart state
+        // ─────────────────────────────────────────────────────────────
+        let cartItems = @json($initialCart);
 
-const ALL_PRODUCTS = [
-    @foreach($products as $p)
-    {
-        id: "{{ $p->id }}",
-        name: @json($p->product_name),
-        sku: "{{ $p->sku }}",
-        price: {{ $p->buying_price ?? 0 }}
-    },
-    @endforeach
-];
+        const ALL_PRODUCTS = [
+            @foreach ($products as $p)
+                {
+                    id: "{{ $p->id }}",
+                    name: @json($p->product_name),
+                    sku: "{{ $p->sku }}",
+                    price: {{ $p->buying_price ?? 0 }}
+                },
+            @endforeach
+        ];
 
-// ─────────────────────────────────────────────────────────────
-// Supplier data
-// ─────────────────────────────────────────────────────────────
-const ALL_SUPPLIERS = [
-    @foreach($suppliers as $s)
-    {
-        id: "{{ $s->id }}",
-        name: @json($s->name),
-        phone: "{{ $s->phone ?? '' }}"
-    },
-    @endforeach
-];
+        // ─────────────────────────────────────────────────────────────
+        // Supplier data
+        // ─────────────────────────────────────────────────────────────
+        const ALL_SUPPLIERS = [
+            @foreach ($suppliers as $s)
+                {
+                    id: "{{ $s->id }}",
+                    name: @json($s->name),
+                    phone: "{{ $s->phone ?? '' }}"
+                },
+            @endforeach
+        ];
 
-// ─────────────────────────────────────────────────────────────
-// DOM refs — product search
-// ─────────────────────────────────────────────────────────────
-const searchInput    = document.getElementById('product-search');
-const dropdown       = document.getElementById('search-dropdown');
-const cartList       = document.getElementById('cart-list');
-const cartEmpty      = document.getElementById('cart-empty');
-const discountInput  = document.getElementById('discount');
-const otherCostInput = document.getElementById('other_cost');
-const subtotalSpan   = document.getElementById('subtotal-display');
-const grandSpan      = document.getElementById('grand-total-display');
-const payStatus      = document.getElementById('payment_status');
-const paidField      = document.getElementById('paid-field');
-const dueField       = document.getElementById('due-field');
-const paidInput      = document.getElementById('paid_amount');
-const dueInput       = document.getElementById('due_amount');
+        // ─────────────────────────────────────────────────────────────
+        // DOM refs — product search
+        // ─────────────────────────────────────────────────────────────
+        const searchInput = document.getElementById('product-search');
+        const dropdown = document.getElementById('search-dropdown');
+        const cartList = document.getElementById('cart-list');
+        const cartEmpty = document.getElementById('cart-empty');
+        const discountInput = document.getElementById('discount');
+        const otherCostInput = document.getElementById('other_cost');
+        const subtotalSpan = document.getElementById('subtotal-display');
+        const grandSpan = document.getElementById('grand-total-display');
+        const payStatus = document.getElementById('payment_status');
+        const paidField = document.getElementById('paid-field');
+        const dueField = document.getElementById('due-field');
+        const paidInput = document.getElementById('paid_amount');
+        const dueInput = document.getElementById('due_amount');
 
-// ─────────────────────────────────────────────────────────────
-// Product search
-// ─────────────────────────────────────────────────────────────
-searchInput?.addEventListener('input', () => {
-    const q = searchInput.value.trim().toLowerCase();
-    if (!q) { dropdown.classList.remove('open'); return; }
+        // ─────────────────────────────────────────────────────────────
+        // Product search
+        // ─────────────────────────────────────────────────────────────
+        searchInput?.addEventListener('input', () => {
+            const q = searchInput.value.trim().toLowerCase();
+            if (!q) {
+                dropdown.classList.remove('open');
+                return;
+            }
 
-    const matches = ALL_PRODUCTS.filter(p =>
-        p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
-    );
+            const matches = ALL_PRODUCTS.filter(p =>
+                p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
+            );
 
-    dropdown.innerHTML = matches.length
-        ? matches.slice(0, 12).map(p => `
+            dropdown.innerHTML = matches.length ?
+                matches.slice(0, 12).map(p => `
             <div class="search-option"
                  data-id="${p.id}"
                  data-name="${escHtml(p.name)}"
@@ -860,50 +864,58 @@ searchInput?.addEventListener('input', () => {
                 </div>
                 <div style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">৳${Number(p.price).toFixed(2)}</div>
             </div>
-        `).join('')
-        : '<div style="padding:14px 16px;font-size:13px;color:#94a3b8">No products found</div>';
+        `).join('') :
+                '<div style="padding:14px 16px;font-size:13px;color:#94a3b8">No products found</div>';
 
-    dropdown.classList.add('open');
-    attachDropdownEvents();
-});
-
-document.addEventListener('click', e => {
-    const wrap = document.getElementById('search-wrap');
-    if (wrap && !wrap.contains(e.target)) dropdown.classList.remove('open');
-});
-
-function attachDropdownEvents() {
-    dropdown.querySelectorAll('.search-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-            addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, parseFloat(opt.dataset.price));
-            searchInput.value = '';
-            dropdown.classList.remove('open');
+            dropdown.classList.add('open');
+            attachDropdownEvents();
         });
-    });
-}
 
-// ─────────────────────────────────────────────────────────────
-// Cart logic
-// ─────────────────────────────────────────────────────────────
-function addToCart(id, name, sku, price) {
-    const existing = cartItems.find(i => String(i.product_id) === String(id));
-    if (existing) {
-        existing.qty += 1;
-        existing.line_total = existing.qty * existing.price;
-    } else {
-        cartItems.push({ product_id: id, product_name: name, sku: sku || '', qty: 1, price, line_total: price });
-    }
-    renderCart();
-}
+        document.addEventListener('click', e => {
+            const wrap = document.getElementById('search-wrap');
+            if (wrap && !wrap.contains(e.target)) dropdown.classList.remove('open');
+        });
 
-function renderCart() {
-    cartEmpty.style.display = cartItems.length ? 'none' : 'flex';
-    cartList.innerHTML = '';
+        function attachDropdownEvents() {
+            dropdown.querySelectorAll('.search-option').forEach(opt => {
+                opt.addEventListener('click', () => {
+                    addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, parseFloat(opt.dataset
+                        .price));
+                    searchInput.value = '';
+                    dropdown.classList.remove('open');
+                });
+            });
+        }
 
-    cartItems.forEach((item, idx) => {
-        const card = document.createElement('div');
-        card.className = 'cart-card';
-        card.innerHTML = `
+        // ─────────────────────────────────────────────────────────────
+        // Cart logic
+        // ─────────────────────────────────────────────────────────────
+        function addToCart(id, name, sku, price) {
+            const existing = cartItems.find(i => String(i.product_id) === String(id));
+            if (existing) {
+                existing.qty += 1;
+                existing.line_total = existing.qty * existing.price;
+            } else {
+                cartItems.push({
+                    product_id: id,
+                    product_name: name,
+                    sku: sku || '',
+                    qty: 1,
+                    price,
+                    line_total: price
+                });
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            cartEmpty.style.display = cartItems.length ? 'none' : 'flex';
+            cartList.innerHTML = '';
+
+            cartItems.forEach((item, idx) => {
+                const card = document.createElement('div');
+                card.className = 'cart-card';
+                card.innerHTML = `
             <input type="hidden" name="items[${idx}][product_id]" value="${item.product_id}">
             <div class="prod-info">
                 <div class="prod-name">${escHtml(item.product_name)}</div>
@@ -924,204 +936,214 @@ function renderCart() {
                 </svg>
             </button>
         `;
-        cartList.appendChild(card);
-    });
+                cartList.appendChild(card);
+            });
 
-    attachCardEvents();
-    recalc();
-}
-
-function attachCardEvents() {
-    cartList.querySelectorAll('.btn-minus').forEach(b => b.addEventListener('click', e => {
-        const i = +e.currentTarget.dataset.idx;
-        cartItems[i].qty > 1 ? (cartItems[i].qty -= 1, updateItem(i)) : removeItem(i);
-    }));
-    cartList.querySelectorAll('.btn-plus').forEach(b => b.addEventListener('click', e => {
-        const i = +e.currentTarget.dataset.idx;
-        cartItems[i].qty += 1; updateItem(i);
-    }));
-    cartList.querySelectorAll('.item-qty').forEach(inp => inp.addEventListener('change', e => {
-        const i = +e.target.dataset.idx;
-        const v = parseFloat(e.target.value) || 1;
-        cartItems[i].qty = v < 0.01 ? 0.01 : v; updateItem(i);
-    }));
-    cartList.querySelectorAll('.item-price').forEach(inp => inp.addEventListener('change', e => {
-        const i = +e.target.dataset.idx;
-        cartItems[i].price = parseFloat(e.target.value) || 0; updateItem(i);
-    }));
-    cartList.querySelectorAll('.btn-remove').forEach(b => b.addEventListener('click', e => {
-        removeItem(+e.currentTarget.dataset.idx);
-    }));
-}
-
-function updateItem(idx) {
-    cartItems[idx].line_total = cartItems[idx].qty * cartItems[idx].price;
-    const qtyInp = cartList.querySelector(`.item-qty[data-idx="${idx}"]`);
-    if (qtyInp) qtyInp.value = cartItems[idx].qty;
-    const totalEl = cartList.querySelectorAll('.item-total')[idx];
-    if (totalEl) totalEl.textContent = '৳' + cartItems[idx].line_total.toFixed(2);
-    recalc();
-}
-
-function removeItem(idx) {
-    cartItems.splice(idx, 1);
-    renderCart();
-}
-
-// ─────────────────────────────────────────────────────────────
-// Totals
-// ─────────────────────────────────────────────────────────────
-function recalc() {
-    const sub   = cartItems.reduce((s, i) => s + i.line_total, 0);
-    const disc  = parseFloat(discountInput?.value) || 0;
-    const other = parseFloat(otherCostInput?.value) || 0;
-    const grand = Math.max(0, sub + other - disc);
-
-    subtotalSpan.textContent = '৳' + sub.toFixed(2);
-    grandSpan.textContent    = '৳' + grand.toFixed(2);
-    updatePayment(grand);
-}
-
-function updatePayment(grand) {
-    const s = payStatus.value;
-    paidField.style.display = (s === 'paid' || s === 'partial') ? 'flex' : 'none';
-    dueField.style.display  = (s === 'due'  || s === 'partial') ? 'flex' : 'none';
-
-    if (s === 'paid') {
-        paidInput.value = grand.toFixed(2);
-        dueInput.value  = '0.00';
-    } else if (s === 'due') {
-        paidInput.value = '0.00';
-        dueInput.value  = grand.toFixed(2);
-    } else {
-        const paid = Math.min(parseFloat(paidInput.value) || 0, grand);
-        paidInput.value = paid.toFixed(2);
-        dueInput.value  = (grand - paid).toFixed(2);
-    }
-}
-
-function getGrand() {
-    return Math.max(
-        0,
-        cartItems.reduce((s, i) => s + i.line_total, 0)
-        + (parseFloat(otherCostInput?.value) || 0)
-        - (parseFloat(discountInput?.value)  || 0)
-    );
-}
-
-discountInput?.addEventListener('input', recalc);
-otherCostInput?.addEventListener('input', recalc);
-payStatus?.addEventListener('change', recalc);
-paidInput?.addEventListener('input', () => {
-    if (payStatus.value === 'partial') {
-        const g = getGrand();
-        const p = Math.min(parseFloat(paidInput.value) || 0, g);
-        dueInput.value = (g - p).toFixed(2);
-    }
-});
-
-// ─────────────────────────────────────────────────────────────
-// Supplier searchable dropdown
-// ─────────────────────────────────────────────────────────────
-(function () {
-    const supDisplay  = document.getElementById('sup-display');
-    const supHidden   = document.getElementById('supplier_id');
-    const supDropdown = document.getElementById('sup-dropdown');
-    const supChevron  = document.getElementById('sup-chevron');
-    const supSearch   = document.getElementById('sup-search');
-    const supList     = document.getElementById('sup-list');
-    const supWrap     = document.getElementById('sup-wrap');
-
-    if (!supDisplay) return;
-
-    const preId = supHidden.value;
-    if (preId) {
-        const pre = ALL_SUPPLIERS.find(s => String(s.id) === String(preId));
-        if (pre) supDisplay.value = pre.name + (pre.phone ? ' · ' + pre.phone : '');
-    }
-
-    function renderSupList(q = '') {
-        const hits = ALL_SUPPLIERS.filter(s =>
-            !q ||
-            s.name.toLowerCase().includes(q.toLowerCase()) ||
-            (s.phone && s.phone.includes(q))
-        );
-
-        supList.innerHTML = '';
-
-        const clearEl = document.createElement('div');
-        clearEl.className = 'sup-option sup-clear';
-        clearEl.innerHTML = '<span class="sup-name">— Select supplier —</span>';
-        clearEl.addEventListener('click', () => pickSupplier(null));
-        supList.appendChild(clearEl);
-
-        if (!hits.length) {
-            const noEl = document.createElement('div');
-            noEl.className = 'sup-no-results';
-            noEl.textContent = 'No suppliers found';
-            supList.appendChild(noEl);
-            return;
+            attachCardEvents();
+            recalc();
         }
 
-        hits.forEach(s => {
-            const d = document.createElement('div');
-            d.className = 'sup-option' + (supHidden.value && String(s.id) === String(supHidden.value) ? ' sup-selected' : '');
-            d.innerHTML = `<span class="sup-name">${escHtml(s.name)}</span>`
-                        + (s.phone ? `<span class="sup-phone">${escHtml(s.phone)}</span>` : '');
-            d.addEventListener('click', () => pickSupplier(s));
-            supList.appendChild(d);
+        function attachCardEvents() {
+            cartList.querySelectorAll('.btn-minus').forEach(b => b.addEventListener('click', e => {
+                const i = +e.currentTarget.dataset.idx;
+                cartItems[i].qty > 1 ? (cartItems[i].qty -= 1, updateItem(i)) : removeItem(i);
+            }));
+            cartList.querySelectorAll('.btn-plus').forEach(b => b.addEventListener('click', e => {
+                const i = +e.currentTarget.dataset.idx;
+                cartItems[i].qty += 1;
+                updateItem(i);
+            }));
+            cartList.querySelectorAll('.item-qty').forEach(inp => inp.addEventListener('change', e => {
+                const i = +e.target.dataset.idx;
+                const v = parseFloat(e.target.value) || 1;
+                cartItems[i].qty = v < 0.01 ? 0.01 : v;
+                updateItem(i);
+            }));
+            cartList.querySelectorAll('.item-price').forEach(inp => inp.addEventListener('change', e => {
+                const i = +e.target.dataset.idx;
+                cartItems[i].price = parseFloat(e.target.value) || 0;
+                updateItem(i);
+            }));
+            cartList.querySelectorAll('.btn-remove').forEach(b => b.addEventListener('click', e => {
+                removeItem(+e.currentTarget.dataset.idx);
+            }));
+        }
+
+        function updateItem(idx) {
+            cartItems[idx].line_total = cartItems[idx].qty * cartItems[idx].price;
+            const qtyInp = cartList.querySelector(`.item-qty[data-idx="${idx}"]`);
+            if (qtyInp) qtyInp.value = cartItems[idx].qty;
+            const totalEl = cartList.querySelectorAll('.item-total')[idx];
+            if (totalEl) totalEl.textContent = '৳' + cartItems[idx].line_total.toFixed(2);
+            recalc();
+        }
+
+        function removeItem(idx) {
+            cartItems.splice(idx, 1);
+            renderCart();
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // Totals
+        // ─────────────────────────────────────────────────────────────
+        function recalc() {
+            const sub = cartItems.reduce((s, i) => s + i.line_total, 0);
+            const disc = parseFloat(discountInput?.value) || 0;
+            const other = parseFloat(otherCostInput?.value) || 0;
+            const grand = Math.max(0, sub + other - disc);
+
+            subtotalSpan.textContent = '৳' + sub.toFixed(2);
+            grandSpan.textContent = '৳' + grand.toFixed(2);
+            updatePayment(grand);
+        }
+
+        function updatePayment(grand) {
+            const s = payStatus.value;
+            paidField.style.display = (s === 'paid' || s === 'partial') ? 'flex' : 'none';
+            dueField.style.display = (s === 'due' || s === 'partial') ? 'flex' : 'none';
+
+            if (s === 'paid') {
+                paidInput.value = grand.toFixed(2);
+                dueInput.value = '0.00';
+            } else if (s === 'due') {
+                paidInput.value = '0.00';
+                dueInput.value = grand.toFixed(2);
+            } else {
+                const paid = Math.min(parseFloat(paidInput.value) || 0, grand);
+                paidInput.value = paid.toFixed(2);
+                dueInput.value = (grand - paid).toFixed(2);
+            }
+        }
+
+        function getGrand() {
+            return Math.max(
+                0,
+                cartItems.reduce((s, i) => s + i.line_total, 0) +
+                (parseFloat(otherCostInput?.value) || 0) -
+                (parseFloat(discountInput?.value) || 0)
+            );
+        }
+
+        discountInput?.addEventListener('input', recalc);
+        otherCostInput?.addEventListener('input', recalc);
+        payStatus?.addEventListener('change', recalc);
+        paidInput?.addEventListener('input', () => {
+            if (payStatus.value === 'partial') {
+                const g = getGrand();
+                const p = Math.min(parseFloat(paidInput.value) || 0, g);
+                dueInput.value = (g - p).toFixed(2);
+            }
         });
-    }
 
-    function pickSupplier(s) {
-        if (s) {
-            supDisplay.value = s.name + (s.phone ? ' · ' + s.phone : '');
-            supHidden.value  = s.id;
-        } else {
-            supDisplay.value = '';
-            supHidden.value  = '';
+        // ─────────────────────────────────────────────────────────────
+        // Supplier searchable dropdown
+        // ─────────────────────────────────────────────────────────────
+        (function() {
+            const supDisplay = document.getElementById('sup-display');
+            const supHidden = document.getElementById('supplier_id');
+            const supDropdown = document.getElementById('sup-dropdown');
+            const supChevron = document.getElementById('sup-chevron');
+            const supSearch = document.getElementById('sup-search');
+            const supList = document.getElementById('sup-list');
+            const supWrap = document.getElementById('sup-wrap');
+
+            if (!supDisplay) return;
+
+            const preId = supHidden.value;
+            if (preId) {
+                const pre = ALL_SUPPLIERS.find(s => String(s.id) === String(preId));
+                if (pre) supDisplay.value = pre.name + (pre.phone ? ' · ' + pre.phone : '');
+            }
+
+            function renderSupList(q = '') {
+                const hits = ALL_SUPPLIERS.filter(s =>
+                    !q ||
+                    s.name.toLowerCase().includes(q.toLowerCase()) ||
+                    (s.phone && s.phone.includes(q))
+                );
+
+                supList.innerHTML = '';
+
+                const clearEl = document.createElement('div');
+                clearEl.className = 'sup-option sup-clear';
+                clearEl.innerHTML = '<span class="sup-name">— Select supplier —</span>';
+                clearEl.addEventListener('click', () => pickSupplier(null));
+                supList.appendChild(clearEl);
+
+                if (!hits.length) {
+                    const noEl = document.createElement('div');
+                    noEl.className = 'sup-no-results';
+                    noEl.textContent = 'No suppliers found';
+                    supList.appendChild(noEl);
+                    return;
+                }
+
+                hits.forEach(s => {
+                    const d = document.createElement('div');
+                    d.className = 'sup-option' + (supHidden.value && String(s.id) === String(supHidden.value) ?
+                        ' sup-selected' : '');
+                    d.innerHTML = `<span class="sup-name">${escHtml(s.name)}</span>` +
+                        (s.phone ? `<span class="sup-phone">${escHtml(s.phone)}</span>` : '');
+                    d.addEventListener('click', () => pickSupplier(s));
+                    supList.appendChild(d);
+                });
+            }
+
+            function pickSupplier(s) {
+                if (s) {
+                    supDisplay.value = s.name + (s.phone ? ' · ' + s.phone : '');
+                    supHidden.value = s.id;
+                } else {
+                    supDisplay.value = '';
+                    supHidden.value = '';
+                }
+                closeSupDropdown();
+            }
+
+            function openSupDropdown() {
+                supDropdown.classList.add('open');
+                supChevron.classList.add('open');
+                supSearch.value = '';
+                renderSupList();
+                setTimeout(() => supSearch.focus(), 50);
+            }
+
+            function closeSupDropdown() {
+                supDropdown.classList.remove('open');
+                supChevron.classList.remove('open');
+            }
+
+            supDisplay.addEventListener('click', () =>
+                supDropdown.classList.contains('open') ? closeSupDropdown() : openSupDropdown()
+            );
+
+            supSearch.addEventListener('input', () => renderSupList(supSearch.value.trim()));
+
+            document.addEventListener('click', e => {
+                if (!supWrap.contains(e.target)) closeSupDropdown();
+            });
+        })();
+
+        // ─────────────────────────────────────────────────────────────
+        // Helpers
+        // ─────────────────────────────────────────────────────────────
+        function escHtml(s) {
+            return String(s).replace(/[&<>"']/g, c =>
+                ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                } [c])
+            );
         }
-        closeSupDropdown();
-    }
 
-    function openSupDropdown() {
-        supDropdown.classList.add('open');
-        supChevron.classList.add('open');
-        supSearch.value = '';
-        renderSupList();
-        setTimeout(() => supSearch.focus(), 50);
-    }
-
-    function closeSupDropdown() {
-        supDropdown.classList.remove('open');
-        supChevron.classList.remove('open');
-    }
-
-    supDisplay.addEventListener('click', () =>
-        supDropdown.classList.contains('open') ? closeSupDropdown() : openSupDropdown()
-    );
-
-    supSearch.addEventListener('input', () => renderSupList(supSearch.value.trim()));
-
-    document.addEventListener('click', e => {
-        if (!supWrap.contains(e.target)) closeSupDropdown();
-    });
-})();
-
-// ─────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────
-function escHtml(s) {
-    return String(s).replace(/[&<>"']/g, c =>
-        ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])
-    );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Init
-// ─────────────────────────────────────────────────────────────
-renderCart();
-recalc();
-setTimeout(recalc, 100);
-</script>
+        // ─────────────────────────────────────────────────────────────
+        // Init
+        // ─────────────────────────────────────────────────────────────
+        renderCart();
+        recalc();
+        setTimeout(recalc, 100);
+    </script>
 @endpush
