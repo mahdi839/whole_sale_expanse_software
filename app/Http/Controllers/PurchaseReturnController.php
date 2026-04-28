@@ -34,6 +34,7 @@ class PurchaseReturnController extends Controller
 
                 $q->where(function ($sub) use ($s) {
                     $sub->where('reference', 'like', "%{$s}%")
+                        ->orWhere('bill_no', 'like', "%{$s}%")
                         ->orWhere('cash_memo', 'like', "%{$s}%")
                         ->orWhereHas('supplier', fn($supplier) => $supplier->where('name', 'like', "%{$s}%"))
                         ->orWhereHas('items.product', fn($product) => $product->where('product_name', 'like', "%{$s}%"));
@@ -51,6 +52,7 @@ class PurchaseReturnController extends Controller
 
         return view('purchase_returns.index', compact('returns', 'filters', 'totals'));
     }
+
     public function create(Request $request)
     {
         $nextReference = PurchaseReturn::generateReference();
@@ -76,13 +78,14 @@ class PurchaseReturnController extends Controller
                 $validated['document'] = $request->file('document')->store('purchase_returns', 'public');
             }
 
-            $itemsInput = $request->input('items', []);
-            $subtotal   = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price']);
-            $discount   = (float) ($validated['discount'] ?? 0);
+            $itemsInput   = $request->input('items', []);
+            $subtotal     = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price']);
+            $discount     = (float) ($validated['discount'] ?? 0);
             $returnAmount = max(0, $subtotal - $discount);
 
             $purchaseReturn = PurchaseReturn::create([
                 'reference'      => $reference,
+                'bill_no'        => $validated['bill_no'] ?? null,
                 'purchase_id'    => $validated['purchase_id'] ?? null,
                 'supplier_id'    => $validated['supplier_id'] ?? null,
                 'discount'       => $discount,
@@ -107,6 +110,7 @@ class PurchaseReturnController extends Controller
                     'purchase_return_id' => $purchaseReturn->id,
                     'purchase_item_id'   => $item['purchase_item_id'] ?? null,
                     'product_id'         => $product->id,
+                    'bale_no'            => $item['bale_no'] ?? null,
                     'qty'                => $qty,
                     'price'              => $price,
                     'line_total'         => $lineTotal,
@@ -116,7 +120,7 @@ class PurchaseReturnController extends Controller
             if ($purchaseReturn->return_status === 'approved') {
                 $this->applyReturnEffects($purchaseReturn->fresh('items'));
                 $purchaseReturn->purchase->update([
-                    'purchase_status'=> 'returned'
+                    'purchase_status' => 'returned',
                 ]);
             }
         });
@@ -158,19 +162,20 @@ class PurchaseReturnController extends Controller
 
             if ($oldStatus === 'approved') {
                 $this->reverseReturnEffects($purchaseReturn->load('items'));
-                 $purchaseReturn->purchase->update([
-                    'purchase_status'=> 'returned'
+                $purchaseReturn->purchase->update([
+                    'purchase_status' => 'returned',
                 ]);
             }
 
             $purchaseReturn->items()->delete();
 
-            $itemsInput = $request->input('items', []);
-            $subtotal   = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price']);
-            $discount   = (float) ($validated['discount'] ?? 0);
+            $itemsInput   = $request->input('items', []);
+            $subtotal     = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price']);
+            $discount     = (float) ($validated['discount'] ?? 0);
             $returnAmount = max(0, $subtotal - $discount);
 
             $purchaseReturn->update([
+                'bill_no'        => $validated['bill_no'] ?? null,
                 'purchase_id'    => $validated['purchase_id'] ?? null,
                 'supplier_id'    => $validated['supplier_id'] ?? null,
                 'discount'       => $discount,
@@ -194,6 +199,7 @@ class PurchaseReturnController extends Controller
                     'purchase_return_id' => $purchaseReturn->id,
                     'purchase_item_id'   => $item['purchase_item_id'] ?? null,
                     'product_id'         => $product->id,
+                    'bale_no'            => $item['bale_no'] ?? null,
                     'qty'                => $qty,
                     'price'              => $price,
                     'line_total'         => $qty * $price,
@@ -266,6 +272,7 @@ class PurchaseReturnController extends Controller
 
             fputcsv($file, [
                 'Reference',
+                'Bill No',
                 'Original Purchase',
                 'Supplier',
                 'Items',
@@ -282,11 +289,14 @@ class PurchaseReturnController extends Controller
 
             foreach ($rows as $row) {
                 $itemsSummary = $row->items->map(
-                    fn($i) => ($i->product?->product_name ?? 'Unknown Product') . ' x' . $i->qty . ' @' . $i->price
+                    fn($i) => ($i->product?->product_name ?? 'Unknown Product')
+                        . ($i->bale_no ? ' [Bale: ' . $i->bale_no . ']' : '')
+                        . ' x' . $i->qty . ' @' . $i->price
                 )->implode(' | ');
 
                 fputcsv($file, [
                     $row->reference,
+                    $row->bill_no,
                     $row->purchase?->reference,
                     $row->supplier?->name,
                     $itemsSummary,
@@ -410,6 +420,7 @@ class PurchaseReturnController extends Controller
     {
         return $request->validate([
             'reference'                => 'nullable|string|max:50|unique:purchase_returns,reference,' . $returnId,
+            'bill_no'                  => 'nullable|string|max:100',
             'purchase_id'              => 'nullable|exists:purchases,id',
             'supplier_id'              => 'nullable|exists:suppliers,id',
             'discount'                 => 'nullable|numeric|min:0',
@@ -424,6 +435,7 @@ class PurchaseReturnController extends Controller
             'items'                    => 'required|array|min:1',
             'items.*.purchase_item_id' => 'nullable|exists:purchase_items,id',
             'items.*.product_id'       => 'required|exists:products,id',
+            'items.*.bale_no'          => 'nullable|string|max:100',
             'items.*.qty'              => 'required|numeric|min:0.01',
             'items.*.price'            => 'required|numeric|min:0',
         ]);
