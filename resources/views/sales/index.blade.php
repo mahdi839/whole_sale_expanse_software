@@ -33,6 +33,15 @@
                         <option value="success" @selected(request('status') == 'success')>Success</option>
                         <option value="returned" @selected(request('status') == 'returned')>Returned</option>
                     </select>
+
+                    @if(auth()->user()->canManageAllShops())
+                        <select name="shop_id" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
+                            <option value="">All shops</option>
+                            @foreach($shops as $shop)
+                                <option value="{{ $shop->id }}" @selected(request('shop_id') == $shop->id)>{{ $shop->name }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-3.5">
@@ -241,6 +250,7 @@
                     <thead>
                         <tr class="border-b bg-gray-50">
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Reference</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Shop</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Customer</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Products</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Unit Price</th>
@@ -272,6 +282,10 @@
                                         class="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-md text-xs font-mono">
                                         {{ $sale->reference }}
                                     </a>
+                                </td>
+
+                                <td class="px-4 py-3 text-xs text-gray-600">
+                                    {{ $sale->shop?->name ?? '-' }}
                                 </td>
 
                                 <td class="px-4 py-3">
@@ -397,7 +411,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="px-5 py-20 text-center text-gray-400">
+                                <td colspan="12" class="px-5 py-20 text-center text-gray-400">
                                     No sales found.
                                     <a href="{{ route('sales.create') }}"
                                         class="text-blue-600 hover:underline">Create first sale</a>

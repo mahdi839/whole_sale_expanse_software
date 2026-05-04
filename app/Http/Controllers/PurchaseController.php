@@ -122,7 +122,7 @@ class PurchaseController extends Controller
                 ]);
 
                 $stock = Stock::firstOrCreate(
-                    ['product_id' => $product->id],
+                    ['product_id' => $product->id, 'shop_id' => null],
                     ['stock_qty' => 0]
                 );
 
@@ -171,7 +171,7 @@ class PurchaseController extends Controller
             }
 
             foreach ($purchase->items as $oldItem) {
-                $stock = Stock::where('product_id', $oldItem->product_id)->first();
+                $stock = Stock::where('product_id', $oldItem->product_id)->whereNull('shop_id')->first();
                 if ($stock) {
                     $stock->decrement('stock_qty', (float) $oldItem->qty);
                 }
@@ -223,7 +223,7 @@ class PurchaseController extends Controller
                 ]);
 
                 $stock = Stock::firstOrCreate(
-                    ['product_id' => $product->id],
+                    ['product_id' => $product->id, 'shop_id' => null],
                     ['stock_qty' => 0]
                 );
 
@@ -249,7 +249,7 @@ class PurchaseController extends Controller
             $supplierId = $purchase->supplier_id;
 
             foreach ($purchase->items as $item) {
-                $stock = Stock::where('product_id', $item->product_id)->first();
+                $stock = Stock::where('product_id', $item->product_id)->whereNull('shop_id')->first();
                 if ($stock) {
                     $stock->decrement('stock_qty', (float) $item->qty);
                 }

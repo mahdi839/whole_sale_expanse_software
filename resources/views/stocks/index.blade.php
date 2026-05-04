@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="header">Stocks</x-slot>
+    <x-slot name="header">Inventory</x-slot>
 
     <div class="space-y-4">
 
@@ -12,23 +12,40 @@
             </div>
         @endif
 
-        <div class="grid grid-cols-2 sm:grid-cols-2 gap-3">
+        <div class="flex flex-wrap gap-2 justify-end">
+            @can('manage stock')
+                <a href="{{ route('stocks.create') }}" class="h-10 px-4 bg-blue-600 text-white rounded-lg text-sm inline-flex items-center">Set Central Stock</a>
+            @endcan
+            @can('distribute stock')
+                <a href="{{ route('stocks.distribute') }}" class="h-10 px-4 bg-green-600 text-white rounded-lg text-sm inline-flex items-center">Distribute to Shop</a>
+            @endcan
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
-                <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Total Items</p>
+                <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Central Items</p>
                 <p class="text-2xl font-semibold text-gray-800">
-                    {{ number_format($stocks->count()) }}
+                    {{ number_format($centralStocks->count()) }}
                 </p>
             </div>
 
             <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
-                <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Total Stock Qty</p>
+                <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Central Qty</p>
                 <p class="text-2xl font-semibold text-green-600">
-                    {{ number_format($stocks->sum('stock_qty')) }}
+                    {{ number_format($centralStocks->sum('stock_qty')) }}
+                </p>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
+                <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Shop Qty</p>
+                <p class="text-2xl font-semibold text-blue-600">
+                    {{ number_format($shopStocks->sum('stock_qty')) }}
                 </p>
             </div>
         </div>
 
         <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div class="px-5 py-3 border-b font-semibold text-sm text-gray-700">Central Inventory</div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
@@ -42,7 +59,7 @@
                     </thead>
 
                     <tbody class="divide-y divide-gray-100">
-                        @forelse($stocks as $stock)
+                        @forelse($centralStocks as $stock)
                             <tr class="hover:bg-gray-50/60 transition-colors">
                                 <td class="px-5 py-3.5 align-top font-medium text-gray-700">
                                     {{ $loop->iteration }}
@@ -50,7 +67,7 @@
 
                                 <td class="px-5 py-3.5 align-top">
                                     <span class="inline-block px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 text-xs font-mono font-medium">
-                                        {{ $stock->product_id }}
+                                        {{ $stock->product?->product_name ?? 'Product #'.$stock->product_id }}
                                     </span>
                                 </td>
 
@@ -99,12 +116,38 @@
                                             <path d="M8 11h8M8 15h5"/>
                                         </svg>
                                         <p class="text-sm">
-                                            No stock records found.
+                                            No central stock records found.
                                             <a href="{{ route('stocks.create') }}" class="text-blue-600 hover:underline">Add your first stock.</a>
                                         </p>
                                     </div>
                                 </td>
                             </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div class="px-5 py-3 border-b font-semibold text-sm text-gray-700">Shop Inventory</div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-100 bg-gray-50">
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Shop</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Product</th>
+                            <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase">Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @forelse($shopStocks as $stock)
+                            <tr>
+                                <td class="px-5 py-3.5">{{ $stock->shop?->name }}</td>
+                                <td class="px-5 py-3.5">{{ $stock->product?->product_name }}</td>
+                                <td class="px-5 py-3.5 text-right font-medium text-blue-600">{{ number_format($stock->stock_qty) }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="3" class="px-5 py-12 text-center text-gray-400">No shop stock distributed yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

@@ -18,7 +18,17 @@ class Product extends Model
 
     public function stock()
     {
-        return $this->hasOne(Stock::class);
+        return $this->hasOne(Stock::class)->whereNull('shop_id');
+    }
+
+    public function stocks()
+    {
+        return $this->hasMany(Stock::class);
+    }
+
+    public function shopStock(?int $shopId)
+    {
+        return $this->hasOne(Stock::class)->where('shop_id', $shopId);
     }
 
     public function saleItems()

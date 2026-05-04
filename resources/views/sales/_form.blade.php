@@ -370,6 +370,23 @@
 
     {{-- ==================== RIGHT SIDEBAR ==================== --}}
     <div class="pos-sidebar">
+        {{-- Shop --}}
+        <div class="field-group">
+            <div class="field-label">Shop</div>
+            @if(auth()->user()->canManageAllShops())
+                <select name="shop_id" class="field-input" required>
+                    <option value="">Select shop</option>
+                    @foreach($shops ?? [] as $shop)
+                        <option value="{{ $shop->id }}" @selected(old('shop_id', $sale?->shop_id ?? null) == $shop->id)>{{ $shop->name }}</option>
+                    @endforeach
+                </select>
+            @else
+                <input type="hidden" name="shop_id" value="{{ auth()->user()->shop_id }}">
+                <input type="text" class="field-input" value="{{ auth()->user()->shop?->name ?? 'No shop assigned' }}" readonly>
+            @endif
+        </div>
+
+        <hr class="divider">
 
         {{-- Customer --}}
         <div class="field-group">

@@ -326,7 +326,7 @@ class PurchaseReturnController extends Controller
         $ret->loadMissing('items');
 
         foreach ($ret->items as $item) {
-            $stock = Stock::where('product_id', $item->product_id)->first();
+            $stock = Stock::where('product_id', $item->product_id)->whereNull('shop_id')->first();
             if ($stock) {
                 $stock->decrement('stock_qty', (float) $item->qty);
             }
@@ -342,7 +342,7 @@ class PurchaseReturnController extends Controller
 
         foreach ($ret->items as $item) {
             $stock = Stock::firstOrCreate(
-                ['product_id' => $item->product_id],
+                ['product_id' => $item->product_id, 'shop_id' => null],
                 ['stock_qty' => 0]
             );
 

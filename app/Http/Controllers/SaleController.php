@@ -6,16 +6,19 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\Shop;
 use App\Models\Stock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Validation\ValidationException;
 
 class SaleController extends Controller
 {
     public function index(Request $request)
     {
         $filters = [
+            'shop_id'        => $request->input('shop_id'),
             'payment_status' => $request->input('payment_status'),
             'status'         => $request->input('status'),
             'search'         => $request->input('search'),
@@ -24,7 +27,9 @@ class SaleController extends Controller
         ];
 
         $sales = Sale::query()
-            ->with(['customer', 'items.product'])
+            ->with(['customer', 'items.product', 'shop'])
+            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('shop_id', auth()->user()->shop_id))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn($q) => $q->where('shop_id', $filters['shop_id']))
             ->when($filters['payment_status'], fn($q) => $q->where('payment_status', $filters['payment_status']))
             ->when($filters['status'], fn($q) => $q->where('status', $filters['status']))
             ->when($filters['search'], function ($q) use ($filters) {
@@ -45,6 +50,8 @@ class SaleController extends Controller
             ->withQueryString();
 
         $totalsQuery = Sale::query()
+            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('shop_id', auth()->user()->shop_id))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn($q) => $q->where('shop_id', $filters['shop_id']))
             ->when($filters['payment_status'], fn($q) => $q->where('payment_status', $filters['payment_status']))
             ->when($filters['status'], fn($q) => $q->where('status', $filters['status']))
             ->when($filters['search'], function ($q) use ($filters) {
@@ -68,16 +75,25 @@ class SaleController extends Controller
             sum(due)         as total_due
         ')->first();
 
-        return view('sales.index', compact('sales', 'filters', 'totals'));
+        $shops = auth()->user()->canManageAllShops()
+            ? Shop::where('is_active', true)->orderBy('name')->get()
+            : collect();
+
+        return view('sales.index', compact('sales', 'filters', 'totals', 'shops'));
     }
 
     public function create()
     {
+        abort_unless(auth()->user()->canManageAllShops() || auth()->user()->shop_id, 403, 'No shop assigned to your user.');
+
         $nextReference = Sale::generateReference();
         $customers     = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
         $products      = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
+        $shops = auth()->user()->canManageAllShops()
+            ? Shop::where('is_active', true)->orderBy('name')->get()
+            : collect([auth()->user()->shop]);
 
-        return view('sales.create', compact('nextReference', 'customers', 'products'));
+        return view('sales.create', compact('nextReference', 'customers', 'products', 'shops'));
     }
 
     public function store(Request $request)
@@ -97,8 +113,12 @@ class SaleController extends Controller
                 (float) ($validated['paid'] ?? 0)
             );
 
+            $shopId = $this->resolveShopId($validated);
+
             $sale = Sale::create([
                 'reference'      => $reference,
+                'shop_id'        => $shopId,
+                'user_id'        => auth()->id(),
                 'customer_id'    => $validated['customer_id'] ?? null,
                 'discount'       => $validated['discount'] ?? 0,
                 'grand_total'    => $grandTotal,
@@ -134,9 +154,14 @@ class SaleController extends Controller
                 ]);
 
                 $stock = Stock::firstOrCreate(
-                    ['product_id' => $product->id],
+                    ['product_id' => $product->id, 'shop_id' => $shopId],
                     ['stock_qty' => 0]
                 );
+                if ((float) $stock->stock_qty < $qty) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Not enough stock in this shop for ' . $product->product_name . '.',
+                    ]);
+                }
                 $stock->decrement('stock_qty', $qty);
             }
 
@@ -156,29 +181,37 @@ class SaleController extends Controller
 
     public function show(Sale $sale)
     {
-        $sale->load(['customer', 'items.product.stock']);
+        $this->authorizeSaleShop($sale);
+        $sale->load(['customer', 'items.product.stock', 'shop', 'user']);
 
         return view('sales.show', compact('sale'));
     }
 
     public function edit(Sale $sale)
     {
+        $this->authorizeSaleShop($sale);
         $sale->load('items.product');
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
         $products  = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
+        $shops = auth()->user()->canManageAllShops()
+            ? Shop::where('is_active', true)->orderBy('name')->get()
+            : collect([auth()->user()->shop]);
 
-        return view('sales.edit', compact('sale', 'customers', 'products'));
+        return view('sales.edit', compact('sale', 'customers', 'products', 'shops'));
     }
 
     public function update(Request $request, Sale $sale)
     {
         $validated = $this->validateSale($request, $sale->id);
+        $this->authorizeSaleShop($sale);
 
         DB::transaction(function () use ($request, $sale, $validated) {
 
             // Reverse old stock
             foreach ($sale->items as $oldItem) {
-                $stock = Stock::where('product_id', $oldItem->product_id)->first();
+                $stock = Stock::where('product_id', $oldItem->product_id)
+                    ->where('shop_id', $sale->shop_id)
+                    ->first();
                 if ($stock) {
                     $stock->increment('stock_qty', (float) $oldItem->qty);
                 }
@@ -206,7 +239,10 @@ class SaleController extends Controller
                 (float) ($validated['paid'] ?? 0)
             );
 
+            $shopId = $this->resolveShopId($validated, $sale);
+
             $sale->update([
+                'shop_id'        => $shopId,
                 'customer_id'    => $validated['customer_id'] ?? null,
                 'discount'       => $validated['discount'] ?? 0,
                 'grand_total'    => $grandTotal,
@@ -240,9 +276,14 @@ class SaleController extends Controller
                     'line_profit'   => $lineProfit,
                 ]);
                 $stock = Stock::firstOrCreate(
-                    ['product_id' => $product->id],
+                    ['product_id' => $product->id, 'shop_id' => $shopId],
                     ['stock_qty' => 0]
                 );
+                if ((float) $stock->stock_qty < $qty) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Not enough stock in this shop for ' . $product->product_name . '.',
+                    ]);
+                }
                 $stock->decrement('stock_qty', $qty);
             }
 
@@ -262,10 +303,14 @@ class SaleController extends Controller
 
     public function destroy(Sale $sale)
     {
+        $this->authorizeSaleShop($sale);
+
         DB::transaction(function () use ($sale) {
 
             foreach ($sale->items as $item) {
-                $stock = Stock::where('product_id', $item->product_id)->first();
+                $stock = Stock::where('product_id', $item->product_id)
+                    ->where('shop_id', $sale->shop_id)
+                    ->first();
                 if ($stock) {
                     $stock->increment('stock_qty', (float) $item->qty);
                 }
@@ -293,7 +338,8 @@ class SaleController extends Controller
      */
     public function invoice(Sale $sale)
     {
-        $sale->load(['customer', 'items.product']);
+        $this->authorizeSaleShop($sale);
+        $sale->load(['customer', 'items.product', 'shop']);
 
         return view('sales.invoice', compact('sale'));
     }
@@ -303,6 +349,8 @@ class SaleController extends Controller
         $fileName = 'sales-' . now()->format('Y-m-d-H-i-s') . '.csv';
 
         $sales = Sale::with(['customer', 'items.product'])
+            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('shop_id', auth()->user()->shop_id))
+            ->when(auth()->user()->canManageAllShops() && $request->shop_id, fn($q) => $q->where('shop_id', $request->shop_id))
             ->when($request->payment_status, fn($q) => $q->where('payment_status', $request->payment_status))
             ->latest()->get();
 
@@ -381,6 +429,7 @@ class SaleController extends Controller
     {
         return $request->validate([
             'reference'              => 'nullable|string|max:50|unique:sales,reference,' . $saleId,
+            'shop_id'                => 'nullable|exists:shops,id',
             'customer_id'            => 'nullable|exists:customers,id',
             'discount'               => 'nullable|numeric|min:0',
             'cash_memo'              => 'nullable|string|max:100',
@@ -395,5 +444,28 @@ class SaleController extends Controller
             'items.*.qty'            => 'required|numeric|min:0.01',
             'items.*.price_on_sale'  => 'required|numeric|min:0',
         ]);
+    }
+
+    private function resolveShopId(array $validated, ?Sale $sale = null): int
+    {
+        if (auth()->user()->canManageAllShops()) {
+            $shopId = $validated['shop_id'] ?? $sale?->shop_id;
+            abort_unless($shopId, 422, 'Please select a shop for this sale.');
+
+            return (int) $shopId;
+        }
+
+        abort_unless(auth()->user()->shop_id, 403, 'No shop assigned to your user.');
+
+        return (int) auth()->user()->shop_id;
+    }
+
+    private function authorizeSaleShop(Sale $sale): void
+    {
+        if (auth()->user()->canManageAllShops()) {
+            return;
+        }
+
+        abort_unless($sale->shop_id === auth()->user()->shop_id, 403);
     }
 }

@@ -20,12 +20,14 @@ class DashboardController extends Controller
         $dateFrom      = $request->input('date_from');
         $dateTo        = $request->input('date_to');
         $paymentStatus = $request->input('payment_status');
+        $shopId        = auth()->user()->canManageAllShops() ? null : (auth()->user()->shop_id ?: -1);
 
         // ── Base query scopes ────────────────────────────────────────
-        $saleScope = function ($q) use ($dateFrom, $dateTo, $paymentStatus) {
+        $saleScope = function ($q) use ($dateFrom, $dateTo, $paymentStatus, $shopId) {
             $q->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
                 ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo))
-                ->when($paymentStatus, fn($q) => $q->where('payment_status', $paymentStatus));
+                ->when($paymentStatus, fn($q) => $q->where('payment_status', $paymentStatus))
+                ->when($shopId, fn($q) => $q->where('shop_id', $shopId));
         };
 
         $purchaseScope = function ($q) use ($dateFrom, $dateTo) {
@@ -38,8 +40,9 @@ class DashboardController extends Controller
                 ->when($dateTo,   fn($q) => $q->whereDate('date', '<=', $dateTo));
         };
 
-        $saleReturnScope = function ($q) use ($dateFrom, $dateTo) {
+        $saleReturnScope = function ($q) use ($dateFrom, $dateTo, $shopId) {
             $q->where('return_status', 'approved')
+                ->when($shopId, fn($q) => $q->whereHas('sale', fn($sale) => $sale->where('shop_id', $shopId)))
                 ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
                 ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo));
         };
@@ -67,6 +70,7 @@ class DashboardController extends Controller
 
         $totalItemProfit = DB::table('sale_items')
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->when($shopId, fn($q) => $q->where('sales.shop_id', $shopId))
             ->when($dateFrom, fn($q) => $q->whereDate('sales.created_at', '>=', $dateFrom))
             ->when($dateTo, fn($q) => $q->whereDate('sales.created_at', '<=', $dateTo))
             ->when($paymentStatus, fn($q) => $q->where('sales.payment_status', $paymentStatus))
@@ -86,6 +90,7 @@ class DashboardController extends Controller
 
         $salesChart = Sale::selectRaw('DATE(created_at) as day, SUM(grand_total) as total')
             ->whereBetween('created_at', [$chartStart, $chartEnd])
+            ->when($shopId, fn($q) => $q->where('shop_id', $shopId))
             ->when($paymentStatus, fn($q) => $q->where('payment_status', $paymentStatus))
             ->groupBy('day')
             ->orderBy('day')
@@ -110,6 +115,7 @@ class DashboardController extends Controller
             ->join('products', 'products.id', '=', 'sale_items.product_id')
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->selectRaw('products.product_name, SUM(sale_items.qty) as total_qty, SUM(sale_items.line_total) as total_revenue')
+            ->when($shopId, fn($q) => $q->where('sales.shop_id', $shopId))
             ->when($dateFrom, fn($q) => $q->whereDate('sales.created_at', '>=', $dateFrom))
             ->when($dateTo,   fn($q) => $q->whereDate('sales.created_at', '<=', $dateTo))
             ->when($paymentStatus, fn($q) => $q->where('sales.payment_status', $paymentStatus))
@@ -123,6 +129,7 @@ class DashboardController extends Controller
             $topCustomers = DB::table('sales')
                 ->join('customers', 'customers.id', '=', 'sales.customer_id')
                 ->selectRaw('customers.full_name, SUM(sales.grand_total) as total_sale, SUM(sales.paid) as total_paid, SUM(sales.due) as due')
+                ->when($shopId, fn($q) => $q->where('sales.shop_id', $shopId))
                 ->when($dateFrom,      fn($q) => $q->whereDate('sales.created_at', '>=', $dateFrom))
                 ->when($dateTo,        fn($q) => $q->whereDate('sales.created_at', '<=', $dateTo))
                 ->when($paymentStatus, fn($q) => $q->where('sales.payment_status', $paymentStatus))
@@ -130,14 +137,24 @@ class DashboardController extends Controller
                 ->orderByDesc('total_sale')
                 ->limit(7)
                 ->get();
-        } else {
+        } elseif (! $shopId) {
             $topCustomers = Customer::orderByDesc('total_sale')
                 ->limit(7)
                 ->get(['full_name', 'total_sale', 'total_paid', 'due']);
+        } else {
+            $topCustomers = DB::table('sales')
+                ->join('customers', 'customers.id', '=', 'sales.customer_id')
+                ->where('sales.shop_id', $shopId)
+                ->selectRaw('customers.full_name, SUM(sales.grand_total) as total_sale, SUM(sales.paid) as total_paid, SUM(sales.due) as due')
+                ->groupBy('customers.id', 'customers.full_name')
+                ->orderByDesc('total_sale')
+                ->limit(7)
+                ->get();
         }
 
         // ── Low stock alerts ─────────────────────────────────────────
         $lowStock = Stock::with('product')
+            ->when($shopId, fn($q) => $q->where('shop_id', $shopId), fn($q) => $q->whereNull('shop_id'))
             ->where('stock_qty', '<=', 10)
             ->orderBy('stock_qty')
             ->limit(6)
@@ -145,6 +162,7 @@ class DashboardController extends Controller
 
         // ── Recent 10 sales ──────────────────────────────────────────
         $recentSales = Sale::with(['customer', 'items'])
+            ->when($shopId, fn($q) => $q->where('shop_id', $shopId))
             ->when($dateFrom,      fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
             ->when($dateTo,        fn($q) => $q->whereDate('created_at', '<=', $dateTo))
             ->when($paymentStatus, fn($q) => $q->where('payment_status', $paymentStatus))

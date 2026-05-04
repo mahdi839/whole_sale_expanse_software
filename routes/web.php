@@ -6,46 +6,59 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\PurchaseReturnController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleReturnController;
+use App\Http\Controllers\ShopController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::middleware(['auth', 'verified','admin'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
 
-    Route::resource('/products', ProductController::class)->except(['show']);
-    Route::resource('/customers', CustomerController::class);
-    Route::resource('/suppliers', SupplierController::class);
+    Route::resource('/products', ProductController::class)->except(['show'])->middleware('permission:manage products');
+    Route::resource('/customers', CustomerController::class)->middleware('permission:manage customers');
+    Route::resource('/suppliers', SupplierController::class)->middleware('permission:manage suppliers');
 
-    Route::get('/purchases/export/csv', [PurchaseController::class, 'exportCsv'])->name('purchases.export.csv');
-    Route::resource('/purchases', PurchaseController::class);
+    Route::resource('/users', UserController::class)->except(['show'])->middleware('permission:manage users');
+    Route::resource('/roles', RoleController::class)->except(['show'])->middleware('permission:manage roles');
+    Route::resource('/permissions', PermissionController::class)->except(['show'])->middleware('permission:manage permissions');
+    Route::resource('/shops', ShopController::class)->middleware('permission:manage shops');
+    Route::get('/shops/{shop}/executives', [ShopController::class, 'executives'])->name('shops.executives')->middleware('permission:manage shops');
+    Route::post('/shops/{shop}/executives', [ShopController::class, 'syncExecutives'])->name('shops.executives.sync')->middleware('permission:manage shops');
 
-    Route::resource('purchase-returns', PurchaseReturnController::class);
+    Route::get('/purchases/export/csv', [PurchaseController::class, 'exportCsv'])->name('purchases.export.csv')->middleware('permission:manage purchases');
+    Route::resource('/purchases', PurchaseController::class)->middleware('permission:manage purchases');
+
+    Route::resource('purchase-returns', PurchaseReturnController::class)->middleware('permission:manage purchase returns');
     Route::post('purchase-returns/{purchaseReturn}/approve', [PurchaseReturnController::class, 'approve'])
-        ->name('purchase-returns.approve');
+        ->name('purchase-returns.approve')->middleware('permission:manage purchase returns');
     Route::get('purchase-returns-export', [PurchaseReturnController::class, 'exportCsv'])
-        ->name('purchase-returns.export');
-    Route::resource('stocks', StockController::class);
+        ->name('purchase-returns.export')->middleware('permission:manage purchase returns');
+    Route::get('stocks/distribute/create', [StockController::class, 'distribute'])->name('stocks.distribute')->middleware('permission:distribute stock');
+    Route::post('stocks/distribute', [StockController::class, 'storeDistribution'])->name('stocks.distribute.store')->middleware('permission:distribute stock');
+    Route::resource('stocks', StockController::class)->middleware('permission:manage stock');
 
-    Route::resource('sales', SaleController::class);
-    Route::get('sales-export', [SaleController::class, 'exportCsv'])->name('sales.export');
-    Route::get('sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
+    Route::get('sales-export', [SaleController::class, 'exportCsv'])->name('sales.export')->middleware('permission:manage sales');
+    Route::get('sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice')->middleware('permission:manage sales');
+    Route::resource('sales', SaleController::class)->middleware('permission:manage sales');
 
-    Route::resource('sale-returns', SaleReturnController::class);
-    Route::post('sale-returns/{saleReturn}/approve', [SaleReturnController::class, 'approve'])->name('sale-returns.approve');
-    Route::get('sale-returns-export', [SaleReturnController::class, 'exportCsv'])->name('sale-returns.export');
+    Route::resource('sale-returns', SaleReturnController::class)->middleware('permission:manage sale returns');
+    Route::post('sale-returns/{saleReturn}/approve', [SaleReturnController::class, 'approve'])->name('sale-returns.approve')->middleware('permission:manage sale returns');
+    Route::get('sale-returns-export', [SaleReturnController::class, 'exportCsv'])->name('sale-returns.export')->middleware('permission:manage sale returns');
 
-    Route::get('expenses-export', [ExpenseController::class, 'exportCsv'])->name('expenses.export');
-Route::resource('expenses', ExpenseController::class);
+    Route::get('expenses-export', [ExpenseController::class, 'exportCsv'])->name('expenses.export')->middleware('permission:manage expenses');
+    Route::resource('expenses', ExpenseController::class)->middleware('permission:manage expenses');
 });
 
 Route::middleware('auth')->group(function () {

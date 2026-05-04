@@ -25,6 +25,7 @@ class SaleReturnController extends Controller
 
         $returns = SaleReturn::query()
             ->with(['sale', 'customer', 'items.product'])
+            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->whereHas('sale', fn($sale) => $sale->where('shop_id', auth()->user()->shop_id)))
             ->when($filters['return_status'], fn($q) => $q->where('return_status', $filters['return_status']))
             ->when($filters['return_type'], fn($q) => $q->where('return_type', $filters['return_type']))
             ->when($filters['search'], function ($q) use ($filters) {
@@ -59,6 +60,9 @@ class SaleReturnController extends Controller
         $sale = null;
         if ($request->filled('sale_id')) {
             $sale = Sale::with(['customer', 'items.product'])->find($request->sale_id);
+            if ($sale) {
+                $this->authorizeSaleShop($sale);
+            }
         }
 
         return view('sale_returns.create', compact('nextReference', 'customers', 'products', 'sale'));
@@ -67,6 +71,9 @@ class SaleReturnController extends Controller
     public function store(Request $request)
     {
         $validated = $this->validateReturn($request);
+        if (! empty($validated['sale_id'])) {
+            $this->authorizeSaleShop(Sale::findOrFail($validated['sale_id']));
+        }
 
         DB::transaction(function () use ($request, $validated) {
             $reference  = $validated['reference'] ?? SaleReturn::generateReference();
@@ -117,6 +124,7 @@ class SaleReturnController extends Controller
 
     public function show(SaleReturn $saleReturn)
     {
+        $this->authorizeReturnShop($saleReturn);
         $saleReturn->load(['sale', 'customer', 'items.product', 'items.saleItem']);
 
         return view('sale_returns.show', compact('saleReturn'));
@@ -124,6 +132,7 @@ class SaleReturnController extends Controller
 
     public function edit(SaleReturn $saleReturn)
     {
+        $this->authorizeReturnShop($saleReturn);
         $saleReturn->load(['items.product', 'items.saleItem', 'sale.items.product']);
 
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
@@ -135,6 +144,10 @@ class SaleReturnController extends Controller
     public function update(Request $request, SaleReturn $saleReturn)
     {
         $validated = $this->validateReturn($request, $saleReturn->id);
+        $this->authorizeReturnShop($saleReturn);
+        if (! empty($validated['sale_id'])) {
+            $this->authorizeSaleShop(Sale::findOrFail($validated['sale_id']));
+        }
         $oldStatus = $saleReturn->return_status;
 
         DB::transaction(function () use ($request, $saleReturn, $validated, $oldStatus) {
@@ -191,6 +204,7 @@ class SaleReturnController extends Controller
 
     public function destroy(SaleReturn $saleReturn)
     {
+        $this->authorizeReturnShop($saleReturn);
         DB::transaction(function () use ($saleReturn) {
             $saleReturn->load('items');
 
@@ -221,6 +235,7 @@ class SaleReturnController extends Controller
 
     public function approve(SaleReturn $saleReturn)
     {
+        $this->authorizeReturnShop($saleReturn);
         if ($saleReturn->return_status === 'approved') {
             return back()->with('error', 'Return is already approved.');
         }
@@ -239,6 +254,7 @@ class SaleReturnController extends Controller
         $fileName = 'sale-returns-' . now()->format('Y-m-d-H-i-s') . '.csv';
 
         $rows = SaleReturn::with(['sale', 'customer', 'items.product'])
+            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->whereHas('sale', fn($sale) => $sale->where('shop_id', auth()->user()->shop_id)))
             ->when($request->return_status, fn($q) => $q->where('return_status', $request->return_status))
             ->when($request->return_type, fn($q) => $q->where('return_type', $request->return_type))
             ->latest()
@@ -297,11 +313,11 @@ class SaleReturnController extends Controller
 
     private function applyReturnEffects(SaleReturn $ret): void
     {
-        $ret->loadMissing('items');
+        $ret->loadMissing(['items', 'sale']);
 
         foreach ($ret->items as $item) {
             $stock = Stock::firstOrCreate(
-                ['product_id' => $item->product_id],
+                ['product_id' => $item->product_id, 'shop_id' => $ret->sale?->shop_id],
                 ['stock_qty'  => 0]
             );
 
@@ -335,10 +351,12 @@ class SaleReturnController extends Controller
 
     private function reverseReturnEffects(SaleReturn $ret): void
     {
-        $ret->loadMissing('items');
+        $ret->loadMissing(['items', 'sale']);
 
         foreach ($ret->items as $item) {
-            $stock = Stock::where('product_id', $item->product_id)->first();
+            $stock = Stock::where('product_id', $item->product_id)
+                ->where('shop_id', $ret->sale?->shop_id)
+                ->first();
 
             if ($stock) {
                 $stock->decrement('stock_qty', (float) $item->qty);
@@ -403,5 +421,24 @@ class SaleReturnController extends Controller
             'items.*.qty'           => 'required|numeric|min:0.01',
             'items.*.price_on_sale' => 'required|numeric|min:0',
         ]);
+    }
+
+    private function authorizeReturnShop(SaleReturn $saleReturn): void
+    {
+        if (auth()->user()->canManageAllShops()) {
+            return;
+        }
+
+        $saleReturn->loadMissing('sale');
+        abort_unless($saleReturn->sale?->shop_id === auth()->user()->shop_id, 403);
+    }
+
+    private function authorizeSaleShop(Sale $sale): void
+    {
+        if (auth()->user()->canManageAllShops()) {
+            return;
+        }
+
+        abort_unless($sale->shop_id === auth()->user()->shop_id, 403);
     }
 }

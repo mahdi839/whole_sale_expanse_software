@@ -28,15 +28,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if (!auth()->user()->is_admin) {
-            auth()->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            return redirect()->route('login')
-                ->withErrors(['email' => 'You do not have admin access.']);
-        }
-
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

@@ -27,6 +27,11 @@
                 @method('PUT')
 
                 <div class="p-4 sm:p-6">
+                    @if($errors->any())
+                        <div class="mb-4 px-4 py-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl">
+                            {{ $errors->first() }}
+                        </div>
+                    @endif
                     @include('sales._form', ['sale' => $sale])
                 </div>
 

@@ -22,6 +22,11 @@
             <form method="POST" action="{{ route('sales.store') }}">
                 @csrf
                 <div class="p-6">
+                    @if($errors->any())
+                        <div class="mb-4 px-4 py-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl">
+                            {{ $errors->first() }}
+                        </div>
+                    @endif
                     @include('sales._form', ['nextReference' => $nextReference])
                 </div>
                 <div class="flex justify-end gap-2.5 px-6 py-4 border-t border-gray-100 bg-gray-50/60">

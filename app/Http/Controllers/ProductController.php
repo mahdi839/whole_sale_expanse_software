@@ -35,7 +35,7 @@ class ProductController extends Controller
             'product_name' => 'required|string|max:255',
             'sku' => 'required|string|max:100|unique:products,sku',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'stock_qty' => 'required|integer|min:0',  // add this
+            'stock_qty' => 'required|numeric|min:0',
         ]);
 
         if ($request->hasFile('image')) {
@@ -68,7 +68,7 @@ class ProductController extends Controller
             'product_name' => 'required|string|max:255',
             'sku' => 'required|string|max:100|unique:products,sku,'.$product->id,
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'stock_qty' => 'required|integer|min:0',  // add this
+            'stock_qty' => 'required|numeric|min:0',
         ]);
 
         if ($request->hasFile('image')) {

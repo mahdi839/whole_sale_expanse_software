@@ -16,7 +16,7 @@ class AdminMiddleware
     public function handle(Request $request, Closure $next): Response
     {
 
-     if (!auth()->check() || !auth()->user()->is_admin) {
+     if (!auth()->check() || (! auth()->user()->is_admin && ! auth()->user()->hasRole('Super Admin'))) {
             // Log them out and redirect to login with an error message
             auth()->logout();
             
