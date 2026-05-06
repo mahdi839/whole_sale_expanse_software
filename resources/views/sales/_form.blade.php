@@ -632,7 +632,7 @@ document.addEventListener('click', e => {
 function attachDropdownEvents() {
     dropdown.querySelectorAll('.search-option').forEach(opt => {
         opt.addEventListener('click', () => {
-            addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, parseFloat(opt.dataset.price), getAvailableStock(opt.dataset.id));
+            addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, toNumber(opt.dataset.price), getAvailableStock(opt.dataset.id));
             searchInput.value = '';
             dropdown.classList.remove('open');
         });
@@ -643,6 +643,7 @@ function attachDropdownEvents() {
 //  Cart logic
 // ============================================================
 function addToCart(id, name, sku, price, stockQty = 0) {
+    price = toNumber(price);
     const existing = cartItems.find(i => i.product_id == id);
     if (existing) {
         existing.qty += 1;
@@ -673,12 +674,12 @@ function renderCart() {
         <input type="number" name="items[${idx}][qty]" class="item-qty" data-idx="${idx}" value="${item.qty}" step="0.01" min="0.01">
         <button type="button" class="btn-plus" data-idx="${idx}">+</button>
     </div>
-    <input type="number"
+    <input type="text"
            name="items[${idx}][price_on_sale]"
            class="price-edit item-price"
            data-idx="${idx}"
-           value="${item.price_on_sale.toFixed(2)}"
-           step="0.01" min="0" title="Unit price">
+           value="${formatMoney(item.price_on_sale)}"
+           inputmode="decimal" autocomplete="off" title="Unit price">
     <div class="line-total item-total">৳${item.line_total.toFixed(2)}</div>
     <button type="button" class="btn-remove" data-idx="${idx}" title="Remove">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -714,7 +715,8 @@ function attachCardEvents() {
 
     cartList.querySelectorAll('.item-price').forEach(inp => inp.addEventListener('change', e => {
         const i = +e.target.dataset.idx;
-        cartItems[i].price_on_sale = parseFloat(e.target.value) || 0;
+        cartItems[i].price_on_sale = toNumber(e.target.value);
+        e.target.value = formatMoney(cartItems[i].price_on_sale);
         updateItem(i);
     }));
 
@@ -724,7 +726,7 @@ function attachCardEvents() {
 }
 
 function updateItem(idx) {
-    cartItems[idx].line_total = cartItems[idx].qty * cartItems[idx].price_on_sale;
+    cartItems[idx].line_total = toNumber(cartItems[idx].qty) * toNumber(cartItems[idx].price_on_sale);
     const qtyInp = cartList.querySelector(`.item-qty[data-idx="${idx}"]`);
     if (qtyInp) qtyInp.value = cartItems[idx].qty;
     const totalEl = cartList.querySelectorAll('.item-total')[idx];
@@ -776,6 +778,12 @@ paidInput.addEventListener('input', () => {
         let p   = Math.min(parseFloat(paidInput.value) || 0, g);
         dueInput.value = (g - p).toFixed(2);
     }
+});
+
+document.querySelector('form')?.addEventListener('submit', () => {
+    cartList.querySelectorAll('.item-price').forEach(inp => {
+        inp.value = formatMoney(toNumber(inp.value));
+    });
 });
 
 shopInput?.addEventListener('change', () => {
@@ -851,6 +859,19 @@ function escHtml(s) {
     return String(s).replace(/[&<>"']/g, c =>
         ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])
     );
+}
+
+function toNumber(value) {
+    const normalized = String(value ?? '')
+        .replace(/[^\d.,-]/g, '')
+        .replace(',', '.');
+
+    const number = Number.parseFloat(normalized);
+    return Number.isFinite(number) ? number : 0;
+}
+
+function formatMoney(value) {
+    return toNumber(value).toFixed(2);
 }
 
 function getAvailableStock(productId) {

@@ -51,7 +51,7 @@
                     <thead>
                         <tr class="border-b border-gray-100 bg-gray-50">
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">#</th>
-                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Product ID</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Product Name</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Stock Qty</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Created</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Actions</th>
