@@ -7,23 +7,209 @@
 
 @php $product = $product ?? null; @endphp
 
+<style>
+    /* ── Premium Form Variables ── */
+    .pf-field { display: flex; flex-direction: column; gap: 6px; }
+
+    .pf-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+    .pf-label .req {
+        color: #ef4444;
+        margin-left: 2px;
+        font-size: 13px;
+        vertical-align: middle;
+        line-height: 1;
+    }
+
+    /* Base input */
+    .pf-input {
+        width: 100%;
+        padding: 11px 14px;
+        font-size: 14px;
+        color: #111827;
+        background: #fff;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        outline: none;
+        box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    .pf-input::placeholder { color: #c4c9d4; }
+    .pf-input:hover:not(:focus) { border-color: #d1d5db; }
+    .pf-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3.5px rgba(59,130,246,.13), 0 1px 2px rgba(0,0,0,.04);
+        background: #fafcff;
+    }
+    .pf-input.pf-error {
+        border-color: #fca5a5;
+        background: #fff8f8;
+    }
+    .pf-input.pf-error:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3.5px rgba(239,68,68,.11);
+    }
+    .pf-input.pf-mono { font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', monospace; letter-spacing: 0.03em; }
+
+    /* Hint text */
+    .pf-hint {
+        font-size: 11.5px;
+        color: #9ca3af;
+        line-height: 1.4;
+    }
+
+    /* Error message */
+    .pf-err-msg {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+        color: #dc2626;
+        font-weight: 500;
+    }
+    .pf-err-msg svg { flex-shrink: 0; opacity: .8; }
+
+    /* ── Stock stepper ── */
+    .pf-stepper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .pf-step-btn {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 9px;
+        background: #f9fafb;
+        color: #374151;
+        font-size: 18px;
+        font-weight: 400;
+        cursor: pointer;
+        transition: background 0.14s, border-color 0.14s, transform 0.1s;
+        user-select: none;
+        line-height: 1;
+    }
+    .pf-step-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+    .pf-step-btn:active { transform: scale(.93); }
+    .pf-step-input {
+        width: 88px;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 500;
+        color: #111827;
+        padding: 8px 10px;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        background: #fff;
+        outline: none;
+        transition: border-color 0.18s, box-shadow 0.18s;
+        box-shadow: 0 1px 2px rgba(0,0,0,.04);
+        -moz-appearance: textfield;
+    }
+    .pf-step-input::-webkit-inner-spin-button,
+    .pf-step-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .pf-step-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3.5px rgba(59,130,246,.13);
+    }
+    .pf-step-input.pf-error { border-color: #fca5a5; background: #fff8f8; }
+
+    /* ── Image upload zone ── */
+    .pf-current-img {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        background: #f9fafb;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+    }
+    .pf-current-img img {
+        width: 52px;
+        height: 52px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1.5px solid #e5e7eb;
+    }
+    .pf-current-img-label { font-size: 12px; font-weight: 600; color: #374151; }
+    .pf-current-img-sub   { font-size: 11.5px; color: #9ca3af; margin-top: 1px; }
+
+    .pf-dropzone {
+        position: relative;
+        border: 1.5px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 28px 20px;
+        text-align: center;
+        cursor: pointer;
+        background: #fafafa;
+        transition: border-color 0.18s, background 0.18s;
+    }
+    .pf-dropzone:hover,
+    .pf-dropzone.pf-dz-active {
+        border-color: #3b82f6;
+        background: #f0f7ff;
+    }
+    .pf-dz-icon {
+        width: 38px;
+        height: 38px;
+        margin: 0 auto 10px;
+        color: #d1d5db;
+        transition: color 0.18s;
+    }
+    .pf-dropzone:hover .pf-dz-icon,
+    .pf-dropzone.pf-dz-active .pf-dz-icon { color: #93c5fd; }
+    .pf-dz-title {
+        font-size: 13.5px;
+        font-weight: 500;
+        color: #4b5563;
+    }
+    .pf-dz-sub {
+        font-size: 11.5px;
+        color: #9ca3af;
+        margin-top: 3px;
+    }
+    #new-preview {
+        display: none;
+        margin: 0 auto 10px;
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 1.5px solid #e5e7eb;
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    #file-name {
+        display: none;
+        font-size: 12px;
+        color: #3b82f6;
+        font-weight: 500;
+        margin-top: 6px;
+    }
+</style>
+
 {{-- Product Name --}}
-<div class="space-y-1.5">
-    <label for="product_name" class="block text-sm font-medium text-gray-700">
-        Product Name <span class="text-red-500">*</span>
+<div class="pf-field">
+    <label for="product_name" class="pf-label">
+        Product Name<span class="req">*</span>
     </label>
-    <input type="text" id="product_name" name="product_name" value="{{ old('product_name', $product?->product_name) }}"
+    <input
+        type="text" id="product_name" name="product_name"
+        value="{{ old('product_name', $product?->product_name) }}"
         placeholder="e.g. Wireless Mouse"
-        class="w-full px-3.5 py-2.5 text-sm border rounded-lg transition
-               @error('product_name') border-red-400 bg-red-50 focus:ring-red-400
-               @else border-gray-200 focus:ring-blue-500 @enderror
-               focus:outline-none focus:ring-2 focus:border-transparent" />
+        class="pf-input @error('product_name') pf-error @enderror"
+    />
     @error('product_name')
-        <p class="flex items-center gap-1 text-xs text-red-600">
-            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                    clip-rule="evenodd" />
+        <p class="pf-err-msg">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
             </svg>
             {{ $message }}
         </p>
@@ -31,56 +217,46 @@
 </div>
 
 {{-- SKU --}}
-<div class="space-y-1.5">
-    <label for="sku" class="block text-sm font-medium text-gray-700">
-        SKU / Product Code <span class="text-red-500">*</span>
+<div class="pf-field">
+    <label for="sku" class="pf-label">
+        SKU / Product Code<span class="req">*</span>
     </label>
-    <input type="text" id="sku" name="sku" value="{{ old('sku', $product?->sku) }}"
+    <input
+        type="text" id="sku" name="sku"
+        value="{{ old('sku', $product?->sku) }}"
         placeholder="e.g. WM-001-BLK"
-        class="w-full px-3.5 py-2.5 text-sm font-mono border rounded-lg transition
-               @error('sku') border-red-400 bg-red-50 focus:ring-red-400
-               @else border-gray-200 focus:ring-blue-500 @enderror
-               focus:outline-none focus:ring-2 focus:border-transparent" />
+        class="pf-input pf-mono @error('sku') pf-error @enderror"
+    />
     @error('sku')
-        <p class="flex items-center gap-1 text-xs text-red-600">
-            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                    clip-rule="evenodd" />
+        <p class="pf-err-msg">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
             </svg>
             {{ $message }}
         </p>
     @enderror
-    <p class="text-xs text-gray-400">Must be unique. Example: CAT-ELECTRONICS-001</p>
+    <p class="pf-hint">Must be unique · e.g. CAT-ELECTRONICS-001</p>
 </div>
 
 {{-- Stock Quantity --}}
-<div class="space-y-1.5">
-    <label for="stock_qty" class="block text-sm font-medium text-gray-700">
-        Stock Quantity <span class="text-red-500">*</span>
+<div class="pf-field">
+    <label for="stock_qty" class="pf-label">
+        Stock Quantity<span class="req">*</span>
     </label>
-    <div class="flex items-center gap-2">
-        <button type="button" onclick="adjustStock(-1)"
-            class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition text-lg font-medium">
-            −
-        </button>
-        <input type="number" id="stock_qty" name="stock_qty"
-            value="{{ old('stock_qty', $product?->stock?->stock_qty ?? 0) }}" min="0"
-            class="w-28 text-center px-3.5 py-2.5 text-sm border rounded-lg transition
-                   @error('stock_qty') border-red-400 bg-red-50 focus:ring-red-400
-                   @else border-gray-200 focus:ring-blue-500 @enderror
-                   focus:outline-none focus:ring-2 focus:border-transparent" />
-        <button type="button" onclick="adjustStock(1)"
-            class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition text-lg font-medium">
-            +
-        </button>
+    <div class="pf-stepper">
+        <button type="button" onclick="adjustStock(-1)" class="pf-step-btn" aria-label="Decrease">−</button>
+        <input
+            type="number" id="stock_qty" name="stock_qty"
+            value="{{ old('stock_qty', $product?->stock?->stock_qty ?? 0) }}"
+            min="0"
+            class="pf-step-input @error('stock_qty') pf-error @enderror"
+        />
+        <button type="button" onclick="adjustStock(1)" class="pf-step-btn" aria-label="Increase">+</button>
     </div>
     @error('stock_qty')
-        <p class="flex items-center gap-1 text-xs text-red-600">
-            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                    clip-rule="evenodd" />
+        <p class="pf-err-msg">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
             </svg>
             {{ $message }}
         </p>
@@ -88,50 +264,46 @@
 </div>
 
 {{-- Image upload --}}
-<div class="space-y-1.5">
-    <label for="image" class="block text-sm font-medium text-gray-700">Product Image</label>
+<div class="pf-field">
+    <label class="pf-label">Product Image</label>
 
     {{-- Current image preview (edit mode) --}}
     @if ($product?->image)
-        <div class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-            <img src="{{ Storage::url($product->image) }}" alt="Current image"
-                class="w-14 h-14 object-cover rounded-lg border border-gray-200" id="current-preview" />
+        <div class="pf-current-img">
+            <img src="{{ Storage::url($product->image) }}" alt="Current image" id="current-preview" />
             <div>
-                <p class="text-xs font-medium text-gray-600">Current image</p>
-                <p class="text-xs text-gray-400">Upload a new one to replace it</p>
+                <p class="pf-current-img-label">Current image</p>
+                <p class="pf-current-img-sub">Upload a new file to replace it</p>
             </div>
         </div>
     @endif
 
     {{-- Drop zone --}}
-    <div id="drop-zone"
-        class="relative border-2 border-dashed border-gray-200 rounded-xl p-6 text-center
-               hover:border-blue-400 hover:bg-blue-50/30 transition-colors cursor-pointer"
-        onclick="document.getElementById('image').click()">
-        <input type="file" id="image" name="image" accept="image/jpg,image/jpeg,image/png,image/webp"
-            class="sr-only" onchange="previewImage(event)" />
+    <div id="drop-zone" class="pf-dropzone" onclick="document.getElementById('image').click()">
+        <input
+            type="file" id="image" name="image"
+            accept="image/jpg,image/jpeg,image/png,image/webp"
+            class="sr-only"
+            onchange="previewImage(event)"
+        />
 
-        {{-- Preview (shown after selection) --}}
-        <img id="new-preview" class="hidden mx-auto mb-3 w-24 h-24 object-cover rounded-xl border border-gray-200" />
+        <img id="new-preview" alt="New preview" />
 
         <div id="drop-prompt">
-            <svg class="w-8 h-8 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5"
-                viewBox="0 0 24 24">
-                <path
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <svg class="pf-dz-icon" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+                <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
-            <p class="text-sm text-gray-500">Click to upload or drag & drop</p>
-            <p class="text-xs text-gray-400 mt-1">JPG, PNG, WEBP · max 2 MB</p>
+            <p class="pf-dz-title">Click to upload or drag &amp; drop</p>
+            <p class="pf-dz-sub">JPG, PNG, WEBP &middot; max 2 MB</p>
         </div>
-        <p id="file-name" class="hidden text-xs text-blue-600 mt-2 font-medium"></p>
+
+        <p id="file-name"></p>
     </div>
 
     @error('image')
-        <p class="flex items-center gap-1 text-xs text-red-600">
-            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                    clip-rule="evenodd" />
+        <p class="pf-err-msg">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
             </svg>
             {{ $message }}
         </p>
@@ -145,16 +317,16 @@
             if (!file) return;
 
             const preview = document.getElementById('new-preview');
-            const prompt = document.getElementById('drop-prompt');
-            const name = document.getElementById('file-name');
+            const prompt  = document.getElementById('drop-prompt');
+            const name    = document.getElementById('file-name');
 
             const reader = new FileReader();
             reader.onload = (e) => {
                 preview.src = e.target.result;
-                preview.classList.remove('hidden');
+                preview.style.display = 'block';
                 prompt.classList.add('hidden');
                 name.textContent = file.name;
-                name.classList.remove('hidden');
+                name.style.display = 'block';
             };
             reader.readAsDataURL(file);
         }
@@ -163,19 +335,17 @@
         const zone = document.getElementById('drop-zone');
         zone.addEventListener('dragover', (e) => {
             e.preventDefault();
-            zone.classList.add('border-blue-400', 'bg-blue-50/30');
+            zone.classList.add('pf-dz-active');
         });
         zone.addEventListener('dragleave', () => {
-            zone.classList.remove('border-blue-400', 'bg-blue-50/30');
+            zone.classList.remove('pf-dz-active');
         });
         zone.addEventListener('drop', (e) => {
             e.preventDefault();
-            zone.classList.remove('border-blue-400', 'bg-blue-50/30');
+            zone.classList.remove('pf-dz-active');
             const input = document.getElementById('image');
             input.files = e.dataTransfer.files;
-            previewImage({
-                target: input
-            });
+            previewImage({ target: input });
         });
 
         function adjustStock(delta) {
