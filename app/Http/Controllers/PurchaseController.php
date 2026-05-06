@@ -146,7 +146,7 @@ class PurchaseController extends Controller
 
     public function edit(Purchase $purchase)
     {
-        $purchase->load('items.product');
+        $purchase->load('items.product.stock');
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
         $products = Product::with('stock')
             ->orderBy('product_name')

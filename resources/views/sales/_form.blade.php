@@ -9,6 +9,7 @@
                 'product_id'    => $item->product_id,
                 'product_name'  => $item->product->product_name ?? 'Unknown',
                 'sku'           => $item->product->sku ?? '',
+                'stock_qty'     => (float) ($item->product?->stocks?->firstWhere('shop_id', $sale->shop_id)?->stock_qty ?? 0),
                 'qty'           => (float) $item->qty,
                 'price_on_sale' => (float) $item->price_on_sale,
                 'line_total'    => (float) $item->line_total,
@@ -171,6 +172,13 @@
         color: #94a3b8;
         font-family: monospace;
         word-break: break-all;
+    }
+
+    .cart-card .prod-stock {
+        font-size: 11px;
+        color: #16a34a;
+        font-weight: 600;
+        margin-top: 2px;
     }
 
     .cart-card .price-col {
@@ -561,9 +569,18 @@ let cartItems = @json($initialCart);
 
 const ALL_PRODUCTS = [
     @foreach($products as $p)
-    { id: "{{ $p->id }}", name: @json($p->product_name), sku: "{{ $p->sku }}", price: {{ $p->selling_price ?? 0 }} },
+    {
+        id: "{{ $p->id }}",
+        name: @json($p->product_name),
+        sku: "{{ $p->sku }}",
+        price: {{ $p->selling_price ?? 0 }},
+        stocks: @json($p->stocks->mapWithKeys(fn($stock) => [(string) $stock->shop_id => (float) $stock->stock_qty]))
+    },
     @endforeach
 ];
+
+const shopInput = document.querySelector('[name="shop_id"]');
+cartItems = cartItems.map(item => ({ ...item, stock_qty: getAvailableStock(item.product_id) }));
 
 // ============================================================
 //  DOM refs
@@ -597,7 +614,7 @@ searchInput.addEventListener('input', () => {
             <div class="search-option" data-id="${p.id}" data-name="${escHtml(p.name)}" data-sku="${escHtml(p.sku)}" data-price="${p.price}">
                 <div style="flex:1;min-width:0">
                     <div style="font-weight:600;color:#1e293b;word-break:break-word">${escHtml(p.name)}</div>
-                    <div class="sku">${escHtml(p.sku)}</div>
+                    <div class="sku">${escHtml(p.sku)} · Stock: ${formatQty(getAvailableStock(p.id))}</div>
                 </div>
                 <div style="font-size:12px;font-weight:600;color:#2563eb;flex-shrink:0">৳${p.price.toFixed(2)}</div>
             </div>`).join('')
@@ -615,7 +632,7 @@ document.addEventListener('click', e => {
 function attachDropdownEvents() {
     dropdown.querySelectorAll('.search-option').forEach(opt => {
         opt.addEventListener('click', () => {
-            addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, parseFloat(opt.dataset.price));
+            addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, parseFloat(opt.dataset.price), getAvailableStock(opt.dataset.id));
             searchInput.value = '';
             dropdown.classList.remove('open');
         });
@@ -625,13 +642,14 @@ function attachDropdownEvents() {
 // ============================================================
 //  Cart logic
 // ============================================================
-function addToCart(id, name, sku, price) {
+function addToCart(id, name, sku, price, stockQty = 0) {
     const existing = cartItems.find(i => i.product_id == id);
     if (existing) {
         existing.qty += 1;
+        existing.stock_qty = stockQty;
         existing.line_total = existing.qty * existing.price_on_sale;
     } else {
-        cartItems.push({ product_id: id, product_name: name, sku: sku || '', qty: 1, price_on_sale: price, line_total: price });
+        cartItems.push({ product_id: id, product_name: name, sku: sku || '', stock_qty: stockQty, qty: 1, price_on_sale: price, line_total: price });
     }
     renderCart();
 }
@@ -648,6 +666,7 @@ function renderCart() {
     <div class="prod-info">
         <div class="prod-name">${escHtml(item.product_name)}</div>
         <div class="prod-sku">${escHtml(item.sku)}</div>
+        <div class="prod-stock">Available: ${formatQty(item.stock_qty)}</div>
     </div>
     <div class="qty-stepper">
         <button type="button" class="btn-minus" data-idx="${idx}">−</button>
@@ -759,6 +778,11 @@ paidInput.addEventListener('input', () => {
     }
 });
 
+shopInput?.addEventListener('change', () => {
+    cartItems = cartItems.map(item => ({ ...item, stock_qty: getAvailableStock(item.product_id) }));
+    renderCart();
+});
+
 function getGrand() {
     return Math.max(0, cartItems.reduce((s, i) => s + i.line_total, 0) - (parseFloat(discountInput.value) || 0));
 }
@@ -827,6 +851,18 @@ function escHtml(s) {
     return String(s).replace(/[&<>"']/g, c =>
         ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])
     );
+}
+
+function getAvailableStock(productId) {
+    const product = ALL_PRODUCTS.find(p => String(p.id) === String(productId));
+    const shopId = shopInput?.value || '';
+
+    return Number(product?.stocks?.[shopId] ?? 0);
+}
+
+function formatQty(qty) {
+    const value = Number(qty) || 0;
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
 // ============================================================

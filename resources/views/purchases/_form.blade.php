@@ -9,6 +9,7 @@
                     'product_id' => $item->product_id,
                     'product_name' => $item->product->product_name ?? 'Unknown',
                     'sku' => $item->product->sku ?? '',
+                    'stock_qty' => (float) ($item->product?->stock?->stock_qty ?? 0),
                     'qty' => (float) $item->qty,
                     'price' => (float) $item->price,
                     'line_total' => (float) $item->line_total,
@@ -209,6 +210,13 @@
         color: #94a3b8;
         font-family: monospace;
         word-break: break-all;
+    }
+
+    .cart-card .prod-stock {
+        font-size: 11px;
+        color: #16a34a;
+        font-weight: 600;
+        margin-top: 2px;
     }
 
     .cart-card .price-col {
@@ -839,7 +847,8 @@
                     id: "{{ $p->id }}",
                     name: @json($p->product_name),
                     sku: "{{ $p->sku }}",
-                    price: {{ $p->buying_price ?? 0 }}
+                    price: {{ $p->buying_price ?? 0 }},
+                    stock_qty: {{ (float) ($p->stock?->stock_qty ?? 0) }}
                 },
             @endforeach
         ];
@@ -894,7 +903,7 @@
                          data-price="${p.price}">
                         <div style="flex:1;min-width:0">
                             <div style="font-weight:600;color:#1e293b;word-break:break-word">${escHtml(p.name)}</div>
-                            <div class="sku">${escHtml(p.sku)}</div>
+                            <div class="sku">${escHtml(p.sku)} · Stock: ${formatQty(p.stock_qty)}</div>
                         </div>
                         <div style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">৳${Number(p.price).toFixed(2)}</div>
                     </div>
@@ -913,7 +922,8 @@
         function attachDropdownEvents() {
             dropdown.querySelectorAll('.search-option').forEach(opt => {
                 opt.addEventListener('click', () => {
-                    addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, parseFloat(opt.dataset.price));
+                    const product = ALL_PRODUCTS.find(p => String(p.id) === String(opt.dataset.id));
+                    addToCart(opt.dataset.id, opt.dataset.name, opt.dataset.sku, parseFloat(opt.dataset.price), product?.stock_qty ?? 0);
                     searchInput.value = '';
                     dropdown.classList.remove('open');
                 });
@@ -923,16 +933,18 @@
         // ─────────────────────────────────────────────────────────────
         // Cart logic
         // ─────────────────────────────────────────────────────────────
-        function addToCart(id, name, sku, price) {
+        function addToCart(id, name, sku, price, stockQty = 0) {
             const existing = cartItems.find(i => String(i.product_id) === String(id));
             if (existing) {
                 existing.qty += 1;
+                existing.stock_qty = stockQty;
                 existing.line_total = existing.qty * existing.price;
             } else {
                 cartItems.push({
                     product_id: id,
                     product_name: name,
                     sku: sku || '',
+                    stock_qty: stockQty,
                     qty: 1,
                     price,
                     line_total: price,
@@ -955,6 +967,7 @@
                     <div class="prod-info">
                         <div class="prod-name">${escHtml(item.product_name)}</div>
                         <div class="prod-sku">${escHtml(item.sku)}</div>
+                        <div class="prod-stock">Available: ${formatQty(item.stock_qty)}</div>
                     </div>
 
                     <div class="qty-stepper">
@@ -1188,6 +1201,11 @@
             return String(s).replace(/[&<>"']/g, c => (
                 { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
             ));
+        }
+
+        function formatQty(qty) {
+            const value = Number(qty) || 0;
+            return Number.isInteger(value) ? String(value) : value.toFixed(2);
         }
 
         // ─────────────────────────────────────────────────────────────

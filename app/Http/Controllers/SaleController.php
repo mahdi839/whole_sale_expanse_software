@@ -88,7 +88,7 @@ class SaleController extends Controller
 
         $nextReference = Sale::generateReference();
         $customers     = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
-        $products      = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
+        $products      = Product::with('stocks')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
         $shops = auth()->user()->canManageAllShops()
             ? Shop::where('is_active', true)->orderBy('name')->get()
             : collect([auth()->user()->shop]);
@@ -190,9 +190,9 @@ class SaleController extends Controller
     public function edit(Sale $sale)
     {
         $this->authorizeSaleShop($sale);
-        $sale->load('items.product');
+        $sale->load('items.product.stocks');
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
-        $products  = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
+        $products  = Product::with('stocks')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
         $shops = auth()->user()->canManageAllShops()
             ? Shop::where('is_active', true)->orderBy('name')->get()
             : collect([auth()->user()->shop]);
