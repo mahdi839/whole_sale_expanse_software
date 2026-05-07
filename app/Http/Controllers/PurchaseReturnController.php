@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ManualDue;
 use App\Models\Purchase;
 use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnItem;
 use App\Models\Stock;
 use App\Models\Supplier;
+use App\Services\CashLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -17,11 +19,12 @@ class PurchaseReturnController extends Controller
 {
     public function index(Request $request)
     {
+        $today = now()->toDateString();
         $filters = [
             'search'        => $request->input('search'),
             'return_status' => $request->input('return_status'),
             'return_type'   => $request->input('return_type'),
-            'date'          => $request->input('date'),
+            'date'          => $request->input('date', $today),
         ];
 
         $returns = PurchaseReturn::query()
@@ -44,7 +47,22 @@ class PurchaseReturnController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $totals = PurchaseReturn::selectRaw('
+        $totals = PurchaseReturn::query()
+            ->when($filters['return_status'], fn($q) => $q->where('return_status', $filters['return_status']))
+            ->when($filters['return_type'], fn($q) => $q->where('return_type', $filters['return_type']))
+            ->when($filters['date'], fn($q) => $q->whereDate('date', $filters['date']))
+            ->when($filters['search'], function ($q) use ($filters) {
+                $s = $filters['search'];
+
+                $q->where(function ($sub) use ($s) {
+                    $sub->where('reference', 'like', "%{$s}%")
+                        ->orWhere('bill_no', 'like', "%{$s}%")
+                        ->orWhere('cash_memo', 'like', "%{$s}%")
+                        ->orWhereHas('supplier', fn($supplier) => $supplier->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('items.product', fn($product) => $product->where('product_name', 'like', "%{$s}%"));
+                });
+            })
+            ->selectRaw('
             count(*) as total_returns,
             sum(subtotal) as total_subtotal,
             sum(return_amount) as total_return_amount
@@ -119,7 +137,7 @@ class PurchaseReturnController extends Controller
 
             if ($purchaseReturn->return_status === 'approved') {
                 $this->applyReturnEffects($purchaseReturn->fresh('items'));
-                $purchaseReturn->purchase->update([
+                $purchaseReturn->purchase?->update([
                     'purchase_status' => 'returned',
                 ]);
             }
@@ -162,7 +180,7 @@ class PurchaseReturnController extends Controller
 
             if ($oldStatus === 'approved') {
                 $this->reverseReturnEffects($purchaseReturn->load('items'));
-                $purchaseReturn->purchase->update([
+                $purchaseReturn->purchase?->update([
                     'purchase_status' => 'returned',
                 ]);
             }
@@ -334,6 +352,13 @@ class PurchaseReturnController extends Controller
 
         $this->syncSupplierFinancials($ret->supplier_id);
         $this->syncPurchaseStatus($ret);
+
+        app(CashLedger::class)->syncSource('purchase_return', $ret->id, 'in', 'purchase_return_refund', (float) $ret->return_amount, [
+            'date' => $ret->date?->toDateString() ?? now()->toDateString(),
+            'payment_method' => $ret->payment_method,
+            'supplier_id' => $ret->supplier_id,
+            'note' => 'Purchase return refund: ' . $ret->reference,
+        ]);
     }
 
     private function reverseReturnEffects(PurchaseReturn $ret): void
@@ -351,6 +376,7 @@ class PurchaseReturnController extends Controller
 
         $this->syncSupplierFinancials($ret->supplier_id);
         $this->syncPurchaseStatus($ret);
+        app(CashLedger::class)->deleteSource('purchase_return', $ret->id);
     }
 
     private function syncSupplierFinancials(?int $supplierId): void
@@ -387,11 +413,14 @@ class PurchaseReturnController extends Controller
 
         $netPurchase = max(0, $grossPurchase - $totalReturnAmount);
         $netPaid     = max(0, $grossPaid - $totalRefunded);
+        $manualDue   = (float) ManualDue::where('party_type', 'supplier')
+            ->where('supplier_id', $supplierId)
+            ->sum('amount');
 
         $supplier->update([
-            'total_purchase' => $netPurchase,
+            'total_purchase' => $netPurchase + $manualDue,
             'total_paid'     => $netPaid,
-            'due'            => max(0, $netPurchase - $netPaid),
+            'due'            => max(0, ($netPurchase + $manualDue) - $netPaid),
         ]);
     }
 

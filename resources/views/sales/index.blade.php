@@ -47,12 +47,12 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-3.5">
                     <div>
                         <label class="block text-xs text-gray-400 mb-1 ml-0.5">From</label>
-                        <input type="date" name="date_from" value="{{ request('date_from') }}"
+                        <input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
                             class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 mb-1 ml-0.5">To</label>
-                        <input type="date" name="date_to" value="{{ request('date_to') }}"
+                        <input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
                             class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
                     </div>
                 </div>

@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\CashTransactionController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DueManagementController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -59,6 +61,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('expenses-export', [ExpenseController::class, 'exportCsv'])->name('expenses.export')->middleware('permission:manage expenses');
     Route::resource('expenses', ExpenseController::class)->middleware('permission:manage expenses');
+
+    Route::resource('cash-transactions', CashTransactionController::class)
+        ->parameters(['cash-transactions' => 'cashTransaction'])
+        ->except(['show'])
+        ->middleware('permission:manage cash');
+    Route::get('dues', [DueManagementController::class, 'index'])->name('dues.index')->middleware('permission:manage dues');
+    Route::post('dues', [DueManagementController::class, 'store'])->name('dues.store')->middleware('permission:manage dues');
+    Route::get('dues/{manualDue}/edit', [DueManagementController::class, 'edit'])->name('dues.edit')->middleware('permission:manage dues');
+    Route::put('dues/{manualDue}', [DueManagementController::class, 'update'])->name('dues.update')->middleware('permission:manage dues');
+    Route::delete('dues/{manualDue}', [DueManagementController::class, 'destroy'])->name('dues.destroy')->middleware('permission:manage dues');
 });
 
 Route::middleware('auth')->group(function () {

@@ -9,6 +9,7 @@ use App\Models\SaleItem;
 use App\Models\SaleReturn;
 use App\Models\SaleReturnItem;
 use App\Models\Stock;
+use App\Services\CashLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -17,10 +18,12 @@ class SaleReturnController extends Controller
 {
     public function index(Request $request)
     {
+        $today = now()->toDateString();
         $filters = [
             'search'        => $request->input('search'),
             'return_status' => $request->input('return_status'),
             'return_type'   => $request->input('return_type'),
+            'date'          => $request->input('date', $today),
         ];
 
         $returns = SaleReturn::query()
@@ -28,6 +31,7 @@ class SaleReturnController extends Controller
             ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->whereHas('sale', fn($sale) => $sale->where('shop_id', auth()->user()->shop_id)))
             ->when($filters['return_status'], fn($q) => $q->where('return_status', $filters['return_status']))
             ->when($filters['return_type'], fn($q) => $q->where('return_type', $filters['return_type']))
+            ->when($filters['date'], fn($q) => $q->whereDate('created_at', $filters['date']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
 
@@ -42,7 +46,12 @@ class SaleReturnController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $totals = SaleReturn::selectRaw('
+        $totals = SaleReturn::query()
+            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->whereHas('sale', fn($sale) => $sale->where('shop_id', auth()->user()->shop_id)))
+            ->when($filters['return_status'], fn($q) => $q->where('return_status', $filters['return_status']))
+            ->when($filters['return_type'], fn($q) => $q->where('return_type', $filters['return_type']))
+            ->when($filters['date'], fn($q) => $q->whereDate('created_at', $filters['date']))
+            ->selectRaw('
             count(*)               as total_returns,
             sum(subtotal)          as total_subtotal,
             sum(return_amount)     as total_return_amount
@@ -347,6 +356,13 @@ class SaleReturnController extends Controller
                 ]);
             }
         }
+
+        app(CashLedger::class)->syncSource('sale_return', $ret->id, 'out', 'sale_return_refund', (float) $ret->return_amount, [
+            'date' => $ret->created_at?->toDateString() ?? now()->toDateString(),
+            'payment_method' => $ret->payment_method,
+            'customer_id' => $ret->customer_id,
+            'note' => 'Sale return refund: ' . $ret->reference,
+        ]);
     }
 
     private function reverseReturnEffects(SaleReturn $ret): void
@@ -378,6 +394,7 @@ class SaleReturnController extends Controller
         }
 
         $this->syncSaleStatus($ret);
+        app(CashLedger::class)->deleteSource('sale_return', $ret->id);
     }
 
     private function syncSaleStatus(SaleReturn $ret): void

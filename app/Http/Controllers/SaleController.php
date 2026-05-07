@@ -8,6 +8,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Shop;
 use App\Models\Stock;
+use App\Services\CashLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -17,13 +18,14 @@ class SaleController extends Controller
 {
     public function index(Request $request)
     {
+        $today = now()->toDateString();
         $filters = [
             'shop_id'        => $request->input('shop_id'),
             'payment_status' => $request->input('payment_status'),
             'status'         => $request->input('status'),
             'search'         => $request->input('search'),
-            'date_from'      => $request->input('date_from'),
-            'date_to'        => $request->input('date_to'),
+            'date_from'      => $request->input('date_from', $today),
+            'date_to'        => $request->input('date_to', $today),
         ];
 
         $sales = Sale::query()
@@ -173,6 +175,13 @@ class SaleController extends Controller
                     $customer->recalculateDue();
                 }
             }
+
+            app(CashLedger::class)->syncSource('sale', $sale->id, 'in', 'sale_payment', (float) $sale->paid, [
+                'date' => $sale->created_at->toDateString(),
+                'payment_method' => $sale->payment_method,
+                'customer_id' => $sale->customer_id,
+                'note' => 'Sale payment: ' . $sale->reference,
+            ]);
         });
 
         return redirect()->route('sales.index')
@@ -226,6 +235,8 @@ class SaleController extends Controller
                     $oldCustomer->recalculateDue();
                 }
             }
+
+            app(CashLedger::class)->deleteSource('sale', $sale->id);
 
             $sale->items()->delete();
 
@@ -295,6 +306,13 @@ class SaleController extends Controller
                     $newCustomer->recalculateDue();
                 }
             }
+
+            app(CashLedger::class)->syncSource('sale', $sale->id, 'in', 'sale_payment', (float) $sale->paid, [
+                'date' => $sale->created_at->toDateString(),
+                'payment_method' => $sale->payment_method,
+                'customer_id' => $sale->customer_id,
+                'note' => 'Sale payment: ' . $sale->reference,
+            ]);
         });
 
         return redirect()->route('sales.index')
@@ -324,6 +342,8 @@ class SaleController extends Controller
                     $customer->recalculateDue();
                 }
             }
+
+            app(CashLedger::class)->deleteSource('sale', $sale->id);
 
             $sale->items()->delete();
             $sale->delete();

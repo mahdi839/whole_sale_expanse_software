@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ManualDue;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Stock;
 use App\Models\Supplier;
+use App\Services\CashLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -16,11 +18,12 @@ class PurchaseController extends Controller
 {
     public function index(Request $request)
     {
+        $today = now()->toDateString();
         $filters = [
             'purchase_status' => $request->input('purchase_status'),
             'payment_status' => $request->input('payment_status'),
             'search' => $request->input('search'),
-            'date' => $request->input('date'),
+            'date' => $request->input('date', $today),
         ];
 
         $purchases = Purchase::query()
@@ -44,7 +47,23 @@ class PurchaseController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $totals = Purchase::selectRaw('
+        $totals = Purchase::query()
+            ->when($filters['purchase_status'], fn ($q) => $q->where('purchase_status', $filters['purchase_status']))
+            ->when($filters['payment_status'], fn ($q) => $q->where('payment_status', $filters['payment_status']))
+            ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
+            ->when($filters['search'], function ($q) use ($filters) {
+                $s = $filters['search'];
+
+                $q->where(function ($sub) use ($s) {
+                    $sub->where('reference', 'like', "%{$s}%")
+                        ->orWhere('cash_memo', 'like', "%{$s}%")
+                        ->orWhere('seller_store_name', 'like', "%{$s}%")
+                        ->orWhere('purchased_by', 'like', "%{$s}%")
+                        ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('items.product', fn ($product) => $product->where('product_name', 'like', "%{$s}%"));
+                });
+            })
+            ->selectRaw('
             count(*)              as total_purchases,
             sum(grand_total)      as total_amount,
             sum(paid_amount)      as total_paid,
@@ -131,6 +150,13 @@ class PurchaseController extends Controller
 
             // Update supplier financials
             $this->syncSupplierFinancials($purchase->supplier_id);
+
+            app(CashLedger::class)->syncSource('purchase', $purchase->id, 'out', 'purchase_payment', (float) $purchase->paid_amount, [
+                'date' => $purchase->date?->toDateString() ?? now()->toDateString(),
+                'payment_method' => $purchase->payment_method,
+                'supplier_id' => $purchase->supplier_id,
+                'note' => 'Purchase payment: ' . $purchase->reference,
+            ]);
         });
 
         return redirect()->route('purchases.index')
@@ -237,6 +263,13 @@ class PurchaseController extends Controller
 
             // Update current supplier totals
             $this->syncSupplierFinancials($purchase->supplier_id);
+
+            app(CashLedger::class)->syncSource('purchase', $purchase->id, 'out', 'purchase_payment', (float) $purchase->paid_amount, [
+                'date' => $purchase->date?->toDateString() ?? now()->toDateString(),
+                'payment_method' => $purchase->payment_method,
+                'supplier_id' => $purchase->supplier_id,
+                'note' => 'Purchase payment: ' . $purchase->reference,
+            ]);
         });
 
         return redirect()->route('purchases.index')
@@ -260,6 +293,7 @@ class PurchaseController extends Controller
             }
 
             $purchase->items()->delete();
+            app(CashLedger::class)->deleteSource('purchase', $purchase->id);
             $purchase->delete();
 
             // Update supplier financials after delete
@@ -366,11 +400,14 @@ class PurchaseController extends Controller
 
         $totalPurchase = (float) ($totals->total_purchase ?? 0);
         $totalPaid = (float) ($totals->total_paid ?? 0);
+        $manualDue = (float) ManualDue::where('party_type', 'supplier')
+            ->where('supplier_id', $supplierId)
+            ->sum('amount');
 
         $supplier->update([
-            'total_purchase' => $totalPurchase,
+            'total_purchase' => $totalPurchase + $manualDue,
             'total_paid' => $totalPaid,
-            'due' => max(0, $totalPurchase - $totalPaid),
+            'due' => max(0, ($totalPurchase + $manualDue) - $totalPaid),
         ]);
     }
 

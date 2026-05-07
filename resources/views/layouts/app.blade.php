@@ -353,12 +353,14 @@
                 </x-sidebar-dropdown>
                 @endcanany
 
-                @can('manage expenses')
-                <x-sidebar-dropdown label="Expenses" :active="request()->routeIs('expenses.*')">
+                @canany(['manage expenses', 'manage cash', 'manage dues'])
+                <x-sidebar-dropdown label="Accounts" :active="request()->routeIs('expenses.*') || request()->routeIs('cash-transactions.*') || request()->routeIs('dues.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></x-slot>
-                    <x-sidebar-sub-link :href="route('expenses.index')">Expenses</x-sidebar-sub-link>
+                    @can('manage expenses')<x-sidebar-sub-link :href="route('expenses.index')">Expenses</x-sidebar-sub-link>@endcan
+                    @can('manage cash')<x-sidebar-sub-link :href="route('cash-transactions.index')">Cash Management</x-sidebar-sub-link>@endcan
+                    @can('manage dues')<x-sidebar-sub-link :href="route('dues.index')">Due Management</x-sidebar-sub-link>@endcan
                 </x-sidebar-dropdown>
-                @endcan
+                @endcanany
 
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Reports & Settings</p>
 

@@ -17,8 +17,9 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $dateFrom      = $request->input('date_from');
-        $dateTo        = $request->input('date_to');
+        $today         = now()->toDateString();
+        $dateFrom      = $request->input('date_from', $today);
+        $dateTo        = $request->input('date_to', $today);
         $paymentStatus = $request->input('payment_status');
         $shopId        = auth()->user()->canManageAllShops() ? null : (auth()->user()->shop_id ?: -1);
 

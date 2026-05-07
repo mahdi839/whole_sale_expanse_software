@@ -23,6 +23,8 @@ class RolePermissionSeeder extends Seeder
         'manage sales',
         'manage sale returns',
         'manage expenses',
+        'manage cash',
+        'manage dues',
     ];
 
     public function run(): void
