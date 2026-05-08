@@ -320,13 +320,10 @@
             <div class="cell-val">{{ $sale->cash_memo ?? '—' }}</div>
         </div>
 
-        @if($sale->bill_no || $sale->bell_no)
+        @if($sale->bell_no)
             <div class="inv-info-cell">
-                <div class="cell-label">Bill No / Bell No</div>
-                <div class="cell-val">{{ $sale->bill_no ?? '—' }}</div>
-                @if($sale->bell_no)
-                    <div class="cell-sub">Bell: {{ $sale->bell_no }}</div>
-                @endif
+                <div class="cell-label">Bell No</div>
+                <div class="cell-val">{{ $sale->bell_no }}</div>
             </div>
         @endif
     </div>

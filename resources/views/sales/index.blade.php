@@ -16,7 +16,7 @@
             <form method="GET" action="{{ route('sales.index') }}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-3.5">
                     <input type="text" name="search" value="{{ request('search') }}"
-                        placeholder="Reference, customer, bill no..."
+                        placeholder="Reference, customer, cash memo..."
                         class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
 
                     <select name="payment_status"
@@ -169,15 +169,11 @@
                             {{ $sale->customer?->full_name ?? '—' }}</p>
                     </div>
 
-                    @if ($sale->bill_no || $sale->bell_no || $sale->cash_memo)
+                    @if ($sale->bell_no || $sale->cash_memo)
                         <div class="flex flex-wrap gap-2 text-xs">
                             @if ($sale->cash_memo)
                                 <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded font-mono">Memo:
                                     {{ $sale->cash_memo }}</span>
-                            @endif
-                            @if ($sale->bill_no)
-                                <span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-mono">Bill:
-                                    {{ $sale->bill_no }}</span>
                             @endif
                             @if ($sale->bell_no)
                                 <span class="px-2 py-0.5 bg-amber-50 text-amber-700 rounded font-mono">Bell:
@@ -330,15 +326,11 @@
                                             <span class="text-gray-500 font-mono" title="Cash Memo">Cash Memo:
                                                 {{ $sale->cash_memo }}</span>
                                         @endif
-                                        @if ($sale->bill_no)
-                                            <span class="text-blue-600 font-mono" title="Bill No">Bill No:
-                                                {{ $sale->bill_no }}</span>
-                                        @endif
                                         @if ($sale->bell_no)
                                             <span class="text-amber-600 font-mono" title="Bell No">Bell No:
                                                 {{ $sale->bell_no }}</span>
                                         @endif
-                                        @if (!$sale->cash_memo && !$sale->bill_no && !$sale->bell_no)
+                                        @if (!$sale->cash_memo && !$sale->bell_no)
                                             <span class="text-gray-300">—</span>
                                         @endif
                                     </div>

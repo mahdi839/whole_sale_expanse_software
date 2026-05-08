@@ -5,7 +5,7 @@
         @include('dues.partials.filters', [
             'route' => route('dues.sale'),
             'filters' => $filters,
-            'placeholder' => 'Reference, customer, phone, bill no...',
+            'placeholder' => 'Reference, customer, phone, cash memo...',
         ])
 
         <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">

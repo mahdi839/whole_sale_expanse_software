@@ -20,7 +20,6 @@ return new class extends Migration
             $table->decimal('paid', 12, 2)->default(0);
             $table->decimal('due', 12, 2)->default(0);
             $table->string('cash_memo')->nullable();
-            $table->string('bill_no')->nullable();
             $table->string('bell_no')->nullable();
             $table->string('payment_method')->nullable();
             $table->string('payment_status')->default('due'); // due, paid, partial

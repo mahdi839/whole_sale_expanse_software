@@ -39,7 +39,6 @@ class SaleController extends Controller
                 $q->where(function ($sub) use ($s) {
                     $sub->where('reference', 'like', "%{$s}%")
                         ->orWhere('cash_memo', 'like', "%{$s}%")
-                        ->orWhere('bill_no', 'like', "%{$s}%")
                         ->orWhere('bell_no', 'like', "%{$s}%")
                         ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
                         ->orWhereHas('items.product', fn($p) => $p->where('product_name', 'like', "%{$s}%"));
@@ -61,7 +60,6 @@ class SaleController extends Controller
                 $q->where(function ($sub) use ($s) {
                     $sub->where('reference', 'like', "%{$s}%")
                         ->orWhere('cash_memo', 'like', "%{$s}%")
-                        ->orWhere('bill_no', 'like', "%{$s}%")
                         ->orWhere('bell_no', 'like', "%{$s}%")
                         ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
                         ->orWhereHas('items.product', fn($p) => $p->where('product_name', 'like', "%{$s}%"));
@@ -127,7 +125,6 @@ class SaleController extends Controller
                 'paid'           => $paid,
                 'due'            => $due,
                 'cash_memo'      => $validated['cash_memo'] ?? null,
-                'bill_no'        => $validated['bill_no'] ?? null,
                 'bell_no'        => $validated['bell_no'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
                 'payment_status' => $validated['payment_status'],
@@ -260,7 +257,6 @@ class SaleController extends Controller
                 'paid'           => $paid,
                 'due'            => $due,
                 'cash_memo'      => $validated['cash_memo'] ?? null,
-                'bill_no'        => $validated['bill_no'] ?? null,
                 'bell_no'        => $validated['bell_no'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
                 'payment_status' => $validated['payment_status'],
@@ -385,7 +381,6 @@ class SaleController extends Controller
                 'Paid',
                 'Due',
                 'Cash Memo',
-                'Bill No',
                 'Bell No',
                 'Payment Method',
                 'Payment Status',
@@ -407,7 +402,6 @@ class SaleController extends Controller
                     $sale->paid,
                     $sale->due,
                     $sale->cash_memo,
-                    $sale->bill_no,
                     $sale->bell_no,
                     $sale->payment_method,
                     $sale->payment_status,
@@ -453,7 +447,6 @@ class SaleController extends Controller
             'customer_id'            => 'nullable|exists:customers,id',
             'discount'               => 'nullable|numeric|min:0',
             'cash_memo'              => 'nullable|string|max:100',
-            'bill_no'                => 'nullable|string|max:100',
             'bell_no'                => 'nullable|string|max:100',
             'payment_method'         => 'nullable|string|max:100',
             'payment_status'         => 'required|in:due,paid,partial',

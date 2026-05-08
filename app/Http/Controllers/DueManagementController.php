@@ -106,7 +106,6 @@ class DueManagementController extends Controller
                 $query->where(function ($sub) use ($search) {
                     $sub->where('reference', 'like', "%{$search}%")
                         ->orWhere('cash_memo', 'like', "%{$search}%")
-                        ->orWhere('bill_no', 'like', "%{$search}%")
                         ->orWhere('bell_no', 'like', "%{$search}%")
                         ->orWhereHas('customer', function ($customer) use ($search) {
                             $customer->where('full_name', 'like', "%{$search}%")

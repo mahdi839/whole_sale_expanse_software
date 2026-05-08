@@ -27,11 +27,26 @@ class ShopController extends Controller
         return redirect()->route('shops.index')->with('success', 'Shop created successfully.');
     }
 
-    public function show(Shop $shop)
+    public function show(Request $request, Shop $shop)
     {
-        $shop->load(['users.roles', 'stocks.product']);
+        $shop->load(['users.roles']);
 
-        return view('shops.show', compact('shop'));
+        $search = $request->input('search');
+        $stocks = $shop->stocks()
+            ->with('product')
+            ->when($search, function ($query) use ($search) {
+                $query->whereHas('product', function ($product) use ($search) {
+                    $product->where('product_name', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%");
+                });
+            })
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->orderBy('products.product_name')
+            ->select('stocks.*')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('shops.show', compact('shop', 'stocks', 'search'));
     }
 
     public function edit(Shop $shop)

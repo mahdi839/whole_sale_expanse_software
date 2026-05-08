@@ -476,21 +476,12 @@
         <hr class="divider">
 
         {{-- Reference Numbers --}}
-        <div class="field-row-2">
-            <div class="field-group">
-                <div class="field-label">Cash Memo #</div>
-                <input type="text" name="cash_memo"
-                       value="{{ old('cash_memo', $sale?->cash_memo) }}"
-                       placeholder="e.g. CM-001"
-                       class="field-input">
-            </div>
-            <div class="field-group">
-                <div class="field-label">Bill No</div>
-                <input type="text" name="bill_no"
-                       value="{{ old('bill_no', $sale?->bill_no) }}"
-                       placeholder="e.g. B-1001"
-                       class="field-input">
-            </div>
+        <div class="field-group">
+            <div class="field-label">Cash Memo #</div>
+            <input type="text" name="cash_memo"
+                   value="{{ old('cash_memo', $sale?->cash_memo) }}"
+                   placeholder="e.g. CM-001"
+                   class="field-input">
         </div>
 
         {{-- Bell No with helper hint --}}
