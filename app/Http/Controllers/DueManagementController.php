@@ -15,45 +15,182 @@ class DueManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $customerDues = Customer::where('due', '>', 0)->orderByDesc('due')->paginate(10, ['*'], 'customers_page');
-        $supplierDues = Supplier::where('due', '>', 0)->orderByDesc('due')->paginate(10, ['*'], 'suppliers_page');
+        return redirect()->route('dues.customer');
+    }
 
-        $saleDues = Sale::with('customer')
+    public function customer()
+    {
+        $filters = $this->filters(request());
+
+        $rows = Customer::query()
+            ->addSelect([
+                'latest_due_sale_at' => Sale::select('created_at')
+                    ->whereColumn('customer_id', 'customers.id')
+                    ->where('due', '>', 0)
+                    ->whereDate('created_at', $filters['date'])
+                    ->latest()
+                    ->limit(1),
+            ])
             ->where('due', '>', 0)
-            ->latest()
-            ->paginate(10, ['*'], 'sales_page');
+            ->whereExists(function ($query) use ($filters) {
+                $query->selectRaw(1)
+                    ->from('sales')
+                    ->whereColumn('sales.customer_id', 'customers.id')
+                    ->where('sales.due', '>', 0)
+                    ->whereDate('sales.created_at', $filters['date']);
+            })
+            ->when($filters['search'], function ($query) use ($filters) {
+                $search = $filters['search'];
 
-        $purchaseDues = Purchase::with('supplier')
-            ->where('due_amount', '>', 0)
+                $query->where(function ($sub) use ($search) {
+                    $sub->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%");
+                });
+            })
+            ->orderByDesc('due')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('dues.customer', compact('rows', 'filters'));
+    }
+
+    public function supplier()
+    {
+        $filters = $this->filters(request());
+
+        $rows = Supplier::query()
+            ->addSelect([
+                'latest_due_purchase_date' => Purchase::select('date')
+                    ->whereColumn('supplier_id', 'suppliers.id')
+                    ->where('due_amount', '>', 0)
+                    ->whereDate('date', $filters['date'])
+                    ->latest('date')
+                    ->limit(1),
+            ])
+            ->where('due', '>', 0)
+            ->whereExists(function ($query) use ($filters) {
+                $query->selectRaw(1)
+                    ->from('purchases')
+                    ->whereColumn('purchases.supplier_id', 'suppliers.id')
+                    ->where('purchases.due_amount', '>', 0)
+                    ->whereDate('purchases.date', $filters['date']);
+            })
+            ->when($filters['search'], function ($query) use ($filters) {
+                $search = $filters['search'];
+
+                $query->where(function ($sub) use ($search) {
+                    $sub->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%");
+                });
+            })
+            ->orderByDesc('due')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('dues.supplier', compact('rows', 'filters'));
+    }
+
+    public function sale()
+    {
+        $filters = $this->filters(request());
+
+        $rows = Sale::with('customer')
+            ->where('due', '>', 0)
+            ->whereDate('created_at', $filters['date'])
+            ->when($filters['search'], function ($query) use ($filters) {
+                $search = $filters['search'];
+
+                $query->where(function ($sub) use ($search) {
+                    $sub->where('reference', 'like', "%{$search}%")
+                        ->orWhere('cash_memo', 'like', "%{$search}%")
+                        ->orWhere('bill_no', 'like', "%{$search}%")
+                        ->orWhere('bell_no', 'like', "%{$search}%")
+                        ->orWhereHas('customer', function ($customer) use ($search) {
+                            $customer->where('full_name', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%")
+                                ->orWhere('code', 'like', "%{$search}%");
+                        });
+                });
+            })
             ->latest()
-            ->paginate(10, ['*'], 'purchases_page');
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('dues.sale', compact('rows', 'filters'));
+    }
+
+    public function purchase()
+    {
+        $filters = $this->filters(request());
+
+        $rows = Purchase::with('supplier')
+            ->where('due_amount', '>', 0)
+            ->whereDate('date', $filters['date'])
+            ->when($filters['search'], function ($query) use ($filters) {
+                $search = $filters['search'];
+
+                $query->where(function ($sub) use ($search) {
+                    $sub->where('reference', 'like', "%{$search}%")
+                        ->orWhere('cash_memo', 'like', "%{$search}%")
+                        ->orWhere('bill_no', 'like', "%{$search}%")
+                        ->orWhere('seller_store_name', 'like', "%{$search}%")
+                        ->orWhere('purchased_by', 'like', "%{$search}%")
+                        ->orWhereHas('supplier', function ($supplier) use ($search) {
+                            $supplier->where('name', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhere('code', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('dues.purchase', compact('rows', 'filters'));
+    }
+
+    public function manual()
+    {
+        $filters = $this->filters(request());
 
         $manualDues = ManualDue::with(['customer', 'supplier'])
+            ->whereDate('date', $filters['date'])
+            ->when($filters['search'], function ($query) use ($filters) {
+                $search = $filters['search'];
+
+                $query->where(function ($sub) use ($search) {
+                    $sub->where('reference', 'like', "%{$search}%")
+                        ->orWhere('note', 'like', "%{$search}%")
+                        ->orWhereHas('customer', function ($customer) use ($search) {
+                            $customer->where('full_name', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%")
+                                ->orWhere('code', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('supplier', function ($supplier) use ($search) {
+                            $supplier->where('name', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhere('code', 'like', "%{$search}%");
+                        });
+                });
+            })
             ->latest('date')
             ->latest()
-            ->paginate(10, ['*'], 'manual_page');
+            ->paginate(10)
+            ->withQueryString();
 
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
 
-        $totals = [
-            'customer_due' => Customer::sum('due'),
-            'supplier_due' => Supplier::sum('due'),
-            'sale_due' => Sale::sum('due'),
-            'purchase_due' => Purchase::sum('due_amount'),
-            'manual_customer_due' => ManualDue::where('party_type', 'customer')->sum('amount'),
-            'manual_supplier_due' => ManualDue::where('party_type', 'supplier')->sum('amount'),
-        ];
-
-        return view('dues.index', compact(
-            'customerDues',
-            'supplierDues',
-            'saleDues',
-            'purchaseDues',
+        return view('dues.manual', compact(
             'manualDues',
             'customers',
             'suppliers',
-            'totals',
+            'filters',
         ));
     }
 
@@ -66,7 +203,7 @@ class DueManagementController extends Controller
             $this->applyManualDue($due, 1);
         });
 
-        return redirect()->route('dues.index')->with('success', 'Manual due added successfully.');
+        return redirect()->route('dues.manual')->with('success', 'Manual due added successfully.');
     }
 
     public function edit(ManualDue $manualDue)
@@ -87,7 +224,7 @@ class DueManagementController extends Controller
             $this->applyManualDue($manualDue->fresh(), 1);
         });
 
-        return redirect()->route('dues.index')->with('success', 'Manual due updated successfully.');
+        return redirect()->route('dues.manual')->with('success', 'Manual due updated successfully.');
     }
 
     public function destroy(ManualDue $manualDue)
@@ -97,7 +234,7 @@ class DueManagementController extends Controller
             $manualDue->delete();
         });
 
-        return redirect()->route('dues.index')->with('success', 'Manual due deleted successfully.');
+        return redirect()->route('dues.manual')->with('success', 'Manual due deleted successfully.');
     }
 
     private function validated(Request $request): array
@@ -120,6 +257,14 @@ class DueManagementController extends Controller
         }
 
         return $data;
+    }
+
+    private function filters(Request $request): array
+    {
+        return [
+            'search' => $request->input('search'),
+            'date' => $request->input('date', now()->toDateString()),
+        ];
     }
 
     private function applyManualDue(ManualDue $due, int $multiplier): void

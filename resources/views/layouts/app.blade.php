@@ -353,14 +353,24 @@
                 </x-sidebar-dropdown>
                 @endcanany
 
-                @canany(['manage expenses', 'manage cash', 'manage dues'])
-                <x-sidebar-dropdown label="Accounts" :active="request()->routeIs('expenses.*') || request()->routeIs('cash-transactions.*') || request()->routeIs('dues.*')">
+                @canany(['manage expenses', 'manage cash'])
+                <x-sidebar-dropdown label="Accounts" :active="request()->routeIs('expenses.*') || request()->routeIs('cash-transactions.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></x-slot>
                     @can('manage expenses')<x-sidebar-sub-link :href="route('expenses.index')">Expenses</x-sidebar-sub-link>@endcan
                     @can('manage cash')<x-sidebar-sub-link :href="route('cash-transactions.index')">Cash Management</x-sidebar-sub-link>@endcan
-                    @can('manage dues')<x-sidebar-sub-link :href="route('dues.index')">Due Management</x-sidebar-sub-link>@endcan
                 </x-sidebar-dropdown>
                 @endcanany
+
+                @can('manage dues')
+                <x-sidebar-dropdown label="Due Management" :active="request()->routeIs('dues.*')">
+                    <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h7"/><path d="M15 16l2 2 4-4"/></svg></x-slot>
+                    <x-sidebar-sub-link :href="route('dues.customer')" :active="request()->routeIs('dues.customer')">Customer Wise Due</x-sidebar-sub-link>
+                    <x-sidebar-sub-link :href="route('dues.supplier')" :active="request()->routeIs('dues.supplier')">Supplier Wise Due</x-sidebar-sub-link>
+                    <x-sidebar-sub-link :href="route('dues.sale')" :active="request()->routeIs('dues.sale')">Sale Wise Due</x-sidebar-sub-link>
+                    <x-sidebar-sub-link :href="route('dues.purchase')" :active="request()->routeIs('dues.purchase')">Purchase Wise Due</x-sidebar-sub-link>
+                    <x-sidebar-sub-link :href="route('dues.manual')" :active="request()->routeIs('dues.manual') || request()->routeIs('dues.edit')">Manual Due</x-sidebar-sub-link>
+                </x-sidebar-dropdown>
+                @endcan
 
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Reports & Settings</p>
 

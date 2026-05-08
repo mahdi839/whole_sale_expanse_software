@@ -67,6 +67,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->except(['show'])
         ->middleware('permission:manage cash');
     Route::get('dues', [DueManagementController::class, 'index'])->name('dues.index')->middleware('permission:manage dues');
+    Route::get('dues/customer-wise', [DueManagementController::class, 'customer'])->name('dues.customer')->middleware('permission:manage dues');
+    Route::get('dues/supplier-wise', [DueManagementController::class, 'supplier'])->name('dues.supplier')->middleware('permission:manage dues');
+    Route::get('dues/sale-wise', [DueManagementController::class, 'sale'])->name('dues.sale')->middleware('permission:manage dues');
+    Route::get('dues/purchase-wise', [DueManagementController::class, 'purchase'])->name('dues.purchase')->middleware('permission:manage dues');
+    Route::get('dues/manual', [DueManagementController::class, 'manual'])->name('dues.manual')->middleware('permission:manage dues');
     Route::post('dues', [DueManagementController::class, 'store'])->name('dues.store')->middleware('permission:manage dues');
     Route::get('dues/{manualDue}/edit', [DueManagementController::class, 'edit'])->name('dues.edit')->middleware('permission:manage dues');
     Route::put('dues/{manualDue}', [DueManagementController::class, 'update'])->name('dues.update')->middleware('permission:manage dues');
