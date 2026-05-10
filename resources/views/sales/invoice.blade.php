@@ -36,6 +36,23 @@
             flex-wrap: wrap;
         }
 
+        .inv-header .company {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .inv-logo {
+            width: 62px;
+            height: 62px;
+            flex: 0 0 62px;
+            border-radius: 10px;
+            background: #fff;
+            padding: 6px;
+            object-fit: contain;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, .18);
+        }
+
         .inv-header .company h1 {
             font-size: 22px;
             font-weight: 700;
@@ -272,6 +289,7 @@
         @media print {
             body { background: #fff; padding: 0; }
             .invoice-wrap { box-shadow: none; border-radius: 0; }
+            .inv-logo { box-shadow: none; }
             .screen-only { display: none !important; }
         }
     </style>
@@ -283,9 +301,12 @@
     {{-- Header --}}
     <div class="inv-header">
         <div class="company">
-            <h1>Inaya Creation</h1>
-            <p> Chista Market,Near Gawsia Market, Dhaka-1205</p>
-            <p>Phone: +880 01300665793</p>
+            <img class="inv-logo" src="{{ asset('inaya_creation_logo.jpeg') }}" alt="Inaya Creation Logo">
+            <div>
+                <h1>Inaya Creation</h1>
+                <p> Chista Market,Near Gawsia Market, Dhaka-1205</p>
+                <p>Phone: +880 01300665793</p>
+            </div>
         </div>
         <div class="inv-meta">
             <div class="label">Invoice</div>
@@ -360,6 +381,10 @@
     <div class="inv-totals">
         <div class="totals-grid">
             <div class="tot-row">
+                <span class="tl">Total Qty</span>
+                <span class="tv">{{ $totalQtyDisplay }}</span>
+            </div>
+            <div class="tot-row">
                 <span class="tl">Subtotal</span>
                 <span class="tv">৳{{ number_format($sale->items->sum('line_total'), 2) }}</span>
             </div>
@@ -381,6 +406,12 @@
                 <div class="tot-row due-row">
                     <span class="tl">Due</span>
                     <span class="tv">৳{{ number_format($sale->due, 2) }}</span>
+                </div>
+            @endif
+            @if(! is_null($customerTotalDue))
+                <div class="tot-row due-row">
+                    <span class="tl">Customer Total Due</span>
+                    <span class="tv">৳{{ number_format($customerTotalDue, 2) }}</span>
                 </div>
             @endif
         </div>

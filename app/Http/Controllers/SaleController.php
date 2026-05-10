@@ -356,8 +356,13 @@ class SaleController extends Controller
     {
         $this->authorizeSaleShop($sale);
         $sale->load(['customer', 'items.product', 'shop']);
+        $totalQty = $sale->items->sum(fn($item) => (float) $item->qty);
+        $totalQtyDisplay = floor($totalQty) == $totalQty
+            ? number_format($totalQty, 0)
+            : number_format($totalQty, 2);
+        $customerTotalDue = $sale->customer ? (float) $sale->customer->due : null;
 
-        return view('sales.invoice', compact('sale'));
+        return view('sales.invoice', compact('sale', 'totalQtyDisplay', 'customerTotalDue'));
     }
 
     public function exportCsv(Request $request)

@@ -21,6 +21,7 @@ class DashboardController extends Controller
         $dateFrom      = $request->input('date_from', $today);
         $dateTo        = $request->input('date_to', $today);
         $paymentStatus = $request->input('payment_status');
+        $canViewProfit = auth()->user()->hasRole('Super Admin');
         $shopId        = auth()->user()->canManageAllShops() ? null : (auth()->user()->shop_id ?: -1);
 
         // ── Base query scopes ────────────────────────────────────────
@@ -69,21 +70,23 @@ class DashboardController extends Controller
             'net_profit'        => 0,
         ];
 
-        $totalItemProfit = DB::table('sale_items')
-            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-            ->when($shopId, fn($q) => $q->where('sales.shop_id', $shopId))
-            ->when($dateFrom, fn($q) => $q->whereDate('sales.created_at', '>=', $dateFrom))
-            ->when($dateTo, fn($q) => $q->whereDate('sales.created_at', '<=', $dateTo))
-            ->when($paymentStatus, fn($q) => $q->where('sales.payment_status', $paymentStatus))
-            ->selectRaw('COALESCE(SUM(sale_items.line_profit), 0) as total_profit')
-            ->value('total_profit');
+        if ($canViewProfit) {
+            $totalItemProfit = DB::table('sale_items')
+                ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+                ->when($shopId, fn($q) => $q->where('sales.shop_id', $shopId))
+                ->when($dateFrom, fn($q) => $q->whereDate('sales.created_at', '>=', $dateFrom))
+                ->when($dateTo, fn($q) => $q->whereDate('sales.created_at', '<=', $dateTo))
+                ->when($paymentStatus, fn($q) => $q->where('sales.payment_status', $paymentStatus))
+                ->selectRaw('COALESCE(SUM(sale_items.line_profit), 0) as total_profit')
+                ->value('total_profit');
 
-        $stats['total_item_profit'] = (float) $totalItemProfit;
+            $stats['total_item_profit'] = (float) $totalItemProfit;
 
-        $stats['net_profit'] =
-            (float) $stats['total_item_profit']
-            - (float) $stats['total_expenses']
-            - (float) $stats['total_sale_returns'];
+            $stats['net_profit'] =
+                (float) $stats['total_item_profit']
+                - (float) $stats['total_expenses']
+                - (float) $stats['total_sale_returns'];
+        }
         // ── Sales last 7 days OR within date range chart ─────────────
         $chartDays  = 6;
         $chartStart = $dateFrom ? \Carbon\Carbon::parse($dateFrom)->startOfDay() : now()->subDays($chartDays)->startOfDay();
@@ -182,6 +185,7 @@ class DashboardController extends Controller
             'lowStock',
             'recentSales',
             'filters',
+            'canViewProfit',
         ));
     }
 }

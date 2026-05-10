@@ -66,33 +66,39 @@
         </div>
 
         {{-- ── Stat cards row 1 ────────────────────────────────────── --}}
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div @class([
+            'grid grid-cols-2 gap-3',
+            'sm:grid-cols-5' => $canViewProfit,
+            'sm:grid-cols-4' => ! $canViewProfit,
+        ])>
 
-            <div class="bg-white border border-gray-200 rounded-xl p-4 flex items-start gap-3">
-                <div class="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" stroke-width="1.8"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 17l6-6 4 4 8-8" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14 7h7v7" />
-                    </svg>
+            @if($canViewProfit)
+                <div class="bg-white border border-gray-200 rounded-xl p-4 flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" stroke-width="1.8"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 17l6-6 4 4 8-8" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 7h7v7" />
+                        </svg>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase tracking-wide leading-tight">Net Profit</p>
+
+                        <p @class([
+                            'text-xl font-medium mt-0.5',
+                            'text-teal-600' => $stats['net_profit'] >= 0,
+                            'text-red-600' => $stats['net_profit'] < 0,
+                        ])>
+                            ৳{{ number_format($stats['net_profit'], 2) }}
+                        </p>
+
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            Item profit - expenses - returns
+                        </p>
+                    </div>
                 </div>
-
-                <div>
-                    <p class="text-xs text-gray-400 uppercase tracking-wide leading-tight">Net Profit</p>
-
-                    <p @class([
-                        'text-xl font-medium mt-0.5',
-                        'text-teal-600' => $stats['net_profit'] >= 0,
-                        'text-red-600' => $stats['net_profit'] < 0,
-                    ])>
-                        ৳{{ number_format($stats['net_profit'], 2) }}
-                    </p>
-
-                    <p class="text-xs text-gray-400 mt-0.5">
-                        Item profit - expenses - returns
-                    </p>
-                </div>
-            </div>
+            @endif
 
             <div class="bg-white border border-gray-200 rounded-xl p-4 flex items-start gap-3">
                 <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
