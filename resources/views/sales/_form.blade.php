@@ -19,6 +19,32 @@
             ->values()
             ->toArray();
     }
+
+    $productPayload = $products->map(function ($product) {
+        return [
+            'id' => (string) $product->id,
+            'name' => $product->product_name,
+            'sku' => $product->sku,
+            'price' => (float) ($product->selling_price ?? 0),
+            'stocks' => $product->stocks->mapWithKeys(fn ($stock) => [
+                (string) $stock->shop_id => (float) $stock->stock_qty,
+            ]),
+            'batches' => $product->purchaseItems->map(function ($item) {
+                $returned = $item->returnItems->sum(fn ($returnItem) => (float) $returnItem->qty);
+                $sold = $item->saleItems->sum(fn ($saleItem) => (float) $saleItem->qty);
+                $salesReturned = $item->saleItems
+                    ->flatMap(fn ($saleItem) => $saleItem->returnItems)
+                    ->sum(fn ($returnItem) => (float) $returnItem->qty);
+
+                return [
+                    'id' => $item->id,
+                    'batch' => $item->batch ?: ('Batch #'.$item->id),
+                    'price' => (float) $item->price,
+                    'available_qty' => max(0, (float) $item->qty - $returned - $sold + $salesReturned),
+                ];
+            })->values(),
+        ];
+    })->values();
 @endphp
 
 <style>
@@ -560,29 +586,7 @@
 // ============================================================
 let cartItems = @json($initialCart);
 
-const ALL_PRODUCTS = [
-    @foreach($products as $p)
-    {
-        id: "{{ $p->id }}",
-        name: @json($p->product_name),
-        sku: "{{ $p->sku }}",
-        price: {{ $p->selling_price ?? 0 }},
-        stocks: @json($p->stocks->mapWithKeys(fn($stock) => [(string) $stock->shop_id => (float) $stock->stock_qty])),
-        batches: @json($p->purchaseItems->map(function ($item) {
-            $returned = $item->returnItems->sum(fn($returnItem) => (float) $returnItem->qty);
-            $sold = $item->saleItems->sum(fn($saleItem) => (float) $saleItem->qty);
-            $salesReturned = $item->saleItems->flatMap->returnItems->sum(fn($returnItem) => (float) $returnItem->qty);
-
-            return [
-                'id' => $item->id,
-                'batch' => $item->batch ?: ('Batch #'.$item->id),
-                'price' => (float) $item->price,
-                'available_qty' => max(0, (float) $item->qty - $returned - $sold + $salesReturned),
-            ];
-        })->values())
-    },
-    @endforeach
-];
+const ALL_PRODUCTS = @json($productPayload);
 
 const shopInput = document.querySelector('[name="shop_id"]');
 cartItems = cartItems.map(item => ({ ...item, stock_qty: getAvailableStock(item.product_id) }));
