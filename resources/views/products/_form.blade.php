@@ -216,15 +216,15 @@
     @enderror
 </div>
 
-{{-- SKU --}}
+{{-- Design Code --}}
 <div class="pf-field">
     <label for="sku" class="pf-label">
-        SKU / Product Code<span class="req">*</span>
+        Design Code<span class="req">*</span>
     </label>
     <input
         type="text" id="sku" name="sku"
         value="{{ old('sku', $product?->sku) }}"
-        placeholder="e.g. WM-001-BLK"
+        placeholder="e.g. DESIGN-001"
         class="pf-input pf-mono @error('sku') pf-error @enderror"
     />
     @error('sku')
@@ -235,7 +235,48 @@
             {{ $message }}
         </p>
     @enderror
-    <p class="pf-hint">Must be unique · e.g. CAT-ELECTRONICS-001</p>
+    <p class="pf-hint">Must be unique.</p>
+</div>
+
+{{-- Product Code --}}
+<div class="pf-field">
+    <label for="product_code" class="pf-label">Product Code</label>
+    <input
+        type="text" id="product_code" name="product_code"
+        value="{{ old('product_code', $product?->product_code) }}"
+        placeholder="e.g. PROD-001"
+        class="pf-input pf-mono @error('product_code') pf-error @enderror"
+    />
+    @error('product_code')
+        <p class="pf-err-msg">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            {{ $message }}
+        </p>
+    @enderror
+</div>
+
+{{-- Sell Price --}}
+<div class="pf-field">
+    <label for="selling_price" class="pf-label">
+        Sell Price<span class="req">*</span>
+    </label>
+    <input
+        type="number" id="selling_price" name="selling_price"
+        value="{{ old('selling_price', $product?->selling_price ?? 0) }}"
+        step="0.01" min="0"
+        placeholder="0.00"
+        class="pf-input @error('selling_price') pf-error @enderror"
+    />
+    @error('selling_price')
+        <p class="pf-err-msg">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            {{ $message }}
+        </p>
+    @enderror
 </div>
 
 {{-- Stock Quantity --}}

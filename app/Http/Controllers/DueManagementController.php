@@ -45,7 +45,8 @@ class DueManagementController extends Controller
                 $query->where(function ($sub) use ($search) {
                     $sub->where('full_name', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%");
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%");
                 });
             })
             ->orderByDesc('due')
@@ -110,7 +111,8 @@ class DueManagementController extends Controller
                         ->orWhereHas('customer', function ($customer) use ($search) {
                             $customer->where('full_name', 'like', "%{$search}%")
                                 ->orWhere('phone', 'like', "%{$search}%")
-                                ->orWhere('code', 'like', "%{$search}%");
+                                ->orWhere('code', 'like', "%{$search}%")
+                                ->orWhere('address', 'like', "%{$search}%");
                         });
                 });
             })

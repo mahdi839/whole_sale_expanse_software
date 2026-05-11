@@ -9,6 +9,8 @@ class SaleItem extends Model
    protected $fillable = [
         'sale_id',
         'product_id',
+        'purchase_item_id',
+        'batch',
         'qty',
         'price_on_sale',
         'cost_price',
@@ -34,6 +36,11 @@ class SaleItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function purchaseItem()
+    {
+        return $this->belongsTo(PurchaseItem::class);
     }
 
     public function returnItems()

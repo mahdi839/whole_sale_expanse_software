@@ -6,6 +6,7 @@ use App\Models\CashTransaction;
 use App\Models\Customer;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class CashTransactionController extends Controller
@@ -63,7 +64,10 @@ class CashTransactionController extends Controller
 
     public function store(Request $request)
     {
-        CashTransaction::create($this->validated($request));
+        DB::transaction(function () use ($request) {
+            $transaction = CashTransaction::create($this->validated($request));
+            $this->applyPartyPayment($transaction, 1);
+        });
 
         return redirect()->route('cash-transactions.index')->with('success', 'Cash transaction saved successfully.');
     }
@@ -83,7 +87,11 @@ class CashTransactionController extends Controller
     {
         abort_if($cashTransaction->source_type, 403, 'Automatic cash entries are edited from their source document.');
 
-        $cashTransaction->update($this->validated($request));
+        DB::transaction(function () use ($request, $cashTransaction) {
+            $this->applyPartyPayment($cashTransaction, -1);
+            $cashTransaction->update($this->validated($request));
+            $this->applyPartyPayment($cashTransaction->fresh(), 1);
+        });
 
         return redirect()->route('cash-transactions.index')->with('success', 'Cash transaction updated successfully.');
     }
@@ -92,7 +100,10 @@ class CashTransactionController extends Controller
     {
         abort_if($cashTransaction->source_type, 403, 'Automatic cash entries are deleted from their source document.');
 
-        $cashTransaction->delete();
+        DB::transaction(function () use ($cashTransaction) {
+            $this->applyPartyPayment($cashTransaction, -1);
+            $cashTransaction->delete();
+        });
 
         return redirect()->route('cash-transactions.index')->with('success', 'Cash transaction deleted successfully.');
     }
@@ -119,5 +130,26 @@ class CashTransactionController extends Controller
         }
 
         return $data;
+    }
+
+    private function applyPartyPayment(CashTransaction $transaction, int $multiplier): void
+    {
+        $amount = (float) $transaction->amount * $multiplier;
+
+        if ($transaction->customer_id) {
+            $customer = Customer::find($transaction->customer_id);
+            if ($customer) {
+                $customer->increment('total_paid', $amount);
+                $customer->recalculateDue();
+            }
+        }
+
+        if ($transaction->supplier_id) {
+            $supplier = Supplier::find($transaction->supplier_id);
+            if ($supplier) {
+                $supplier->increment('total_paid', $amount);
+                $supplier->update(['due' => max(0, (float) $supplier->total_purchase - (float) $supplier->total_paid)]);
+            }
+        }
     }
 }

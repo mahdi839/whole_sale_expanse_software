@@ -15,7 +15,8 @@ class ProductController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('product_name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('product_code', 'like', "%{$search}%");
             });
         }
 
@@ -34,6 +35,8 @@ class ProductController extends Controller
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
             'sku' => 'required|string|max:100|unique:products,sku',
+            'product_code' => 'nullable|string|max:100|unique:products,product_code',
+            'selling_price' => 'required|numeric|min:0',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'stock_qty' => 'required|numeric|min:0',
         ]);
@@ -67,6 +70,8 @@ class ProductController extends Controller
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
             'sku' => 'required|string|max:100|unique:products,sku,'.$product->id,
+            'product_code' => 'nullable|string|max:100|unique:products,product_code,'.$product->id,
+            'selling_price' => 'required|numeric|min:0',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'stock_qty' => 'required|numeric|min:0',
         ]);

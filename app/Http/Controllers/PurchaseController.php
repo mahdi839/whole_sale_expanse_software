@@ -79,7 +79,7 @@ class PurchaseController extends Controller
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
         $products = Product::with('stock')
             ->orderBy('product_name')
-            ->get(['id', 'product_name', 'sku']);
+            ->get(['id', 'product_name', 'sku', 'product_code', 'selling_price']);
 
         return view('purchases.create', compact('nextReference', 'suppliers', 'products'));
     }
@@ -138,14 +138,8 @@ class PurchaseController extends Controller
                     'price' => $price,
                     'line_total' => $lineTotal,
                     'bale_no' => $item['bale_no'] ?? null,
+                    'batch' => $item['batch'] ?? null,
                 ]);
-
-                $stock = Stock::firstOrCreate(
-                    ['product_id' => $product->id, 'shop_id' => null],
-                    ['stock_qty' => 0]
-                );
-
-                $stock->increment('stock_qty', $qty);
             }
 
             // Update supplier financials
@@ -176,7 +170,7 @@ class PurchaseController extends Controller
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
         $products = Product::with('stock')
             ->orderBy('product_name')
-            ->get(['id', 'product_name', 'sku']);
+            ->get(['id', 'product_name', 'sku', 'product_code', 'selling_price']);
 
         return view('purchases.edit', compact('purchase', 'suppliers', 'products'));
     }
@@ -194,13 +188,6 @@ class PurchaseController extends Controller
                 }
 
                 $validated['document'] = $request->file('document')->store('purchases', 'public');
-            }
-
-            foreach ($purchase->items as $oldItem) {
-                $stock = Stock::where('product_id', $oldItem->product_id)->whereNull('shop_id')->first();
-                if ($stock) {
-                    $stock->decrement('stock_qty', (float) $oldItem->qty);
-                }
             }
 
             $purchase->items()->delete();
@@ -246,14 +233,8 @@ class PurchaseController extends Controller
                     'price' => $price,
                     'line_total' => $qty * $price,
                     'bale_no' => $item['bale_no'] ?? null,
+                    'batch' => $item['batch'] ?? null,
                 ]);
-
-                $stock = Stock::firstOrCreate(
-                    ['product_id' => $product->id, 'shop_id' => null],
-                    ['stock_qty' => 0]
-                );
-
-                $stock->increment('stock_qty', $qty);
             }
 
             // Recalculate old supplier if changed
@@ -280,13 +261,6 @@ class PurchaseController extends Controller
     {
         DB::transaction(function () use ($purchase) {
             $supplierId = $purchase->supplier_id;
-
-            foreach ($purchase->items as $item) {
-                $stock = Stock::where('product_id', $item->product_id)->whereNull('shop_id')->first();
-                if ($stock) {
-                    $stock->decrement('stock_qty', (float) $item->qty);
-                }
-            }
 
             if ($purchase->document) {
                 Storage::disk('public')->delete($purchase->document);
@@ -431,6 +405,7 @@ class PurchaseController extends Controller
             'bill_no' => 'nullable|string|max:100',
             'items' => 'required|array|min:1',
             'items.*.bale_no' => 'nullable|string|max:100',
+            'items.*.batch' => 'nullable|string|max:100',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.qty' => 'required|numeric|min:0.01',
             'items.*.price' => 'required|numeric|min:0',

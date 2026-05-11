@@ -339,7 +339,7 @@
 
                             <div class="mt-3 flex flex-wrap items-center gap-3 text-xs">
                                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
-                                    SKU: <span class="return-sku text-gray-700 font-medium">—</span>
+                                    Design Code: <span class="return-sku text-gray-700 font-medium">—</span>
                                 </span>
                                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
                                     Stock: <span class="return-stock text-gray-700 font-medium">0</span>
@@ -549,7 +549,7 @@
 
         <div class="mt-3 flex flex-wrap items-center gap-3 text-xs">
             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
-                SKU: <span class="return-sku text-gray-700 font-medium">—</span>
+                Design Code: <span class="return-sku text-gray-700 font-medium">—</span>
             </span>
             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500">
                 Stock: <span class="return-stock text-gray-700 font-medium">0</span>

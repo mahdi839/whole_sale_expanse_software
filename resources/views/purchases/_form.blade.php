@@ -14,6 +14,7 @@
                     'price' => (float) $item->price,
                     'line_total' => (float) $item->line_total,
                     'bale_no' => $item->bale_no ?? '',
+                    'batch' => $item->batch ?? '',
                 ],
             )
             ->values()
@@ -630,7 +631,7 @@
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.35-4.35" />
                 </svg>
-                <input type="text" id="product-search" placeholder="Search by name or SKU…" autocomplete="off">
+                <input type="text" id="product-search" placeholder="Search by name or design code…" autocomplete="off">
                 <div class="search-dropdown" id="search-dropdown">
                     @foreach ($products as $product)
                         <div class="search-option" data-id="{{ $product->id }}"
@@ -948,7 +949,8 @@
                     qty: 1,
                     price,
                     line_total: price,
-                    bale_no: ''       // ← NEW
+                    bale_no: '',
+                    batch: ''
                 });
             }
             renderCart();
@@ -1001,6 +1003,16 @@
                                value="${escHtml(item.bale_no || '')}"
                                placeholder="Optional bale / bundle number">
                     </div>
+                    <div class="bale-row">
+                        <label for="batch_${idx}">Batch</label>
+                        <input type="text"
+                               id="batch_${idx}"
+                               name="items[${idx}][batch]"
+                               class="bale-input item-batch"
+                               data-idx="${idx}"
+                               value="${escHtml(item.batch || '')}"
+                               placeholder="Batch code">
+                    </div>
                 `;
                 cartList.appendChild(card);
             });
@@ -1034,6 +1046,10 @@
             cartList.querySelectorAll('.item-bale').forEach(inp => inp.addEventListener('input', e => {
                 const i = +e.target.dataset.idx;
                 cartItems[i].bale_no = e.target.value;
+            }));
+            cartList.querySelectorAll('.item-batch').forEach(inp => inp.addEventListener('input', e => {
+                const i = +e.target.dataset.idx;
+                cartItems[i].batch = e.target.value;
             }));
             cartList.querySelectorAll('.btn-remove').forEach(b => b.addEventListener('click', e => {
                 removeItem(+e.currentTarget.dataset.idx);

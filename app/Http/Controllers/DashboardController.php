@@ -71,21 +71,28 @@ class DashboardController extends Controller
         ];
 
         if ($canViewProfit) {
-            $totalItemProfit = DB::table('sale_items')
+            $returnedQtySub = DB::table('sale_return_items')
+                ->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
+                ->where('sale_returns.return_status', 'approved')
+                ->selectRaw('sale_return_items.sale_item_id, COALESCE(SUM(sale_return_items.qty), 0) as returned_qty')
+                ->groupBy('sale_return_items.sale_item_id');
+
+            $cogs = DB::table('sale_items')
                 ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+                ->leftJoinSub($returnedQtySub, 'returned_items', 'returned_items.sale_item_id', '=', 'sale_items.id')
                 ->when($shopId, fn($q) => $q->where('sales.shop_id', $shopId))
                 ->when($dateFrom, fn($q) => $q->whereDate('sales.created_at', '>=', $dateFrom))
                 ->when($dateTo, fn($q) => $q->whereDate('sales.created_at', '<=', $dateTo))
                 ->when($paymentStatus, fn($q) => $q->where('sales.payment_status', $paymentStatus))
-                ->selectRaw('COALESCE(SUM(sale_items.line_profit), 0) as total_profit')
-                ->value('total_profit');
+                ->selectRaw('COALESCE(SUM((sale_items.qty - COALESCE(returned_items.returned_qty, 0)) * sale_items.cost_price), 0) as cogs')
+                ->value('cogs');
 
-            $stats['total_item_profit'] = (float) $totalItemProfit;
+            $netSales = (float) $stats['total_sales'] - (float) $stats['total_sale_returns'];
+            $stats['total_item_profit'] = $netSales - (float) $cogs;
 
             $stats['net_profit'] =
                 (float) $stats['total_item_profit']
-                - (float) $stats['total_expenses']
-                - (float) $stats['total_sale_returns'];
+                - (float) $stats['total_expenses'];
         }
         // ── Sales last 7 days OR within date range chart ─────────────
         $chartDays  = 6;

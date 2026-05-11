@@ -262,7 +262,7 @@
 
                             <div class="mt-3 flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
                                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500 break-all">
-                                    SKU:
+                                    Design Code:
                                     <span class="return-sku text-gray-700 font-medium">—</span>
                                 </span>
 
@@ -467,7 +467,7 @@
 
         <div class="mt-3 flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-200 text-gray-500 break-all">
-                SKU:
+                Design Code:
                 <span class="return-sku text-gray-700 font-medium">—</span>
             </span>
 

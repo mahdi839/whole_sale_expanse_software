@@ -5,7 +5,7 @@
         <select name="product_id" class="w-full border-gray-300 rounded-lg">
             @foreach($products ?? [] as $product)
                 <option value="{{ $product->id }}" @selected(old('product_id', $stock?->product_id ?? null) == $product->id)>
-                    {{ $product->product_name }} ({{ $product->sku }})
+                    {{ $product->product_name }} (Design: {{ $product->sku }})
                 </option>
             @endforeach
         </select>

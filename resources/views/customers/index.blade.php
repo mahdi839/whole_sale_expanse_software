@@ -132,6 +132,9 @@
                         <p class="text-sm text-gray-500 mt-1 break-all">
                             {{ $customer->phone ?? '—' }}
                         </p>
+                        @if($customer->address)
+                            <p class="text-xs text-gray-400 mt-1 break-words">{{ $customer->address }}</p>
+                        @endif
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 text-xs">
@@ -146,6 +149,16 @@
                     </div>
 
                     <div class="flex items-center gap-2 pt-1">
+                        <a
+                            href="{{ route('customers.show', $customer) }}"
+                            title="View transactions"
+                            class="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                        >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </a>
                         <a
                             href="{{ route('customers.edit', $customer) }}"
                             class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
@@ -204,6 +217,7 @@
                             <th class="text-left px-5 py-3 font-medium text-gray-500 whitespace-nowrap">Code</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Full Name</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden md:table-cell">Phone</th>
+                            <th class="text-left px-5 py-3 font-medium text-gray-500 hidden xl:table-cell">Address</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Total Sale</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Total Paid</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Due</th>
@@ -236,6 +250,10 @@
                                     {{ $customer->phone ?? '—' }}
                                 </td>
 
+                                <td class="px-5 py-3 text-gray-500 hidden xl:table-cell max-w-xs truncate">
+                                    {{ $customer->address ?? '—' }}
+                                </td>
+
                                 {{-- Total Sale --}}
                                 <td class="px-5 py-3 text-right text-gray-700 hidden lg:table-cell">
                                     ৳{{ number_format($customer->total_sale, 2) }}
@@ -262,6 +280,16 @@
                                 {{-- Actions --}}
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-end gap-2">
+                                        <a
+                                            href="{{ route('customers.show', $customer) }}"
+                                            title="View transactions"
+                                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                                        >
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                        </a>
                                         <a
                                             href="{{ route('customers.edit', $customer) }}"
                                             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
@@ -294,7 +322,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-5 py-16 text-center">
+                                <td colspan="8" class="px-5 py-16 text-center">
                                     <div class="flex flex-col items-center gap-3 text-gray-400">
                                         <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                             <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>

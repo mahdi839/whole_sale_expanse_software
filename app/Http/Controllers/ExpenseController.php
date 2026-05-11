@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Services\CashLedger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 
@@ -74,7 +76,10 @@ class ExpenseController extends Controller
             $validated['document'] = $request->file('document')->store('expenses', 'public');
         }
 
-        Expense::create($validated);
+        DB::transaction(function () use ($validated) {
+            $expense = Expense::create($validated);
+            $this->syncCash($expense);
+        });
 
         return redirect()->route('expenses.index')
             ->with('success', 'Expense created successfully.');
@@ -104,7 +109,10 @@ class ExpenseController extends Controller
             $validated['document'] = $request->file('document')->store('expenses', 'public');
         }
 
-        $expense->update($validated);
+        DB::transaction(function () use ($expense, $validated) {
+            $expense->update($validated);
+            $this->syncCash($expense->fresh());
+        });
 
         return redirect()->route('expenses.index')
             ->with('success', 'Expense updated successfully.');
@@ -116,7 +124,10 @@ class ExpenseController extends Controller
             Storage::disk('public')->delete($expense->document);
         }
 
-        $expense->delete();
+        DB::transaction(function () use ($expense) {
+            app(CashLedger::class)->deleteSource('expense', $expense->id);
+            $expense->delete();
+        });
 
         return redirect()->route('expenses.index')
             ->with('success', 'Expense deleted successfully.');
@@ -188,5 +199,13 @@ class ExpenseController extends Controller
             'Marketing',
             'Others',
         ];
+    }
+
+    private function syncCash(Expense $expense): void
+    {
+        app(CashLedger::class)->syncSource('expense', $expense->id, 'out', 'expense', (float) $expense->amount, [
+            'date' => $expense->date?->toDateString() ?? now()->toDateString(),
+            'note' => 'Expense: '.$expense->reference.' - '.$expense->category,
+        ]);
     }
 }

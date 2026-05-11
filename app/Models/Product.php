@@ -13,7 +13,13 @@ class Product extends Model
     protected $fillable = [
         'product_name',
         'sku',
+        'product_code',
+        'selling_price',
         'image',
+    ];
+
+    protected $casts = [
+        'selling_price' => 'decimal:2',
     ];
 
     public function stock()

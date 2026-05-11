@@ -19,7 +19,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-3">
                 <select name="items[0][product_id]" class="border-gray-300 rounded-lg">
                     @foreach($products as $product)
-                        <option value="{{ $product->id }}">{{ $product->product_name }} - central: {{ $product->stock?->stock_qty ?? 0 }}</option>
+                        <option value="{{ $product->id }}">{{ $product->product_name }} - design: {{ $product->sku }} - central: {{ $product->stock?->stock_qty ?? 0 }}</option>
                     @endforeach
                 </select>
                 <input type="number" step="0.01" min="0.01" name="items[0][qty]" class="border-gray-300 rounded-lg" placeholder="Qty">
@@ -36,7 +36,7 @@
     @push('scripts')
     <script>
         let itemIndex = 1;
-        const productOptions = @json($products->map(fn($p) => ['id' => $p->id, 'label' => $p->product_name . ' - central: ' . ($p->stock?->stock_qty ?? 0)]));
+        const productOptions = @json($products->map(fn($p) => ['id' => $p->id, 'label' => $p->product_name . ' - design: ' . $p->sku . ' - central: ' . ($p->stock?->stock_qty ?? 0)]));
         function addItem() {
             const wrap = document.getElementById('items');
             const row = document.createElement('div');

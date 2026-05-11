@@ -52,6 +52,7 @@
                         <tr class="border-b border-gray-100 bg-gray-50">
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">#</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Product Name</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Design Code</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Stock Qty</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Created</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Actions</th>
@@ -69,6 +70,10 @@
                                     <span class="inline-block px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 text-xs font-mono font-medium">
                                         {{ $stock->product?->product_name ?? 'Product #'.$stock->product_id }}
                                     </span>
+                                </td>
+
+                                <td class="px-5 py-3.5 align-top font-mono text-xs text-gray-600">
+                                    {{ $stock->product?->sku ?? '—' }}
                                 </td>
 
                                 <td class="px-5 py-3.5 align-top text-right font-medium text-green-600 tabular-nums">
@@ -109,7 +114,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-5 py-20 text-center">
+                                <td colspan="6" class="px-5 py-20 text-center">
                                     <div class="flex flex-col items-center gap-3 text-gray-400">
                                         <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                             <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
@@ -136,6 +141,7 @@
                         <tr class="border-b border-gray-100 bg-gray-50">
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Shop</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Product</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Design Code</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase">Qty</th>
                         </tr>
                     </thead>
@@ -144,10 +150,11 @@
                             <tr>
                                 <td class="px-5 py-3.5">{{ $stock->shop?->name }}</td>
                                 <td class="px-5 py-3.5">{{ $stock->product?->product_name }}</td>
+                                <td class="px-5 py-3.5 font-mono text-xs text-gray-600">{{ $stock->product?->sku ?? '—' }}</td>
                                 <td class="px-5 py-3.5 text-right font-medium text-blue-600">{{ number_format($stock->stock_qty) }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="3" class="px-5 py-12 text-center text-gray-400">No shop stock distributed yet.</td></tr>
+                            <tr><td colspan="4" class="px-5 py-12 text-center text-gray-400">No shop stock distributed yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

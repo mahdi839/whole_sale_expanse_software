@@ -94,7 +94,7 @@
                         </p>
 
                         <p class="text-xs text-gray-400 mt-0.5">
-                            Item profit - expenses - returns
+                            Net sales - COGS - expenses
                         </p>
                     </div>
                 </div>

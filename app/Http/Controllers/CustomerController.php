@@ -18,7 +18,8 @@ class CustomerController extends Controller
             ->when($search, function ($q) use ($search) {
                 $q->where('full_name', 'like', "%{$search}%")
                   ->orWhere('code',     'like', "%{$search}%")
-                  ->orWhere('phone',    'like', "%{$search}%");
+                  ->orWhere('phone',    'like', "%{$search}%")
+                  ->orWhere('address',  'like', "%{$search}%");
             })
             ->latest()
             ->paginate(15)
@@ -44,6 +45,7 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'full_name'  => 'required|string|max:255',
             'phone'      => 'nullable|string|max:20',
+            'address'    => 'nullable|string|max:1000',
             'total_sale' => 'nullable|numeric|min:0',
             'total_paid' => 'nullable|numeric|min:0',
         ]);
@@ -60,6 +62,7 @@ class CustomerController extends Controller
                 'code'       => $customer->code,
                 'full_name'  => $customer->full_name,
                 'phone'      => $customer->phone,
+                'address'    => $customer->address,
                 'total_sale' => $customer->total_sale,
                 'total_paid' => $customer->total_paid,
                 'due'        => $customer->due,
@@ -75,7 +78,51 @@ class CustomerController extends Controller
     // -------------------------------------------------------
     public function show(Customer $customer)
     {
-        return view('customers.show', compact('customer'));
+        $logs = collect()
+            ->merge($customer->sales()->with('items.product')->latest()->get()->map(fn ($sale) => [
+                'date' => $sale->created_at,
+                'type' => 'Sale',
+                'reference' => $sale->reference,
+                'amount' => (float) $sale->grand_total,
+                'paid' => (float) $sale->paid,
+                'due' => (float) $sale->due,
+                'note' => $sale->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->implode(', '),
+                'url' => route('sales.show', $sale),
+            ]))
+            ->merge($customer->saleReturns()->latest()->get()->map(fn ($return) => [
+                'date' => $return->created_at,
+                'type' => 'Sale Return',
+                'reference' => $return->reference,
+                'amount' => -1 * (float) $return->return_amount,
+                'paid' => $return->return_type === 'credit' ? 0 : -1 * (float) $return->return_amount,
+                'due' => 0,
+                'note' => ucfirst($return->return_type).' / '.ucfirst($return->return_status),
+                'url' => route('sale-returns.show', $return),
+            ]))
+            ->merge($customer->cashTransactions()->latest('date')->latest()->get()->map(fn ($cash) => [
+                'date' => $cash->date,
+                'type' => 'Payment',
+                'reference' => $cash->reference,
+                'amount' => $cash->direction === 'in' ? (float) $cash->amount : -1 * (float) $cash->amount,
+                'paid' => (float) $cash->amount,
+                'due' => 0,
+                'note' => $cash->note,
+                'url' => route('cash-transactions.index', ['search' => $cash->reference]),
+            ]))
+            ->merge($customer->manualDues()->latest('date')->latest()->get()->map(fn ($due) => [
+                'date' => $due->date,
+                'type' => 'Manual Due',
+                'reference' => $due->reference ?? 'Manual',
+                'amount' => (float) $due->amount,
+                'paid' => 0,
+                'due' => (float) $due->amount,
+                'note' => $due->note,
+                'url' => route('dues.manual'),
+            ]))
+            ->sortByDesc('date')
+            ->values();
+
+        return view('customers.show', compact('customer', 'logs'));
     }
  
     // -------------------------------------------------------
@@ -94,6 +141,7 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'full_name'  => 'required|string|max:255',
             'phone'      => 'nullable|string|max:20',
+            'address'    => 'nullable|string|max:1000',
             'total_sale' => 'nullable|numeric|min:0',
             'total_paid' => 'nullable|numeric|min:0',
         ]);

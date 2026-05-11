@@ -16,7 +16,11 @@
             @forelse($rows as $row)
                 <tr>
                     <td class="px-5 py-3"><a href="{{ route('sales.show', $row) }}" class="inline-block max-w-full truncate px-2 py-0.5 bg-violet-50 text-violet-700 rounded-md text-xs font-mono">{{ $row->reference }}</a></td>
-                    <td class="px-5 py-3 truncate">{{ $row->customer?->full_name ?? '-' }}</td>
+                    <td class="px-5 py-3 truncate">
+                        {{ $row->customer?->full_name ?? '-' }}
+                        <div class="text-xs text-gray-400 truncate">{{ $row->customer?->phone ?? '—' }}</div>
+                        <div class="text-xs text-gray-400 truncate">{{ $row->customer?->address ?? '—' }}</div>
+                    </td>
                     <td class="px-5 py-3 whitespace-nowrap">{{ optional($row->created_at)->format('d M Y') }}</td>
                     <td class="px-5 py-3 text-right font-semibold text-red-600">৳{{ number_format($row->due, 2) }}</td>
                 </tr>

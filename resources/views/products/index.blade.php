@@ -17,7 +17,7 @@
                         </svg>
                     </span>
                     <input type="text" name="search" value="{{ $search ?? '' }}"
-                        placeholder="Search by name or SKU…"
+                        placeholder="Search by name, design code or product code…"
                         class="w-full pl-9 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
 
@@ -106,6 +106,11 @@
                                     class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-xs font-mono font-medium break-all">
                                     {{ $product->sku }}
                                 </span>
+                                @if($product->product_code)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-mono font-medium break-all">
+                                        {{ $product->product_code }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -119,6 +124,11 @@
                                     {{ $product->stock?->stock_qty ?? 0 }}
                                 </span>
                             </p>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-lg p-2">
+                            <p class="text-gray-400">Sell Price</p>
+                            <p class="mt-1 font-medium text-gray-700">৳{{ number_format($product->selling_price, 2) }}</p>
                         </div>
 
                         <div class="bg-gray-50 rounded-lg p-2">
@@ -187,7 +197,9 @@
                         <tr class="border-b border-gray-100 bg-gray-50/60">
                             <th class="text-left px-5 py-3 font-medium text-gray-500 w-16">Image</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Product Name</th>
-                            <th class="text-left px-5 py-3 font-medium text-gray-500">SKU / Product Code</th>
+                            <th class="text-left px-5 py-3 font-medium text-gray-500">Design Code</th>
+                            <th class="text-left px-5 py-3 font-medium text-gray-500">Product Code</th>
+                            <th class="text-right px-5 py-3 font-medium text-gray-500">Sell Price</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Stock</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden sm:table-cell">Added</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Actions</th>
@@ -225,6 +237,14 @@
                                         class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-xs font-mono font-medium">
                                         {{ $product->sku }}
                                     </span>
+                                </td>
+
+                                <td class="px-5 py-3">
+                                    <span class="text-xs font-mono text-gray-600">{{ $product->product_code ?? '—' }}</span>
+                                </td>
+
+                                <td class="px-5 py-3 text-right font-medium text-gray-700">
+                                    ৳{{ number_format($product->selling_price, 2) }}
                                 </td>
 
                                 {{-- Stock --}}
@@ -272,7 +292,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-5 py-16 text-center">
+                                <td colspan="8" class="px-5 py-16 text-center">
                                     <div class="flex flex-col items-center gap-3 text-gray-400">
                                         <svg class="w-10 h-10" fill="none" stroke="currentColor"
                                             stroke-width="1.5" viewBox="0 0 24 24">

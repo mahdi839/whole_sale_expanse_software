@@ -88,7 +88,9 @@ class SaleController extends Controller
 
         $nextReference = Sale::generateReference();
         $customers     = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
-        $products      = Product::with('stocks')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
+        $products      = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
+            ->orderBy('product_name')
+            ->get(['id', 'product_name', 'sku', 'product_code', 'selling_price']);
         $shops = auth()->user()->canManageAllShops()
             ? Shop::where('is_active', true)->orderBy('name')->get()
             : collect([auth()->user()->shop]);
@@ -137,13 +139,21 @@ class SaleController extends Controller
                 $qty       = (float) $item['qty'];
                 $price     = (float) $item['price_on_sale'];
                 $lineTotal = $qty * $price;
-                $costPrice  = $this->getProductCostPrice($product->id);
+                $purchaseItem = $this->resolvePurchaseItem($product->id, $item['purchase_item_id'] ?? null);
+                if ($purchaseItem && $this->getBatchAvailableQty($purchaseItem->id) < $qty) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Not enough batch quantity for ' . $product->product_name . '.',
+                    ]);
+                }
+                $costPrice  = (float) ($purchaseItem?->price ?? 0);
                 $profit     = $price - $costPrice;
                 $lineProfit = $profit * $qty;
 
                 SaleItem::create([
                     'sale_id'       => $sale->id,
                     'product_id'    => $product->id,
+                    'purchase_item_id' => $purchaseItem?->id,
+                    'batch'         => $purchaseItem?->batch,
                     'qty'           => $qty,
                     'price_on_sale' => $price,
                     'cost_price'    => $costPrice,
@@ -198,7 +208,9 @@ class SaleController extends Controller
         $this->authorizeSaleShop($sale);
         $sale->load('items.product.stocks');
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
-        $products  = Product::with('stocks')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
+        $products  = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
+            ->orderBy('product_name')
+            ->get(['id', 'product_name', 'sku', 'product_code', 'selling_price']);
         $shops = auth()->user()->canManageAllShops()
             ? Shop::where('is_active', true)->orderBy('name')->get()
             : collect([auth()->user()->shop]);
@@ -268,13 +280,21 @@ class SaleController extends Controller
                 $qty     = (float) $item['qty'];
                 $price   = (float) $item['price_on_sale'];
 
-                $costPrice  = $this->getProductCostPrice($product->id);
+                $purchaseItem = $this->resolvePurchaseItem($product->id, $item['purchase_item_id'] ?? null);
+                if ($purchaseItem && $this->getBatchAvailableQty($purchaseItem->id) < $qty) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Not enough batch quantity for ' . $product->product_name . '.',
+                    ]);
+                }
+                $costPrice  = (float) ($purchaseItem?->price ?? 0);
                 $profit     = $price - $costPrice;
                 $lineProfit = $profit * $qty;
 
                 SaleItem::create([
                     'sale_id'       => $sale->id,
                     'product_id'    => $product->id,
+                    'purchase_item_id' => $purchaseItem?->id,
+                    'batch'         => $purchaseItem?->batch,
                     'qty'           => $qty,
                     'price_on_sale' => $price,
                     'cost_price'    => $costPrice,
@@ -435,14 +455,40 @@ class SaleController extends Controller
         };
     }
 
-    private function getProductCostPrice(int $productId): float
+    private function resolvePurchaseItem(int $productId, ?int $purchaseItemId): ?\App\Models\PurchaseItem
     {
-        $latestPurchasePrice = DB::table('purchase_items')
-            ->where('product_id', $productId)
-            ->latest('id')
-            ->value('price');
+        if ($purchaseItemId) {
+            return \App\Models\PurchaseItem::where('product_id', $productId)->find($purchaseItemId);
+        }
 
-        return (float) ($latestPurchasePrice ?? 0);
+        return \App\Models\PurchaseItem::where('product_id', $productId)->latest('id')->first();
+    }
+
+    private function getBatchAvailableQty(int $purchaseItemId): float
+    {
+        $purchaseItem = \App\Models\PurchaseItem::find($purchaseItemId);
+        if (! $purchaseItem) {
+            return 0;
+        }
+
+        $returnedToSupplier = DB::table('purchase_return_items')
+            ->join('purchase_returns', 'purchase_returns.id', '=', 'purchase_return_items.purchase_return_id')
+            ->where('purchase_returns.return_status', 'approved')
+            ->where('purchase_return_items.purchase_item_id', $purchaseItemId)
+            ->sum('purchase_return_items.qty');
+
+        $sold = DB::table('sale_items')
+            ->where('purchase_item_id', $purchaseItemId)
+            ->sum('qty');
+
+        $returnedByCustomer = DB::table('sale_return_items')
+            ->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
+            ->join('sale_items', 'sale_items.id', '=', 'sale_return_items.sale_item_id')
+            ->where('sale_returns.return_status', 'approved')
+            ->where('sale_items.purchase_item_id', $purchaseItemId)
+            ->sum('sale_return_items.qty');
+
+        return max(0, (float) $purchaseItem->qty - (float) $returnedToSupplier - (float) $sold + (float) $returnedByCustomer);
     }
     private function validateSale(Request $request, ?int $saleId = null): array
     {
@@ -459,6 +505,7 @@ class SaleController extends Controller
             'note'                   => 'nullable|string|max:2000',
             'items'                  => 'required|array|min:1',
             'items.*.product_id'     => 'required|exists:products,id',
+            'items.*.purchase_item_id' => 'nullable|exists:purchase_items,id',
             'items.*.qty'            => 'required|numeric|min:0.01',
             'items.*.price_on_sale'  => 'required|numeric|min:0',
         ]);

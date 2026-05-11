@@ -13,6 +13,7 @@ class PurchaseItem extends Model
         'purchase_id',
         'product_id',
         'bale_no',
+        'batch',
         'qty',
         'price',
         'line_total',
@@ -37,5 +38,10 @@ class PurchaseItem extends Model
     public function returnItems()
     {
         return $this->hasMany(PurchaseReturnItem::class);
+    }
+
+    public function saleItems()
+    {
+        return $this->hasMany(SaleItem::class);
     }
 }

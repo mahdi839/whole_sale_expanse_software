@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">Customer Profile</x-slot>
 
-    <div class="max-w-2xl space-y-4">
+    <div class="max-w-5xl space-y-4">
 
         {{-- Breadcrumb --}}
         <nav class="flex items-center gap-2 text-xs text-gray-400">
@@ -39,11 +39,53 @@
                     <dt class="text-gray-500">Phone</dt>
                     <dd class="font-medium text-gray-800">{{ $customer->phone ?? '—' }}</dd>
                 </div>
+                <div class="flex justify-between gap-4 py-3">
+                    <dt class="text-gray-500">Address</dt>
+                    <dd class="font-medium text-gray-800 text-right">{{ $customer->address ?? '—' }}</dd>
+                </div>
                 <div class="flex justify-between py-3">
                     <dt class="text-gray-500">Member Since</dt>
                     <dd class="font-medium text-gray-800">{{ $customer->created_at->format('d M Y') }}</dd>
                 </div>
             </dl>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div class="px-5 py-3 border-b">
+                <h3 class="text-sm font-semibold text-gray-800">Transaction Logs</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 border-b">
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Date</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Type</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Reference</th>
+                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Amount</th>
+                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
+                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Due</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Note</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @forelse($logs as $log)
+                            <tr>
+                                <td class="px-5 py-3 whitespace-nowrap">{{ optional($log['date'])->format('d M Y') }}</td>
+                                <td class="px-5 py-3">{{ $log['type'] }}</td>
+                                <td class="px-5 py-3">
+                                    <a href="{{ $log['url'] }}" class="font-mono text-xs text-blue-700 hover:underline">{{ $log['reference'] }}</a>
+                                </td>
+                                <td class="px-5 py-3 text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">৳{{ number_format($log['amount'], 2) }}</td>
+                                <td class="px-5 py-3 text-right text-green-600">৳{{ number_format($log['paid'], 2) }}</td>
+                                <td class="px-5 py-3 text-right text-red-600">৳{{ number_format($log['due'], 2) }}</td>
+                                <td class="px-5 py-3 text-gray-500 max-w-xs truncate">{{ $log['note'] ?: '—' }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="7" class="px-5 py-12 text-center text-gray-400">No transactions found.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         {{-- Financial summary --}}

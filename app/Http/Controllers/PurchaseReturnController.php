@@ -343,13 +343,6 @@ class PurchaseReturnController extends Controller
     {
         $ret->loadMissing('items');
 
-        foreach ($ret->items as $item) {
-            $stock = Stock::where('product_id', $item->product_id)->whereNull('shop_id')->first();
-            if ($stock) {
-                $stock->decrement('stock_qty', (float) $item->qty);
-            }
-        }
-
         $this->syncSupplierFinancials($ret->supplier_id);
         $this->syncPurchaseStatus($ret);
 
@@ -364,15 +357,6 @@ class PurchaseReturnController extends Controller
     private function reverseReturnEffects(PurchaseReturn $ret): void
     {
         $ret->loadMissing('items');
-
-        foreach ($ret->items as $item) {
-            $stock = Stock::firstOrCreate(
-                ['product_id' => $item->product_id, 'shop_id' => null],
-                ['stock_qty' => 0]
-            );
-
-            $stock->increment('stock_qty', (float) $item->qty);
-        }
 
         $this->syncSupplierFinancials($ret->supplier_id);
         $this->syncPurchaseStatus($ret);

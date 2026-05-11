@@ -13,6 +13,7 @@ class Customer extends Model
         'code',
         'full_name',
         'phone',
+        'address',
         'total_sale',
         'total_paid',
         'due',
@@ -59,5 +60,25 @@ class Customer extends Model
     {
         $this->due = max(0, $this->total_sale - $this->total_paid);
         $this->saveQuietly();
+    }
+
+    public function sales()
+    {
+        return $this->hasMany(Sale::class);
+    }
+
+    public function saleReturns()
+    {
+        return $this->hasMany(SaleReturn::class);
+    }
+
+    public function cashTransactions()
+    {
+        return $this->hasMany(CashTransaction::class);
+    }
+
+    public function manualDues()
+    {
+        return $this->hasMany(ManualDue::class);
     }
 }

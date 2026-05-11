@@ -9,6 +9,8 @@
                 'product_id'    => $item->product_id,
                 'product_name'  => $item->product->product_name ?? 'Unknown',
                 'sku'           => $item->product->sku ?? '',
+                'purchase_item_id' => $item->purchase_item_id,
+                'batch'         => $item->batch ?? '',
                 'stock_qty'     => (float) ($item->product?->stocks?->firstWhere('shop_id', $sale->shop_id)?->stock_qty ?? 0),
                 'qty'           => (float) $item->qty,
                 'price_on_sale' => (float) $item->price_on_sale,
@@ -342,7 +344,7 @@
                     <circle cx="11" cy="11" r="8"/>
                     <path d="m21 21-4.35-4.35"/>
                 </svg>
-                <input type="text" id="product-search" placeholder="Search by name or SKU…" autocomplete="off">
+                <input type="text" id="product-search" placeholder="Search by name or design code…" autocomplete="off">
                 <div class="search-dropdown" id="search-dropdown">
                     @foreach ($products as $product)
                         <div class="search-option"
@@ -565,7 +567,19 @@ const ALL_PRODUCTS = [
         name: @json($p->product_name),
         sku: "{{ $p->sku }}",
         price: {{ $p->selling_price ?? 0 }},
-        stocks: @json($p->stocks->mapWithKeys(fn($stock) => [(string) $stock->shop_id => (float) $stock->stock_qty]))
+        stocks: @json($p->stocks->mapWithKeys(fn($stock) => [(string) $stock->shop_id => (float) $stock->stock_qty])),
+        batches: @json($p->purchaseItems->map(function ($item) {
+            $returned = $item->returnItems->sum(fn($returnItem) => (float) $returnItem->qty);
+            $sold = $item->saleItems->sum(fn($saleItem) => (float) $saleItem->qty);
+            $salesReturned = $item->saleItems->flatMap->returnItems->sum(fn($returnItem) => (float) $returnItem->qty);
+
+            return [
+                'id' => $item->id,
+                'batch' => $item->batch ?: ('Batch #'.$item->id),
+                'price' => (float) $item->price,
+                'available_qty' => max(0, (float) $item->qty - $returned - $sold + $salesReturned),
+            ];
+        })->values())
     },
     @endforeach
 ];
@@ -641,7 +655,8 @@ function addToCart(id, name, sku, price, stockQty = 0) {
         existing.stock_qty = stockQty;
         existing.line_total = existing.qty * existing.price_on_sale;
     } else {
-        cartItems.push({ product_id: id, product_name: name, sku: sku || '', stock_qty: stockQty, qty: 1, price_on_sale: price, line_total: price });
+        const batch = getFirstBatch(id);
+        cartItems.push({ product_id: id, product_name: name, sku: sku || '', stock_qty: stockQty, qty: 1, price_on_sale: price, line_total: price, purchase_item_id: batch?.id || '', batch: batch?.batch || '' });
     }
     renderCart();
 }
@@ -658,7 +673,7 @@ function renderCart() {
     <div class="prod-info">
         <div class="prod-name">${escHtml(item.product_name)}</div>
         <div class="prod-sku">${escHtml(item.sku)}</div>
-        <div class="prod-stock">Available: ${formatQty(item.stock_qty)}</div>
+        <div class="prod-stock">Available: ${formatQty(item.stock_qty)}${item.batch ? ' · Batch: ' + escHtml(item.batch) : ''}</div>
     </div>
     <div class="qty-stepper">
         <button type="button" class="btn-minus" data-idx="${idx}">−</button>
@@ -671,6 +686,9 @@ function renderCart() {
            data-idx="${idx}"
            value="${formatMoney(item.price_on_sale)}"
            inputmode="decimal" autocomplete="off" title="Unit price">
+    <select name="items[${idx}][purchase_item_id]" class="price-edit item-batch" data-idx="${idx}" title="Batch">
+        ${getBatchOptions(item.product_id, item.purchase_item_id)}
+    </select>
     <div class="line-total item-total">৳${item.line_total.toFixed(2)}</div>
     <button type="button" class="btn-remove" data-idx="${idx}" title="Remove">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -708,6 +726,14 @@ function attachCardEvents() {
         const i = +e.target.dataset.idx;
         cartItems[i].price_on_sale = toNumber(e.target.value);
         e.target.value = formatMoney(cartItems[i].price_on_sale);
+        updateItem(i);
+    }));
+
+    cartList.querySelectorAll('.item-batch').forEach(sel => sel.addEventListener('change', e => {
+        const i = +e.target.dataset.idx;
+        const selected = getProductBatches(cartItems[i].product_id).find(batch => String(batch.id) === String(e.target.value));
+        cartItems[i].purchase_item_id = e.target.value;
+        cartItems[i].batch = selected?.batch || '';
         updateItem(i);
     }));
 
@@ -870,6 +896,28 @@ function getAvailableStock(productId) {
     const shopId = shopInput?.value || '';
 
     return Number(product?.stocks?.[shopId] ?? 0);
+}
+
+function getProductBatches(productId) {
+    const product = ALL_PRODUCTS.find(p => String(p.id) === String(productId));
+    return product?.batches || [];
+}
+
+function getFirstBatch(productId) {
+    return getProductBatches(productId).find(batch => Number(batch.available_qty) > 0) || getProductBatches(productId)[0] || null;
+}
+
+function getBatchOptions(productId, selectedId) {
+    const batches = getProductBatches(productId);
+    if (!batches.length) {
+        return '<option value="">No batch</option>';
+    }
+
+    return batches.map(batch => {
+        const selected = String(batch.id) === String(selectedId) ? ' selected' : '';
+        const label = `${escHtml(batch.batch)} · Cost: ৳${Number(batch.price).toFixed(2)} · Qty: ${formatQty(batch.available_qty)}`;
+        return `<option value="${batch.id}"${selected}>${label}</option>`;
+    }).join('');
 }
 
 function formatQty(qty) {

@@ -356,7 +356,7 @@
                 <tr>
                     <th>#</th>
                     <th>Product</th>
-                    <th>SKU</th>
+                    <th>Design Code</th>
                     <th class="r">Qty</th>
                     <th class="r">Unit Price</th>
                     <th class="r">Line Total</th>
