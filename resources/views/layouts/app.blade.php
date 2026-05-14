@@ -326,6 +326,11 @@
                 </x-sidebar-dropdown>
                 @endcan
 
+                <x-sidebar-link :href="route('cloth-sewings.index')" :active="request()->routeIs('cloth-sewings.*')">
+                    <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 7h16"/><path d="M6 7v11a2 2 0 002 2h8a2 2 0 002-2V7"/><path d="M9 7V4h6v3"/><path d="M9 12h6"/><path d="M9 16h4"/></svg></x-slot>
+                    Cloth Sewing
+                </x-sidebar-link>
+
                 @canany(['manage shops', 'manage stock', 'distribute stock'])
                     <x-sidebar-dropdown label="Stock Management" :active="request()->routeIs('shops.*') || request()->routeIs('stocks.*')">
                         <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg></x-slot>

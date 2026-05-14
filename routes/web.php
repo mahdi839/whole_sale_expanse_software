@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CashTransactionController;
+use App\Http\Controllers\ClothSewingController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DueManagementController;
@@ -34,6 +35,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('/customers', CustomerController::class)->middleware('permission:manage customers');
     Route::get('/suppliers/{supplier}/transactions/export', [SupplierController::class, 'exportTransactions'])->name('suppliers.transactions.export')->middleware('permission:manage suppliers|manage dues');
     Route::resource('/suppliers', SupplierController::class)->middleware('permission:manage suppliers');
+    Route::resource('/cloth-sewings', ClothSewingController::class)
+        ->parameters(['cloth-sewings' => 'clothSewing'])
+        ->except(['show']);
 
     Route::resource('/users', UserController::class)->except(['show'])->middleware('permission:manage users');
     Route::resource('/roles', RoleController::class)->except(['show'])->middleware('permission:manage roles');

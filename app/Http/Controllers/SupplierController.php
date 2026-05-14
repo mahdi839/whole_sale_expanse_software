@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Supplier;
+use App\Support\SimplePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 
@@ -58,22 +59,34 @@ class SupplierController extends Controller
     public function exportTransactions(Supplier $supplier)
     {
         $logs = $this->supplierLogs($supplier);
+        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Paid', 'Due', 'Note'];
+        $rows = $logs->map(fn ($log) => [
+            optional($log['date'])->format('Y-m-d'),
+            $log['type'],
+            $log['reference'],
+            $log['amount'],
+            $log['paid'],
+            $log['due'],
+            $log['note'],
+        ]);
+
+        if (request('format') === 'pdf') {
+            $fileName = 'supplier-'.$supplier->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.pdf';
+
+            return Response::make(SimplePdf::table('Supplier Transactions - '.$supplier->name, $headers, $rows), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+            ]);
+        }
+
         $fileName = 'supplier-'.$supplier->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.csv';
 
-        return Response::stream(function () use ($logs) {
+        return Response::stream(function () use ($rows, $headers) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Date', 'Type', 'Reference', 'Amount', 'Paid', 'Due', 'Note']);
+            fputcsv($file, $headers);
 
-            foreach ($logs as $log) {
-                fputcsv($file, [
-                    optional($log['date'])->format('Y-m-d'),
-                    $log['type'],
-                    $log['reference'],
-                    $log['amount'],
-                    $log['paid'],
-                    $log['due'],
-                    $log['note'],
-                ]);
+            foreach ($rows as $row) {
+                fputcsv($file, $row);
             }
 
             fclose($file);

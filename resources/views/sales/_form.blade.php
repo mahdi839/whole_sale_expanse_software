@@ -68,6 +68,7 @@
         display: flex;
         flex-direction: column;
         gap: 20px;
+        position: relative;
     }
 
     .pos-sidebar {
@@ -87,9 +88,19 @@
     .product-search-panel {
         position: sticky;
         top: 0;
-        z-index: 20;
+        z-index: 60;
         background: #fff;
-        padding-bottom: 10px;
+        margin: -24px -24px 0;
+        padding: 16px 24px 12px;
+        border-bottom: 1px solid #eef2f7;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, .06);
+    }
+
+    @media (max-width: 640px) {
+        .product-search-panel {
+            margin: -16px -16px 0;
+            padding: 12px 16px 10px;
+        }
     }
 
     .search-wrap { position: relative; }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Support\SimplePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 
@@ -87,9 +88,26 @@ class CustomerController extends Controller
     public function exportTransactions(Customer $customer)
     {
         [$logs] = $this->customerLogs($customer);
+        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Note'];
+
+        if (request('format') === 'pdf') {
+            $rows = $logs->map(fn ($log) => [
+                optional($log['date'])->format('Y-m-d'),
+                $log['type'],
+                $log['reference'],
+                $log['amount'],
+                $log['qty'],
+                $log['paid'],
+                $log['due'],
+                $log['note'],
+            ]);
+
+            return $this->streamPdf('customer-'.$customer->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.pdf', 'Customer Transactions - '.$customer->full_name, $headers, $rows);
+        }
+
         $fileName = 'customer-'.$customer->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.csv';
 
-        return $this->streamLogsCsv($fileName, $logs, ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Note']);
+        return $this->streamLogsCsv($fileName, $logs, $headers);
     }
  
     // -------------------------------------------------------
@@ -223,6 +241,14 @@ class CustomerController extends Controller
             fclose($file);
         }, 200, [
             'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
+    }
+
+    private function streamPdf(string $fileName, string $title, array $headers, $rows)
+    {
+        return Response::make(SimplePdf::table($title, $headers, $rows), 200, [
+            'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
     }

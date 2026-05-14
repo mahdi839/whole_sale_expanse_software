@@ -7,6 +7,7 @@ use App\Models\ManualDue;
 use App\Models\Purchase;
 use App\Models\Sale;
 use App\Models\Supplier;
+use App\Support\SimplePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -218,7 +219,7 @@ class DueManagementController extends Controller
             ->orderByDesc('due')
             ->get();
 
-        return $this->csv('customer-wise-dues', ['Code', 'Customer', 'Phone', 'Total Sale', 'Total Paid', 'Due'], $rows->map(fn ($row) => [
+        return $this->export('customer-wise-dues', 'Customer Wise Dues', ['Code', 'Customer', 'Phone', 'Total Sale', 'Total Paid', 'Due'], $rows->map(fn ($row) => [
             $row->code,
             $row->full_name,
             $row->phone,
@@ -250,7 +251,7 @@ class DueManagementController extends Controller
             ->orderByDesc('due')
             ->get();
 
-        return $this->csv('supplier-wise-dues', ['Code', 'Supplier', 'Phone', 'Total Purchase', 'Total Paid', 'Due'], $rows->map(fn ($row) => [
+        return $this->export('supplier-wise-dues', 'Supplier Wise Dues', ['Code', 'Supplier', 'Phone', 'Total Purchase', 'Total Paid', 'Due'], $rows->map(fn ($row) => [
             $row->code,
             $row->name,
             $row->phone,
@@ -279,7 +280,7 @@ class DueManagementController extends Controller
             ->latest()
             ->get();
 
-        return $this->csv('sale-wise-dues', ['Date', 'Reference', 'Customer', 'Grand Total', 'Paid', 'Due', 'Status'], $rows->map(fn ($row) => [
+        return $this->export('sale-wise-dues', 'Sale Wise Dues', ['Date', 'Reference', 'Customer', 'Grand Total', 'Paid', 'Due', 'Status'], $rows->map(fn ($row) => [
             optional($row->created_at)->format('Y-m-d'),
             $row->reference,
             $row->customer?->full_name,
@@ -311,7 +312,7 @@ class DueManagementController extends Controller
             ->latest()
             ->get();
 
-        return $this->csv('purchase-wise-dues', ['Date', 'Reference', 'Supplier', 'Grand Total', 'Paid', 'Due', 'Status'], $rows->map(fn ($row) => [
+        return $this->export('purchase-wise-dues', 'Purchase Wise Dues', ['Date', 'Reference', 'Supplier', 'Grand Total', 'Paid', 'Due', 'Status'], $rows->map(fn ($row) => [
             optional($row->date)->format('Y-m-d'),
             $row->reference,
             $row->supplier?->name,
@@ -343,7 +344,7 @@ class DueManagementController extends Controller
             ->latest()
             ->get();
 
-        return $this->csv('manual-dues', ['Date', 'Reference', 'Party Type', 'Party', 'Amount', 'Note'], $rows->map(fn ($row) => [
+        return $this->export('manual-dues', 'Manual Dues', ['Date', 'Reference', 'Party Type', 'Party', 'Amount', 'Note'], $rows->map(fn ($row) => [
             optional($row->date)->format('Y-m-d'),
             $row->reference,
             $row->party_type,
@@ -445,6 +446,18 @@ class DueManagementController extends Controller
                 $supplier->update(['due' => max(0, (float) $supplier->total_purchase - (float) $supplier->total_paid)]);
             }
         }
+    }
+
+    private function export(string $name, string $title, array $header, $rows)
+    {
+        if (request('format') === 'pdf') {
+            return Response::make(SimplePdf::table($title, $header, $rows), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$name.'-'.now()->format('Y-m-d-H-i-s').'.pdf"',
+            ]);
+        }
+
+        return $this->csv($name, $header, $rows);
     }
 
     private function csv(string $name, array $header, $rows)

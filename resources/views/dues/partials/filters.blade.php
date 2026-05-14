@@ -21,7 +21,11 @@
             @isset($exportRoute)
                 <a href="{{ $exportRoute }}"
                     class="h-10 px-4 bg-emerald-600 text-white rounded-lg text-sm inline-flex items-center justify-center w-full sm:w-auto">
-                    Download
+                    CSV
+                </a>
+                <a href="{{ $pdfRoute ?? $exportRoute.(str_contains($exportRoute, '?') ? '&' : '?').'format=pdf' }}"
+                    class="h-10 px-4 bg-red-600 text-white rounded-lg text-sm inline-flex items-center justify-center w-full sm:w-auto">
+                    PDF
                 </a>
             @endisset
         </div>
