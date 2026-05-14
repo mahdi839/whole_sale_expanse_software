@@ -140,6 +140,13 @@
                     </div>
 
                     <div class="flex items-center gap-2 pt-1">
+                        <a href="{{ route('products.barcode', $product) }}"
+                            class="inline-flex items-center justify-center w-9 h-9 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition"
+                            title="Generate barcode">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M4 5v14M8 5v14M13 5v14M17 5v14M20 5v14"/>
+                            </svg>
+                        </a>
                         <a href="{{ route('products.edit', $product) }}"
                             class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
@@ -263,6 +270,13 @@
                                 {{-- Actions --}}
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-end gap-2">
+                                        <a href="{{ route('products.barcode', $product) }}"
+                                            class="inline-flex items-center justify-center w-8 h-8 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition"
+                                            title="Generate barcode">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path d="M4 5v14M8 5v14M13 5v14M17 5v14M20 5v14"/>
+                                            </svg>
+                                        </a>
                                         <a href="{{ route('products.edit', $product) }}"
                                             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"

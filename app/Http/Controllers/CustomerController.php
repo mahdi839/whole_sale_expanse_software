@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 
 class CustomerController extends Controller
 {
@@ -78,58 +79,17 @@ class CustomerController extends Controller
     // -------------------------------------------------------
     public function show(Customer $customer)
     {
-        $sales = $customer->sales()->with('items.product')->latest()->get();
-        $totalQty = $sales->sum(fn ($sale) => $sale->items->sum(fn ($item) => (float) $item->qty));
-
-        $logs = collect()
-            ->merge($sales->map(fn ($sale) => [
-                'date' => $sale->created_at,
-                'type' => 'Sale',
-                'reference' => $sale->reference,
-                'amount' => (float) $sale->grand_total,
-                'qty' => $sale->items->sum(fn ($item) => (float) $item->qty),
-                'paid' => (float) $sale->paid,
-                'due' => (float) $sale->due,
-                'note' => $sale->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->implode(', '),
-                'url' => route('sales.show', $sale),
-            ]))
-            ->merge($customer->saleReturns()->latest()->get()->map(fn ($return) => [
-                'date' => $return->created_at,
-                'type' => 'Sale Return',
-                'reference' => $return->reference,
-                'amount' => -1 * (float) $return->return_amount,
-                'qty' => null,
-                'paid' => $return->return_type === 'credit' ? 0 : -1 * (float) $return->return_amount,
-                'due' => 0,
-                'note' => ucfirst($return->return_type).' / '.ucfirst($return->return_status),
-                'url' => route('sale-returns.show', $return),
-            ]))
-            ->merge($customer->cashTransactions()->latest('date')->latest()->get()->map(fn ($cash) => [
-                'date' => $cash->date,
-                'type' => 'Payment',
-                'reference' => $cash->reference,
-                'amount' => $cash->direction === 'in' ? (float) $cash->amount : -1 * (float) $cash->amount,
-                'qty' => null,
-                'paid' => (float) $cash->amount,
-                'due' => 0,
-                'note' => $cash->note,
-                'url' => route('cash-transactions.index', ['search' => $cash->reference]),
-            ]))
-            ->merge($customer->manualDues()->latest('date')->latest()->get()->map(fn ($due) => [
-                'date' => $due->date,
-                'type' => 'Manual Due',
-                'reference' => $due->reference ?? 'Manual',
-                'amount' => (float) $due->amount,
-                'qty' => null,
-                'paid' => 0,
-                'due' => (float) $due->amount,
-                'note' => $due->note,
-                'url' => route('dues.manual'),
-            ]))
-            ->sortByDesc('date')
-            ->values();
+        [$logs, $totalQty] = $this->customerLogs($customer);
 
         return view('customers.show', compact('customer', 'logs', 'totalQty'));
+    }
+
+    public function exportTransactions(Customer $customer)
+    {
+        [$logs] = $this->customerLogs($customer);
+        $fileName = 'customer-'.$customer->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.csv';
+
+        return $this->streamLogsCsv($fileName, $logs, ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Note']);
     }
  
     // -------------------------------------------------------
@@ -183,5 +143,87 @@ class CustomerController extends Controller
  
         return redirect()->route('customers.index')
             ->with('success', 'Customer deleted successfully.');
+    }
+
+    private function customerLogs(Customer $customer): array
+    {
+        $sales = $customer->sales()->with('items.product')->latest()->get();
+        $totalQty = $sales->sum(fn ($sale) => $sale->items->sum(fn ($item) => (float) $item->qty));
+
+        $logs = collect()
+            ->merge($sales->map(fn ($sale) => [
+                'date' => $sale->created_at,
+                'type' => 'Sale',
+                'reference' => $sale->reference,
+                'amount' => (float) $sale->grand_total,
+                'qty' => $sale->items->sum(fn ($item) => (float) $item->qty),
+                'paid' => (float) $sale->paid,
+                'due' => (float) $sale->due,
+                'note' => $sale->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->implode(', '),
+                'url' => route('sales.show', $sale),
+            ]))
+            ->merge($customer->saleReturns()->latest()->get()->map(fn ($return) => [
+                'date' => $return->created_at,
+                'type' => 'Sale Return',
+                'reference' => $return->reference,
+                'amount' => -1 * (float) $return->return_amount,
+                'qty' => null,
+                'paid' => $return->return_type === 'credit' ? 0 : -1 * (float) $return->return_amount,
+                'due' => 0,
+                'note' => ucfirst($return->return_type).' / '.ucfirst($return->return_status),
+                'url' => route('sale-returns.show', $return),
+            ]))
+            ->merge($customer->cashTransactions()->latest('date')->latest()->get()->map(fn ($cash) => [
+                'date' => $cash->date,
+                'type' => 'Payment',
+                'reference' => $cash->reference,
+                'amount' => $cash->direction === 'in' ? (float) $cash->amount : -1 * (float) $cash->amount,
+                'qty' => null,
+                'paid' => (float) $cash->amount,
+                'due' => 0,
+                'note' => $cash->note,
+                'url' => route('cash-transactions.index', ['search' => $cash->reference]),
+            ]))
+            ->merge($customer->manualDues()->latest('date')->latest()->get()->map(fn ($due) => [
+                'date' => $due->date,
+                'type' => 'Manual Due',
+                'reference' => $due->reference ?? 'Manual',
+                'amount' => (float) $due->amount,
+                'qty' => null,
+                'paid' => 0,
+                'due' => (float) $due->amount,
+                'note' => $due->note,
+                'url' => route('dues.manual'),
+            ]))
+            ->sortByDesc('date')
+            ->values();
+
+        return [$logs, $totalQty];
+    }
+
+    private function streamLogsCsv(string $fileName, $logs, array $header)
+    {
+        return Response::stream(function () use ($logs, $header) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $header);
+
+            foreach ($logs as $log) {
+                fputcsv($file, [
+                    optional($log['date'])->format('Y-m-d'),
+                    $log['type'],
+                    $log['reference'],
+                    $log['amount'],
+                    $log['qty'],
+                    $log['paid'],
+                    $log['due'],
+                    $log['note'],
+                ]);
+            }
+
+            fclose($file);
+        }, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
     }
 }

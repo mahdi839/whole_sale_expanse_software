@@ -9,6 +9,7 @@ use App\Models\Sale;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Validation\Rule;
 
 class DueManagementController extends Controller
@@ -27,7 +28,7 @@ class DueManagementController extends Controller
                 'latest_due_sale_at' => Sale::select('created_at')
                     ->whereColumn('customer_id', 'customers.id')
                     ->where('due', '>', 0)
-                    ->whereDate('created_at', $filters['date'])
+                    ->when($filters['date'], fn ($q) => $q->whereDate('created_at', $filters['date']))
                     ->latest()
                     ->limit(1),
             ])
@@ -37,7 +38,7 @@ class DueManagementController extends Controller
                     ->from('sales')
                     ->whereColumn('sales.customer_id', 'customers.id')
                     ->where('sales.due', '>', 0)
-                    ->whereDate('sales.created_at', $filters['date']);
+                    ->when($filters['date'], fn ($q) => $q->whereDate('sales.created_at', $filters['date']));
             })
             ->when($filters['search'], function ($query) use ($filters) {
                 $search = $filters['search'];
@@ -65,7 +66,7 @@ class DueManagementController extends Controller
                 'latest_due_purchase_date' => Purchase::select('date')
                     ->whereColumn('supplier_id', 'suppliers.id')
                     ->where('due_amount', '>', 0)
-                    ->whereDate('date', $filters['date'])
+                    ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
                     ->latest('date')
                     ->limit(1),
             ])
@@ -75,7 +76,7 @@ class DueManagementController extends Controller
                     ->from('purchases')
                     ->whereColumn('purchases.supplier_id', 'suppliers.id')
                     ->where('purchases.due_amount', '>', 0)
-                    ->whereDate('purchases.date', $filters['date']);
+                    ->when($filters['date'], fn ($q) => $q->whereDate('purchases.date', $filters['date']));
             })
             ->when($filters['search'], function ($query) use ($filters) {
                 $search = $filters['search'];
@@ -100,7 +101,7 @@ class DueManagementController extends Controller
 
         $rows = Sale::with('customer')
             ->where('due', '>', 0)
-            ->whereDate('created_at', $filters['date'])
+            ->when($filters['date'], fn ($q) => $q->whereDate('created_at', $filters['date']))
             ->when($filters['search'], function ($query) use ($filters) {
                 $search = $filters['search'];
 
@@ -129,7 +130,7 @@ class DueManagementController extends Controller
 
         $rows = Purchase::with('supplier')
             ->where('due_amount', '>', 0)
-            ->whereDate('date', $filters['date'])
+            ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
             ->when($filters['search'], function ($query) use ($filters) {
                 $search = $filters['search'];
 
@@ -159,7 +160,7 @@ class DueManagementController extends Controller
         $filters = $this->filters(request());
 
         $manualDues = ManualDue::with(['customer', 'supplier'])
-            ->whereDate('date', $filters['date'])
+            ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
             ->when($filters['search'], function ($query) use ($filters) {
                 $search = $filters['search'];
 
@@ -193,6 +194,163 @@ class DueManagementController extends Controller
             'suppliers',
             'filters',
         ));
+    }
+
+    public function exportCustomer()
+    {
+        $filters = $this->filters(request());
+        $rows = Customer::query()
+            ->where('due', '>', 0)
+            ->whereExists(function ($query) use ($filters) {
+                $query->selectRaw(1)
+                    ->from('sales')
+                    ->whereColumn('sales.customer_id', 'customers.id')
+                    ->where('sales.due', '>', 0)
+                    ->when($filters['date'], fn ($q) => $q->whereDate('sales.created_at', $filters['date']));
+            })
+            ->when($filters['search'], fn ($q) => $q->where(function ($sub) use ($filters) {
+                $search = $filters['search'];
+                $sub->where('full_name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%");
+            }))
+            ->orderByDesc('due')
+            ->get();
+
+        return $this->csv('customer-wise-dues', ['Code', 'Customer', 'Phone', 'Total Sale', 'Total Paid', 'Due'], $rows->map(fn ($row) => [
+            $row->code,
+            $row->full_name,
+            $row->phone,
+            $row->total_sale,
+            $row->total_paid,
+            $row->due,
+        ]));
+    }
+
+    public function exportSupplier()
+    {
+        $filters = $this->filters(request());
+        $rows = Supplier::query()
+            ->where('due', '>', 0)
+            ->whereExists(function ($query) use ($filters) {
+                $query->selectRaw(1)
+                    ->from('purchases')
+                    ->whereColumn('purchases.supplier_id', 'suppliers.id')
+                    ->where('purchases.due_amount', '>', 0)
+                    ->when($filters['date'], fn ($q) => $q->whereDate('purchases.date', $filters['date']));
+            })
+            ->when($filters['search'], fn ($q) => $q->where(function ($sub) use ($filters) {
+                $search = $filters['search'];
+                $sub->where('name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            }))
+            ->orderByDesc('due')
+            ->get();
+
+        return $this->csv('supplier-wise-dues', ['Code', 'Supplier', 'Phone', 'Total Purchase', 'Total Paid', 'Due'], $rows->map(fn ($row) => [
+            $row->code,
+            $row->name,
+            $row->phone,
+            $row->total_purchase,
+            $row->total_paid,
+            $row->due,
+        ]));
+    }
+
+    public function exportSale()
+    {
+        $filters = $this->filters(request());
+        $rows = Sale::with('customer')
+            ->where('due', '>', 0)
+            ->when($filters['date'], fn ($q) => $q->whereDate('created_at', $filters['date']))
+            ->when($filters['search'], fn ($q) => $q->where(function ($sub) use ($filters) {
+                $search = $filters['search'];
+                $sub->where('reference', 'like', "%{$search}%")
+                    ->orWhere('cash_memo', 'like', "%{$search}%")
+                    ->orWhere('bell_no', 'like', "%{$search}%")
+                    ->orWhereHas('customer', fn ($customer) => $customer->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%"));
+            }))
+            ->latest()
+            ->get();
+
+        return $this->csv('sale-wise-dues', ['Date', 'Reference', 'Customer', 'Grand Total', 'Paid', 'Due', 'Status'], $rows->map(fn ($row) => [
+            optional($row->created_at)->format('Y-m-d'),
+            $row->reference,
+            $row->customer?->full_name,
+            $row->grand_total,
+            $row->paid,
+            $row->due,
+            $row->payment_status,
+        ]));
+    }
+
+    public function exportPurchase()
+    {
+        $filters = $this->filters(request());
+        $rows = Purchase::with('supplier')
+            ->where('due_amount', '>', 0)
+            ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
+            ->when($filters['search'], fn ($q) => $q->where(function ($sub) use ($filters) {
+                $search = $filters['search'];
+                $sub->where('reference', 'like', "%{$search}%")
+                    ->orWhere('cash_memo', 'like', "%{$search}%")
+                    ->orWhere('bill_no', 'like', "%{$search}%")
+                    ->orWhere('seller_store_name', 'like', "%{$search}%")
+                    ->orWhere('purchased_by', 'like', "%{$search}%")
+                    ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%"));
+            }))
+            ->latest()
+            ->get();
+
+        return $this->csv('purchase-wise-dues', ['Date', 'Reference', 'Supplier', 'Grand Total', 'Paid', 'Due', 'Status'], $rows->map(fn ($row) => [
+            optional($row->date)->format('Y-m-d'),
+            $row->reference,
+            $row->supplier?->name,
+            $row->grand_total,
+            $row->paid_amount,
+            $row->due_amount,
+            $row->payment_status,
+        ]));
+    }
+
+    public function exportManual()
+    {
+        $filters = $this->filters(request());
+        $rows = ManualDue::with(['customer', 'supplier'])
+            ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
+            ->when($filters['search'], fn ($q) => $q->where(function ($sub) use ($filters) {
+                $search = $filters['search'];
+                $sub->where('reference', 'like', "%{$search}%")
+                    ->orWhere('note', 'like', "%{$search}%")
+                    ->orWhereHas('customer', fn ($customer) => $customer->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%"))
+                    ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%"));
+            }))
+            ->latest('date')
+            ->latest()
+            ->get();
+
+        return $this->csv('manual-dues', ['Date', 'Reference', 'Party Type', 'Party', 'Amount', 'Note'], $rows->map(fn ($row) => [
+            optional($row->date)->format('Y-m-d'),
+            $row->reference,
+            $row->party_type,
+            $row->customer?->full_name ?? $row->supplier?->name,
+            $row->amount,
+            $row->note,
+        ]));
     }
 
     public function store(Request $request)
@@ -264,7 +422,7 @@ class DueManagementController extends Controller
     {
         return [
             'search' => $request->input('search'),
-            'date' => $request->input('date', now()->toDateString()),
+            'date' => $request->input('date'),
         ];
     }
 
@@ -287,5 +445,24 @@ class DueManagementController extends Controller
                 $supplier->update(['due' => max(0, (float) $supplier->total_purchase - (float) $supplier->total_paid)]);
             }
         }
+    }
+
+    private function csv(string $name, array $header, $rows)
+    {
+        $fileName = $name.'-'.now()->format('Y-m-d-H-i-s').'.csv';
+
+        return Response::stream(function () use ($header, $rows) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $header);
+
+            foreach ($rows as $row) {
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+        }, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
     }
 }

@@ -151,6 +151,14 @@
 
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-end gap-2">
+                                        <a href="{{ route('suppliers.show', $supplier) }}"
+                                           class="inline-flex items-center justify-center w-8 h-8 text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                                           title="View transactions">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                        </a>
                                         <a href="{{ route('suppliers.edit', $supplier) }}"
                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
                                                   text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition">

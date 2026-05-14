@@ -4,6 +4,7 @@
     <div class="space-y-4">
         @include('dues.partials.filters', [
             'route' => route('dues.purchase'),
+            'exportRoute' => route('dues.purchase.export', request()->query()),
             'filters' => $filters,
             'placeholder' => 'Reference, supplier, phone, bill no...',
         ])

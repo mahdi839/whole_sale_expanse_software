@@ -73,6 +73,7 @@
 
         @include('dues.partials.filters', [
             'route' => route('dues.manual'),
+            'exportRoute' => route('dues.manual.export', request()->query()),
             'filters' => $filters,
             'placeholder' => 'Reference, party name, phone, note...',
         ])

@@ -84,6 +84,14 @@
     }
 
     /* Search */
+    .product-search-panel {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: #fff;
+        padding-bottom: 10px;
+    }
+
     .search-wrap { position: relative; }
 
     .search-wrap input {
@@ -363,7 +371,7 @@
     <div class="pos-left">
 
         {{-- Product Search --}}
-        <div>
+        <div class="product-search-panel">
             <div class="field-label mb-2">Search Products</div>
             <div class="search-wrap" id="search-wrap">
                 <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -660,7 +668,7 @@ function addToCart(id, name, sku, price, stockQty = 0) {
         existing.line_total = existing.qty * existing.price_on_sale;
     } else {
         const batch = getFirstBatch(id);
-        cartItems.push({ product_id: id, product_name: name, sku: sku || '', stock_qty: stockQty, qty: 1, price_on_sale: price, line_total: price, purchase_item_id: batch?.id || '', batch: batch?.batch || '' });
+        cartItems.push({ product_id: id, product_name: name, sku: sku || '', stock_qty: stockQty, qty: 4, price_on_sale: price, line_total: price * 4, purchase_item_id: batch?.id || '', batch: batch?.batch || '' });
     }
     renderCart();
 }

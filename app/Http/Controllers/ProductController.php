@@ -65,6 +65,11 @@ class ProductController extends Controller
         return view('products.edit', compact('product'));
     }
 
+    public function barcode(Product $product)
+    {
+        return view('products.barcode', compact('product'));
+    }
+
     public function update(Request $request, Product $product)
     {
         $validated = $request->validate([

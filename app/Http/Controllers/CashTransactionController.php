@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\CashTransaction;
 use App\Models\Customer;
+use App\Models\Purchase;
+use App\Models\Sale;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -135,21 +137,153 @@ class CashTransactionController extends Controller
     private function applyPartyPayment(CashTransaction $transaction, int $multiplier): void
     {
         $amount = (float) $transaction->amount * $multiplier;
+        $customerAmount = $transaction->direction === 'in' ? $amount : -1 * $amount;
+        $supplierAmount = $transaction->direction === 'out' ? $amount : -1 * $amount;
 
         if ($transaction->customer_id) {
             $customer = Customer::find($transaction->customer_id);
             if ($customer) {
-                $customer->increment('total_paid', $amount);
+                $customer->increment('total_paid', $customerAmount);
                 $customer->recalculateDue();
+                $this->applyCustomerPaymentToSales((int) $transaction->customer_id, $customerAmount);
             }
         }
 
         if ($transaction->supplier_id) {
             $supplier = Supplier::find($transaction->supplier_id);
             if ($supplier) {
-                $supplier->increment('total_paid', $amount);
+                $supplier->increment('total_paid', $supplierAmount);
                 $supplier->update(['due' => max(0, (float) $supplier->total_purchase - (float) $supplier->total_paid)]);
+                $this->applySupplierPaymentToPurchases((int) $transaction->supplier_id, $supplierAmount);
             }
         }
+    }
+
+    private function applyCustomerPaymentToSales(int $customerId, float $amount): void
+    {
+        if ($amount > 0) {
+            $remaining = $amount;
+
+            Sale::where('customer_id', $customerId)
+                ->where('due', '>', 0)
+                ->orderBy('created_at')
+                ->orderBy('id')
+                ->get()
+                ->each(function (Sale $sale) use (&$remaining) {
+                    if ($remaining <= 0) {
+                        return false;
+                    }
+
+                    $paid = min($remaining, (float) $sale->due);
+                    $this->applySalePaymentDelta($sale, $paid);
+                    $remaining -= $paid;
+
+                    return true;
+                });
+
+            return;
+        }
+
+        if ($amount < 0) {
+            $remaining = abs($amount);
+
+            Sale::where('customer_id', $customerId)
+                ->where('paid', '>', 0)
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->get()
+                ->each(function (Sale $sale) use (&$remaining) {
+                    if ($remaining <= 0) {
+                        return false;
+                    }
+
+                    $reversed = min($remaining, (float) $sale->paid);
+                    $this->applySalePaymentDelta($sale, -1 * $reversed);
+                    $remaining -= $reversed;
+
+                    return true;
+                });
+        }
+    }
+
+    private function applySalePaymentDelta(Sale $sale, float $delta): void
+    {
+        $grandTotal = (float) $sale->grand_total;
+        $paid = min($grandTotal, max(0, (float) $sale->paid + $delta));
+        $due = max(0, $grandTotal - $paid);
+
+        $sale->update([
+            'paid' => $paid,
+            'due' => $due,
+            'payment_status' => match (true) {
+                $due <= 0 => 'paid',
+                $paid > 0 => 'partial',
+                default => 'due',
+            },
+        ]);
+    }
+
+    private function applySupplierPaymentToPurchases(int $supplierId, float $amount): void
+    {
+        if ($amount > 0) {
+            $remaining = $amount;
+
+            Purchase::where('supplier_id', $supplierId)
+                ->where('due_amount', '>', 0)
+                ->orderBy('date')
+                ->orderBy('id')
+                ->get()
+                ->each(function (Purchase $purchase) use (&$remaining) {
+                    if ($remaining <= 0) {
+                        return false;
+                    }
+
+                    $paid = min($remaining, (float) $purchase->due_amount);
+                    $this->applyPurchasePaymentDelta($purchase, $paid);
+                    $remaining -= $paid;
+
+                    return true;
+                });
+
+            return;
+        }
+
+        if ($amount < 0) {
+            $remaining = abs($amount);
+
+            Purchase::where('supplier_id', $supplierId)
+                ->where('paid_amount', '>', 0)
+                ->orderByDesc('date')
+                ->orderByDesc('id')
+                ->get()
+                ->each(function (Purchase $purchase) use (&$remaining) {
+                    if ($remaining <= 0) {
+                        return false;
+                    }
+
+                    $reversed = min($remaining, (float) $purchase->paid_amount);
+                    $this->applyPurchasePaymentDelta($purchase, -1 * $reversed);
+                    $remaining -= $reversed;
+
+                    return true;
+                });
+        }
+    }
+
+    private function applyPurchasePaymentDelta(Purchase $purchase, float $delta): void
+    {
+        $grandTotal = (float) $purchase->grand_total;
+        $paid = min($grandTotal, max(0, (float) $purchase->paid_amount + $delta));
+        $due = max(0, $grandTotal - $paid);
+
+        $purchase->update([
+            'paid_amount' => $paid,
+            'due_amount' => $due,
+            'payment_status' => match (true) {
+                $due <= 0 => 'paid',
+                $paid > 0 => 'partial',
+                default => 'due',
+            },
+        ]);
     }
 }

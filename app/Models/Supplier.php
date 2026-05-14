@@ -48,4 +48,24 @@ class Supplier extends Model
  
         return 'SUP-' . str_pad($next, 6, '0', STR_PAD_LEFT);
     }
+
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
+    public function purchaseReturns()
+    {
+        return $this->hasMany(PurchaseReturn::class);
+    }
+
+    public function cashTransactions()
+    {
+        return $this->hasMany(CashTransaction::class);
+    }
+
+    public function manualDues()
+    {
+        return $this->hasMany(ManualDue::class);
+    }
 }

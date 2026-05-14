@@ -29,7 +29,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
 
     Route::resource('/products', ProductController::class)->except(['show'])->middleware('permission:manage products');
+    Route::get('/products/{product}/barcode', [ProductController::class, 'barcode'])->name('products.barcode')->middleware('permission:manage products');
+    Route::get('/customers/{customer}/transactions/export', [CustomerController::class, 'exportTransactions'])->name('customers.transactions.export')->middleware('permission:manage customers|manage dues');
     Route::resource('/customers', CustomerController::class)->middleware('permission:manage customers');
+    Route::get('/suppliers/{supplier}/transactions/export', [SupplierController::class, 'exportTransactions'])->name('suppliers.transactions.export')->middleware('permission:manage suppliers|manage dues');
     Route::resource('/suppliers', SupplierController::class)->middleware('permission:manage suppliers');
 
     Route::resource('/users', UserController::class)->except(['show'])->middleware('permission:manage users');
@@ -68,11 +71,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('permission:manage cash');
     Route::get('dues', [DueManagementController::class, 'index'])->name('dues.index')->middleware('permission:manage dues');
     Route::get('dues/customer-wise', [DueManagementController::class, 'customer'])->name('dues.customer')->middleware('permission:manage dues');
+    Route::get('dues/customer-wise/export', [DueManagementController::class, 'exportCustomer'])->name('dues.customer.export')->middleware('permission:manage dues');
     Route::get('dues/customers/{customer}/transactions', [CustomerController::class, 'show'])->name('dues.customers.transactions')->middleware('permission:manage dues');
     Route::get('dues/supplier-wise', [DueManagementController::class, 'supplier'])->name('dues.supplier')->middleware('permission:manage dues');
+    Route::get('dues/supplier-wise/export', [DueManagementController::class, 'exportSupplier'])->name('dues.supplier.export')->middleware('permission:manage dues');
     Route::get('dues/sale-wise', [DueManagementController::class, 'sale'])->name('dues.sale')->middleware('permission:manage dues');
+    Route::get('dues/sale-wise/export', [DueManagementController::class, 'exportSale'])->name('dues.sale.export')->middleware('permission:manage dues');
     Route::get('dues/purchase-wise', [DueManagementController::class, 'purchase'])->name('dues.purchase')->middleware('permission:manage dues');
+    Route::get('dues/purchase-wise/export', [DueManagementController::class, 'exportPurchase'])->name('dues.purchase.export')->middleware('permission:manage dues');
     Route::get('dues/manual', [DueManagementController::class, 'manual'])->name('dues.manual')->middleware('permission:manage dues');
+    Route::get('dues/manual/export', [DueManagementController::class, 'exportManual'])->name('dues.manual.export')->middleware('permission:manage dues');
     Route::post('dues', [DueManagementController::class, 'store'])->name('dues.store')->middleware('permission:manage dues');
     Route::get('dues/{manualDue}/edit', [DueManagementController::class, 'edit'])->name('dues.edit')->middleware('permission:manage dues');
     Route::put('dues/{manualDue}', [DueManagementController::class, 'update'])->name('dues.update')->middleware('permission:manage dues');
