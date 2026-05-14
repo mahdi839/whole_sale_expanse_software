@@ -91,6 +91,7 @@
                 </div>
                 <input name="full_name" required placeholder="Customer name" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                 <input name="phone" placeholder="Phone" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                <input name="alternative_phone" placeholder="Alternative phone" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                 <button class="w-full h-10 bg-blue-600 text-white rounded-lg text-sm">Save Customer</button>
             </form>
         </div>

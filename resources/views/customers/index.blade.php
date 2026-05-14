@@ -132,6 +132,11 @@
                         <p class="text-sm text-gray-500 mt-1 break-all">
                             {{ $customer->phone ?? '—' }}
                         </p>
+                        @if($customer->alternative_phone)
+                            <p class="text-xs text-gray-400 mt-0.5 break-all">
+                                Alt: {{ $customer->alternative_phone }}
+                            </p>
+                        @endif
                         @if($customer->address)
                             <p class="text-xs text-gray-400 mt-1 break-words">{{ $customer->address }}</p>
                         @endif
@@ -248,6 +253,9 @@
                                 {{-- Phone --}}
                                 <td class="px-5 py-3 text-gray-500 hidden md:table-cell">
                                     {{ $customer->phone ?? '—' }}
+                                    @if($customer->alternative_phone)
+                                        <div class="text-xs text-gray-400 mt-0.5">Alt: {{ $customer->alternative_phone }}</div>
+                                    @endif
                                 </td>
 
                                 <td class="px-5 py-3 text-gray-500 hidden xl:table-cell max-w-xs truncate">

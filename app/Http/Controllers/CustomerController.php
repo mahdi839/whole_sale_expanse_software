@@ -21,6 +21,7 @@ class CustomerController extends Controller
                 $q->where('full_name', 'like', "%{$search}%")
                   ->orWhere('code',     'like', "%{$search}%")
                   ->orWhere('phone',    'like', "%{$search}%")
+                  ->orWhere('alternative_phone', 'like', "%{$search}%")
                   ->orWhere('address',  'like', "%{$search}%");
             })
             ->latest()
@@ -47,6 +48,7 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'full_name'  => 'required|string|max:255',
             'phone'      => 'nullable|string|max:20',
+            'alternative_phone' => 'nullable|string|max:20',
             'address'    => 'nullable|string|max:1000',
             'total_sale' => 'nullable|numeric|min:0',
             'total_paid' => 'nullable|numeric|min:0',
@@ -64,6 +66,7 @@ class CustomerController extends Controller
                 'code'       => $customer->code,
                 'full_name'  => $customer->full_name,
                 'phone'      => $customer->phone,
+                'alternative_phone' => $customer->alternative_phone,
                 'address'    => $customer->address,
                 'total_sale' => $customer->total_sale,
                 'total_paid' => $customer->total_paid,
@@ -126,6 +129,7 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'full_name'  => 'required|string|max:255',
             'phone'      => 'nullable|string|max:20',
+            'alternative_phone' => 'nullable|string|max:20',
             'address'    => 'nullable|string|max:1000',
             'total_sale' => 'nullable|numeric|min:0',
             'total_paid' => 'nullable|numeric|min:0',

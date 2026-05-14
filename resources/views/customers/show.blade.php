@@ -51,6 +51,10 @@
                     <dt class="text-gray-500">Phone</dt>
                     <dd class="font-medium text-gray-800">{{ $customer->phone ?? '-' }}</dd>
                 </div>
+                <div class="flex justify-between py-3">
+                    <dt class="text-gray-500">Alternative Phone</dt>
+                    <dd class="font-medium text-gray-800">{{ $customer->alternative_phone ?? '-' }}</dd>
+                </div>
                 <div class="flex justify-between gap-4 py-3">
                     <dt class="text-gray-500">Address</dt>
                     <dd class="font-medium text-gray-800 text-right">{{ $customer->address ?? '-' }}</dd>

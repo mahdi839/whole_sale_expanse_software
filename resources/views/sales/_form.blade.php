@@ -580,6 +580,7 @@
         <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
             <input type="text" id="new_customer_name" placeholder="Full Name *" class="field-input">
             <input type="text" id="new_customer_phone" placeholder="Phone" class="field-input">
+            <input type="text" id="new_customer_alternative_phone" placeholder="Alternative Phone" class="field-input">
             <div id="modal-error" class="hidden" style="font-size:12px;color:#ef4444"></div>
         </div>
 
@@ -855,6 +856,7 @@ function closeCustomerModal(e) {
 document.getElementById('save-customer-btn').addEventListener('click', async () => {
     const name  = document.getElementById('new_customer_name').value.trim();
     const phone = document.getElementById('new_customer_phone').value.trim();
+    const alternativePhone = document.getElementById('new_customer_alternative_phone').value.trim();
     const err   = document.getElementById('modal-error');
 
     if (!name) { err.textContent = 'Name is required'; err.classList.remove('hidden'); return; }
@@ -871,7 +873,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ full_name: name, phone })
+            body: JSON.stringify({ full_name: name, phone, alternative_phone: alternativePhone })
         });
 
         const data = await res.json();
@@ -884,6 +886,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
         closeCustomerModal();
         document.getElementById('new_customer_name').value  = '';
         document.getElementById('new_customer_phone').value = '';
+        document.getElementById('new_customer_alternative_phone').value = '';
     } catch (ex) {
         err.textContent = ex.message;
         err.classList.remove('hidden');
