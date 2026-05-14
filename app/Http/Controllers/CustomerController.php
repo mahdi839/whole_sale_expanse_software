@@ -146,9 +146,20 @@ class CustomerController extends Controller
             'total_paid' => 'nullable|numeric|min:0',
         ]);
  
-        $validated['total_sale'] = $validated['total_sale'] ?? 0;
-        $validated['total_paid'] = $validated['total_paid'] ?? 0;
-        $validated['due']        = max(0, $validated['total_sale'] - $validated['total_paid']);
+        $totalSale = $request->has('total_sale')
+            ? ($validated['total_sale'] ?? 0)
+            : $customer->total_sale;
+        $totalPaid = $request->has('total_paid')
+            ? ($validated['total_paid'] ?? 0)
+            : $customer->total_paid;
+
+        if ($request->hasAny(['total_sale', 'total_paid'])) {
+            $validated['total_sale'] = $totalSale;
+            $validated['total_paid'] = $totalPaid;
+            $validated['due']        = max(0, $totalSale - $totalPaid);
+        } else {
+            unset($validated['total_sale'], $validated['total_paid']);
+        }
  
         $customer->update($validated);
  

@@ -63,28 +63,3 @@
         </p>
     @enderror
 </div>
-
-</div>
-
-@push('scripts')
-<script>
-function calcDue() {
-    const sale = parseFloat(document.getElementById('total_sale').value) || 0;
-    const paid = parseFloat(document.getElementById('total_paid').value) || 0;
-    const due  = Math.max(0, sale - paid);
-
-    const el = document.getElementById('due-display');
-    el.textContent = '৳' + due.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-    if (due > 0) {
-        el.classList.remove('text-gray-500', 'bg-gray-50', 'border-gray-200');
-        el.classList.add('text-red-700', 'bg-red-50', 'border-red-200');
-    } else {
-        el.classList.remove('text-red-700', 'bg-red-50', 'border-red-200');
-        el.classList.add('text-gray-500', 'bg-gray-50', 'border-gray-200');
-    }
-}
-// Run once on page load to colour correctly
-calcDue();
-</script>
-@endpush
