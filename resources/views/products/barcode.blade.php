@@ -71,7 +71,7 @@
         }
         .info-label,
         .info-value {
-            min-height: 27px;
+            min-height: 22px;
             display: flex;
             align-items: center;
             border-bottom: 1px solid #c99b3c;
@@ -86,13 +86,13 @@
             letter-spacing: 1px;
         }
         .info-value {
-            padding: 4px 10px;
+            padding: 2px 10px;
             font: 800 12px Arial, sans-serif;
             overflow-wrap: anywhere;
         }
         .info-value.product-name {
             font-size: clamp(12px, 2vw, 12px);
-            line-height: 1.05;
+            line-height: .80;
         }
         .cut-line {
             border-top: 1px dashed #111;
@@ -148,7 +148,7 @@
                 min-height: 38mm;
                 box-shadow: none;
             }
-            .brand-title { font-size: 17px; }
+            .brand-title { font-size: 22px; }
             .brand-subtitle { font-size: 6px; letter-spacing: 1.5px; }
             .brand-logo { width: 34px; height: 34px; }
             .sticker-head { grid-template-columns: 36px 1fr; gap: 6px; }
@@ -256,7 +256,6 @@
                     <img class="brand-logo" src="${escapeAttr(product.logo)}" alt="Inaya creation logo">
                     <div>
                         <div class="brand-title">Inaya creation</div>
-                        <div class="brand-subtitle">STYLE WITH ELEGANCE</div>
                     </div>
                 </div>
                 <div class="info-table">
@@ -267,8 +266,8 @@
                     <div class="info-label">PRICE</div>
                     <div class="info-value">৳ ${Number(product.price || 0).toLocaleString('en-US')}</div>
                 </div>
-                <div class="cut-line"></div>
-                <div class="barcode-wrap">
+                
+                <div class="barcode-wrap mt-1">
                     <svg class="barcode-svg" role="img" aria-label="Barcode"></svg>
                     <div class="barcode-text">${escapeHtml(product.code || product.design || '0000')}</div>
                 </div>
