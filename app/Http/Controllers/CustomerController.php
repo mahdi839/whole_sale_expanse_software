@@ -78,12 +78,16 @@ class CustomerController extends Controller
     // -------------------------------------------------------
     public function show(Customer $customer)
     {
+        $sales = $customer->sales()->with('items.product')->latest()->get();
+        $totalQty = $sales->sum(fn ($sale) => $sale->items->sum(fn ($item) => (float) $item->qty));
+
         $logs = collect()
-            ->merge($customer->sales()->with('items.product')->latest()->get()->map(fn ($sale) => [
+            ->merge($sales->map(fn ($sale) => [
                 'date' => $sale->created_at,
                 'type' => 'Sale',
                 'reference' => $sale->reference,
                 'amount' => (float) $sale->grand_total,
+                'qty' => $sale->items->sum(fn ($item) => (float) $item->qty),
                 'paid' => (float) $sale->paid,
                 'due' => (float) $sale->due,
                 'note' => $sale->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->implode(', '),
@@ -94,6 +98,7 @@ class CustomerController extends Controller
                 'type' => 'Sale Return',
                 'reference' => $return->reference,
                 'amount' => -1 * (float) $return->return_amount,
+                'qty' => null,
                 'paid' => $return->return_type === 'credit' ? 0 : -1 * (float) $return->return_amount,
                 'due' => 0,
                 'note' => ucfirst($return->return_type).' / '.ucfirst($return->return_status),
@@ -104,6 +109,7 @@ class CustomerController extends Controller
                 'type' => 'Payment',
                 'reference' => $cash->reference,
                 'amount' => $cash->direction === 'in' ? (float) $cash->amount : -1 * (float) $cash->amount,
+                'qty' => null,
                 'paid' => (float) $cash->amount,
                 'due' => 0,
                 'note' => $cash->note,
@@ -114,6 +120,7 @@ class CustomerController extends Controller
                 'type' => 'Manual Due',
                 'reference' => $due->reference ?? 'Manual',
                 'amount' => (float) $due->amount,
+                'qty' => null,
                 'paid' => 0,
                 'due' => (float) $due->amount,
                 'note' => $due->note,
@@ -122,7 +129,7 @@ class CustomerController extends Controller
             ->sortByDesc('date')
             ->values();
 
-        return view('customers.show', compact('customer', 'logs'));
+        return view('customers.show', compact('customer', 'logs', 'totalQty'));
     }
  
     // -------------------------------------------------------
