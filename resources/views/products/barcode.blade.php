@@ -170,6 +170,16 @@
         </nav>
 
         <div class="barcode-controls bg-white border border-gray-200 rounded-xl p-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-4 border-b border-gray-100">
+                <div>
+                    <h2 class="text-sm font-semibold text-gray-800">Barcode Sticker Print</h2>
+                    <p class="text-xs text-gray-500 mt-1">Set quantity, generate stickers, then print the full sheet.</p>
+                </div>
+                <button id="printTopBtn" type="button"
+                    class="inline-flex items-center justify-center h-10 px-5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">
+                    Print Stickers
+                </button>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                 <div class="md:col-span-2">
                     <label class="block text-xs text-gray-500 mb-1">Product</label>
@@ -261,7 +271,6 @@
                 <div class="barcode-wrap">
                     <svg class="barcode-svg" role="img" aria-label="Barcode"></svg>
                     <div class="barcode-text">${escapeHtml(product.code || product.design || '0000')}</div>
-                    <div class="thanks">THANK YOU FOR CHOOSING US</div>
                 </div>
             </section>
         `;
@@ -316,11 +325,14 @@
         return escapeHtml(value);
     }
 
-    document.getElementById('generateBtn').addEventListener('click', renderLabels);
-    document.getElementById('printBtn').addEventListener('click', () => {
+    function printStickers() {
         renderLabels();
         window.print();
-    });
+    }
+
+    document.getElementById('generateBtn').addEventListener('click', renderLabels);
+    document.getElementById('printBtn').addEventListener('click', printStickers);
+    document.getElementById('printTopBtn').addEventListener('click', printStickers);
 
     renderLabels();
     </script>
