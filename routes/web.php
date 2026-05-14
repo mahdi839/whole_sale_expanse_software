@@ -15,6 +15,7 @@ use App\Http\Controllers\PurchaseReturnController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleReturnController;
+use App\Http\Controllers\SalesManController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
@@ -38,6 +39,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('/cloth-sewings', ClothSewingController::class)
         ->parameters(['cloth-sewings' => 'clothSewing'])
         ->except(['show']);
+    Route::resource('/sales-men', SalesManController::class)
+        ->parameters(['sales-men' => 'salesMan']);
 
     Route::resource('/users', UserController::class)->except(['show'])->middleware('permission:manage users');
     Route::resource('/roles', RoleController::class)->except(['show'])->middleware('permission:manage roles');

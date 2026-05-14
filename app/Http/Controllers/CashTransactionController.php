@@ -6,6 +6,7 @@ use App\Models\CashTransaction;
 use App\Models\Customer;
 use App\Models\Purchase;
 use App\Models\Sale;
+use App\Models\SalesMan;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ class CashTransactionController extends Controller
         ];
 
         $query = CashTransaction::query()
-            ->with(['customer', 'supplier'])
+            ->with(['customer', 'supplier', 'salesMan'])
             ->when($filters['direction'], fn($q) => $q->where('direction', $filters['direction']))
             ->when($filters['type'], fn($q) => $q->where('type', $filters['type']))
             ->when($filters['date_from'], fn($q) => $q->whereDate('date', '>=', $filters['date_from']))
@@ -37,7 +38,8 @@ class CashTransactionController extends Controller
                         ->orWhere('note', 'like', "%{$s}%")
                         ->orWhere('payment_method', 'like', "%{$s}%")
                         ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
-                        ->orWhereHas('supplier', fn($sp) => $sp->where('name', 'like', "%{$s}%"));
+                        ->orWhereHas('supplier', fn($sp) => $sp->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('salesMan', fn($sm) => $sm->where('name', 'like', "%{$s}%"));
                 });
             });
 
@@ -60,8 +62,9 @@ class CashTransactionController extends Controller
         $transaction = new CashTransaction(['date' => now()->toDateString(), 'direction' => 'in', 'type' => 'manual_add']);
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('cash_transactions.create', compact('transaction', 'customers', 'suppliers'));
+        return view('cash_transactions.create', compact('transaction', 'customers', 'suppliers', 'salesMen'));
     }
 
     public function store(Request $request)
@@ -81,8 +84,9 @@ class CashTransactionController extends Controller
         $transaction = $cashTransaction;
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('cash_transactions.edit', compact('transaction', 'customers', 'suppliers'));
+        return view('cash_transactions.edit', compact('transaction', 'customers', 'suppliers', 'salesMen'));
     }
 
     public function update(Request $request, CashTransaction $cashTransaction)
@@ -120,6 +124,7 @@ class CashTransactionController extends Controller
             'payment_method' => 'nullable|string|max:100',
             'customer_id' => 'nullable|exists:customers,id',
             'supplier_id' => 'nullable|exists:suppliers,id',
+            'sales_man_id' => 'nullable|exists:sales_men,id',
             'note' => 'nullable|string|max:2000',
         ]);
 
@@ -155,6 +160,16 @@ class CashTransactionController extends Controller
                 $supplier->increment('total_paid', $supplierAmount);
                 $supplier->update(['due' => max(0, (float) $supplier->total_purchase - (float) $supplier->total_paid)]);
                 $this->applySupplierPaymentToPurchases((int) $transaction->supplier_id, $supplierAmount);
+            }
+        }
+
+        if ($transaction->sales_man_id) {
+            $salesMan = SalesMan::find($transaction->sales_man_id);
+            if ($salesMan) {
+                $expenseAmount = $transaction->direction === 'out' ? $amount : -1 * $amount;
+                $salesMan->update([
+                    'total_expense' => max(0, (float) $salesMan->total_expense + $expenseAmount),
+                ]);
             }
         }
     }

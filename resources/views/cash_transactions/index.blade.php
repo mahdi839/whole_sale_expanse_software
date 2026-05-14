@@ -71,7 +71,7 @@
                                     @endif
                                 </td>
                                 <td class="px-5 py-3">{{ ucwords(str_replace('_', ' ', $transaction->type)) }}</td>
-                                <td class="px-5 py-3">{{ $transaction->customer?->full_name ?? $transaction->supplier?->name ?? '—' }}</td>
+                                <td class="px-5 py-3">{{ $transaction->customer?->full_name ?? $transaction->supplier?->name ?? $transaction->salesMan?->name ?? '—' }}</td>
                                 <td class="px-5 py-3 text-right font-semibold {{ $transaction->direction === 'in' ? 'text-emerald-600' : 'text-red-600' }}">
                                     {{ $transaction->direction === 'in' ? '+' : '-' }}৳{{ number_format($transaction->amount, 2) }}
                                 </td>

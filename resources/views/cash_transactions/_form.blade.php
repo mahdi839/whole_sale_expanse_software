@@ -61,6 +61,19 @@
         </select>
         @error('supplier_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Sales Man</label>
+        <select name="sales_man_id" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+            <option value="">No sales man</option>
+            @foreach($salesMen as $salesMan)
+                <option value="{{ $salesMan->id }}" @selected(old('sales_man_id', $transaction?->sales_man_id) == $salesMan->id)>
+                    {{ $salesMan->name }}{{ $salesMan->phone ? ' - '.$salesMan->phone : '' }}
+                </option>
+            @endforeach
+        </select>
+        @error('sales_man_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
 </div>
 
 <input type="hidden" name="direction" id="cash-direction" value="{{ old('direction', $transaction?->direction ?? 'in') }}">

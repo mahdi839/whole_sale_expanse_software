@@ -20,6 +20,7 @@ class CashTransaction extends Model
         'source_id',
         'customer_id',
         'supplier_id',
+        'sales_man_id',
         'note',
     ];
 
@@ -45,6 +46,11 @@ class CashTransaction extends Model
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function salesMan()
+    {
+        return $this->belongsTo(SalesMan::class);
     }
 
     public static function generateReference(): string

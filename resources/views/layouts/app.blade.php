@@ -331,6 +331,11 @@
                     Cloth Sewing
                 </x-sidebar-link>
 
+                <x-sidebar-link :href="route('sales-men.index')" :active="request()->routeIs('sales-men.*')">
+                    <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="7" r="4"/><path d="M5 21a7 7 0 0114 0"/><path d="M18 8h4"/><path d="M20 6v4"/></svg></x-slot>
+                    Sales Men
+                </x-sidebar-link>
+
                 @canany(['manage shops', 'manage stock', 'distribute stock'])
                     <x-sidebar-dropdown label="Stock Management" :active="request()->routeIs('shops.*') || request()->routeIs('stocks.*')">
                         <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg></x-slot>
