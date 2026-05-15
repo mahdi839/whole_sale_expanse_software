@@ -113,6 +113,8 @@
             border-radius: 999px;
             border: 2px solid #b98725;
             background: #050505;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
         }
         .brand-title {
             font-family: Georgia, serif;
@@ -282,7 +284,7 @@
         code: @json($product->product_code ?: $product->sku),
         name: @json($product->product_name),
         price: @json((float) $product->selling_price),
-        logo: @json(asset('inaya_creation_logo.jpeg')),
+        logo: @json('/inaya_creation_logo.jpeg'),
     };
 
     const patterns = [
@@ -320,7 +322,7 @@
         return `
             <section class="sticker">
                 <div class="sticker-head">
-                    <img class="brand-logo" src="${escapeAttr(product.logo)}" alt="Inaya creation logo">
+                    <img class="brand-logo" src="${escapeAttr(product.logo)}" alt="Inaya creation logo" loading="eager" decoding="sync">
                     <div>
                         <div class="brand-title">Inaya creation</div>
                         <div class="brand-subtitle">STYLE WITH ELEGANCE</div>
@@ -390,9 +392,31 @@
         return escapeHtml(value);
     }
 
-    function printStickers() {
+    async function waitForStickerImages() {
+        const images = Array.from(document.querySelectorAll('#printArea img'));
+        await Promise.all(images.map(image => {
+            if (image.complete && image.naturalWidth > 0) {
+                return Promise.resolve();
+            }
+
+            if (typeof image.decode === 'function') {
+                return image.decode().catch(() => new Promise(resolve => {
+                    image.addEventListener('load', resolve, { once: true });
+                    image.addEventListener('error', resolve, { once: true });
+                }));
+            }
+
+            return new Promise(resolve => {
+                image.addEventListener('load', resolve, { once: true });
+                image.addEventListener('error', resolve, { once: true });
+            });
+        }));
+    }
+
+    async function printStickers() {
         renderLabels();
-        window.print();
+        await waitForStickerImages();
+        setTimeout(() => window.print(), 100);
     }
 
     document.getElementById('generateBtn').addEventListener('click', renderLabels);
