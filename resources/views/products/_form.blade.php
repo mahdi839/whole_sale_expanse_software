@@ -244,7 +244,7 @@
     <input
         type="text" id="product_code" name="product_code"
         value="{{ old('product_code', $product?->product_code) }}"
-        placeholder="e.g. PROD-001"
+        placeholder="e.g. 24434"
         class="pf-input pf-mono @error('product_code') pf-error @enderror"
     />
     @error('product_code')
@@ -255,6 +255,7 @@
             {{ $message }}
         </p>
     @enderror
+    <p class="pf-hint">Enter the middle code. The system stores it with 2 random digits before and after.</p>
 </div>
 
 {{-- Sell Price --}}

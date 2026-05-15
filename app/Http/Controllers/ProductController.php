@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
@@ -35,11 +36,13 @@ class ProductController extends Controller
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
             'sku' => 'required|string|max:100|unique:products,sku',
-            'product_code' => 'nullable|string|max:100|unique:products,product_code',
+            'product_code' => 'nullable|string|max:96',
             'selling_price' => 'required|numeric|min:0',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'stock_qty' => 'required|numeric|min:0',
         ]);
+
+        $validated['product_code'] = $this->generatedProductCode($validated['product_code'] ?? null);
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('products', 'public');
@@ -75,11 +78,15 @@ class ProductController extends Controller
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
             'sku' => 'required|string|max:100|unique:products,sku,'.$product->id,
-            'product_code' => 'nullable|string|max:100|unique:products,product_code,'.$product->id,
+            'product_code' => 'nullable|string|max:96',
             'selling_price' => 'required|numeric|min:0',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'stock_qty' => 'required|numeric|min:0',
         ]);
+
+        if (($validated['product_code'] ?? null) !== $product->product_code) {
+            $validated['product_code'] = $this->generatedProductCode($validated['product_code'] ?? null, $product->id);
+        }
 
         if ($request->hasFile('image')) {
             if ($product->image) {
@@ -117,5 +124,34 @@ class ProductController extends Controller
 
         return redirect()->route('products.index')
             ->with('success', 'Product deleted successfully.');
+    }
+
+    private function generatedProductCode(?string $middleCode, ?int $ignoreProductId = null): ?string
+    {
+        $middleCode = trim((string) $middleCode);
+
+        if ($middleCode === '') {
+            return null;
+        }
+
+        for ($attempt = 0; $attempt < 25; $attempt++) {
+            $code = $this->twoDigitRandom() . $middleCode . $this->twoDigitRandom();
+            $exists = Product::where('product_code', $code)
+                ->when($ignoreProductId, fn ($query) => $query->whereKeyNot($ignoreProductId))
+                ->exists();
+
+            if (! $exists) {
+                return $code;
+            }
+        }
+
+        throw ValidationException::withMessages([
+            'product_code' => 'Could not generate a unique product code. Please try again.',
+        ]);
+    }
+
+    private function twoDigitRandom(): string
+    {
+        return str_pad((string) random_int(0, 99), 2, '0', STR_PAD_LEFT);
     }
 }
