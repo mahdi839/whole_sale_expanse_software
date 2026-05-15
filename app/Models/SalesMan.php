@@ -25,4 +25,9 @@ class SalesMan extends Model
     {
         return $this->hasMany(CashTransaction::class);
     }
+
+    public function expenses()
+    {
+        return $this->hasMany(Expense::class);
+    }
 }

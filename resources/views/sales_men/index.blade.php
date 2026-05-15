@@ -40,7 +40,7 @@
                                 <td class="px-5 py-3 text-gray-600">{{ $salesMan->phone ?? '-' }}</td>
                                 <td class="px-5 py-3 text-gray-600 max-w-xs truncate">{{ $salesMan->address ?? '-' }}</td>
                                 <td class="px-5 py-3">{{ optional($salesMan->joining_date)->format('d M Y') ?? '-' }}</td>
-                                <td class="px-5 py-3 text-right font-semibold text-red-600">৳{{ number_format($salesMan->total_expense, 2) }}</td>
+                                <td class="px-5 py-3 text-right font-semibold text-red-600">৳{{ number_format($salesMan->expense_total ?? 0, 2) }}</td>
                                 <td class="px-5 py-3">
                                     <div class="flex justify-end gap-2">
                                         <a href="{{ route('sales-men.show', $salesMan) }}" class="inline-flex items-center justify-center w-8 h-8 text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100" title="View transactions">

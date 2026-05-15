@@ -157,7 +157,7 @@ class SupplierController extends Controller
                 'amount' => -1 * (float) $return->return_amount,
                 'paid' => $return->return_type === 'refund' ? -1 * (float) $return->return_amount : 0,
                 'due' => 0,
-                'note' => ucfirst($return->return_type).' / '.ucfirst($return->return_status),
+                'note' => ucfirst($return->return_type).' / '.ucfirst($return->return_status).($return->note ? ' - '.$return->note : ''),
                 'url' => route('purchase-returns.show', $return),
             ]))
             ->merge($supplier->cashTransactions()->latest('date')->latest()->get()->map(fn ($cash) => [

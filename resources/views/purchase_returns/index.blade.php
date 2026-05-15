@@ -1,4 +1,4 @@
-<x-app-layout>
+﻿<x-app-layout>
     <x-slot name="header">Purchase Returns</x-slot>
 
     <div class="space-y-4">
@@ -76,7 +76,7 @@
                             href="{{ route('purchase-returns.export', request()->query()) }}"
                             class="h-10 px-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm inline-flex items-center justify-center gap-1 w-full sm:w-auto"
                         >
-                            ⬇ CSV
+                            â¬‡ CSV
                         </a>
 
                         <a
@@ -100,14 +100,14 @@
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Subtotal</p>
                 <p class="text-xl font-semibold text-gray-800 break-words">
-                    ৳{{ number_format($totals->total_subtotal ?? 0, 2) }}
+                    à§³{{ number_format($totals->total_subtotal ?? 0, 2) }}
                 </p>
             </div>
 
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Return Amount</p>
                 <p class="text-xl font-semibold text-red-600 break-words">
-                    ৳{{ number_format($totals->total_return_amount ?? 0, 2) }}
+                    à§³{{ number_format($totals->total_return_amount ?? 0, 2) }}
                 </p>
             </div>
         </div>
@@ -132,7 +132,7 @@
                         <div class="text-right shrink-0">
                             <p class="text-xs text-gray-400">Amount</p>
                             <p class="text-sm font-semibold text-red-600">
-                                ৳{{ number_format($return->return_amount, 2) }}
+                                à§³{{ number_format($return->return_amount, 2) }}
                             </p>
                         </div>
                     </div>
@@ -140,7 +140,7 @@
                     <div>
                         <p class="text-xs text-gray-400 mb-1">Supplier</p>
                         <p class="text-sm font-medium text-gray-800 break-words">
-                            {{ $return->supplier?->name ?? '—' }}
+                            {{ $return->supplier?->name ?? 'â€”' }}
                         </p>
                     </div>
 
@@ -181,6 +181,13 @@
                             {{ ucfirst($return->return_type) }}
                         </span>
                     </div>
+
+                    @if($return->note)
+                        <div>
+                            <p class="text-xs text-gray-400 mb-1">Note</p>
+                            <p class="text-xs text-gray-600 break-words">{{ $return->note }}</p>
+                        </div>
+                    @endif
 
                     <div class="flex flex-col gap-2 pt-1">
                         @if($return->return_status === 'pending')
@@ -238,6 +245,7 @@
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Supplier</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Items</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Amount</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Note</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Status</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Actions</th>
                         </tr>
@@ -257,9 +265,8 @@
                                         {{ optional($return->date)->format('d M Y') }}
                                     </div>
                                 </td>
-
                                 <td class="px-5 py-3">
-                                    {{ $return->supplier?->name ?? '—' }}
+                                    {{ $return->supplier?->name ?? 'â€”' }}
                                 </td>
 
                                 <td class="px-5 py-3 text-xs text-gray-600">
@@ -273,7 +280,11 @@
                                 </td>
 
                                 <td class="px-5 py-3 text-right font-medium text-red-600">
-                                    ৳{{ number_format($return->return_amount, 2) }}
+                                    {{ number_format($return->return_amount, 2) }}
+                                </td>
+
+                                <td class="px-5 py-3 text-xs text-gray-500 max-w-xs truncate">
+                                    {{ $return->note ?: '—' }}
                                 </td>
 
                                 <td class="px-5 py-3">
@@ -336,7 +347,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-5 py-20 text-center text-gray-400">
+                                <td colspan="7" class="px-5 py-20 text-center text-gray-400">
                                     No purchase returns found.
                                     <a href="{{ route('purchase-returns.create') }}" class="text-blue-600 hover:underline">
                                         Create first purchase return
@@ -356,3 +367,6 @@
         </div>
     </div>
 </x-app-layout>
+
+
+

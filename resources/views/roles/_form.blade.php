@@ -7,14 +7,7 @@
     </div>
     <div>
         <h3 class="text-sm font-semibold text-gray-800 mb-2">Permissions</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            @foreach($permissions as $permission)
-                <label class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg text-sm">
-                    <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" @checked(in_array($permission->name, old('permissions', $role->permissions->pluck('name')->all())))>
-                    {{ $permission->name }}
-                </label>
-            @endforeach
-        </div>
+        @include('shared._permission_groups', ['selectedPermissionNames' => $role->permissions->pluck('name')->all()])
     </div>
     <div class="flex gap-2">
         <button class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Save</button>

@@ -295,6 +295,10 @@
     </style>
 </head>
 <body>
+@php
+    $money = fn ($value) => rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
+    $qty = fn ($value) => rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
+@endphp
 
 <div class="invoice-wrap">
 
@@ -326,6 +330,9 @@
             <div class="cell-val">{{ $sale->customer?->full_name ?? 'Walk-in Customer' }}</div>
             @if($sale->customer?->phone)
                 <div class="cell-sub">{{ $sale->customer->phone }}</div>
+            @endif
+            @if($sale->customer?->address)
+                <div class="cell-sub">{{ $sale->customer->address }}</div>
             @endif
         </div>
 
@@ -368,9 +375,9 @@
                         <td style="color:#94a3b8;width:32px">{{ $i + 1 }}</td>
                         <td style="font-weight:600">{{ $item->product->product_name }}</td>
                         <td style="font-family:monospace;font-size:12px;color:#94a3b8">{{ $item->product->sku ?? '—' }}</td>
-                        <td class="r">{{ $item->qty }}</td>
-                        <td class="r" style="font-family:monospace">৳{{ number_format($item->price_on_sale, 2) }}</td>
-                        <td class="r" style="font-family:monospace;font-weight:600">৳{{ number_format($item->line_total, 2) }}</td>
+                        <td class="r">{{ $qty($item->qty) }}</td>
+                        <td class="r" style="font-family:monospace">৳{{ $money($item->price_on_sale) }}</td>
+                        <td class="r" style="font-family:monospace;font-weight:600">৳{{ $money($item->line_total) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -386,32 +393,32 @@
             </div>
             <div class="tot-row">
                 <span class="tl">Subtotal</span>
-                <span class="tv">৳{{ number_format($sale->items->sum('line_total'), 2) }}</span>
+                <span class="tv">৳{{ $money($sale->items->sum('line_total')) }}</span>
             </div>
             @if($sale->discount > 0)
                 <div class="tot-row">
                     <span class="tl">Discount</span>
-                    <span class="tv" style="color:#dc2626">− ৳{{ number_format($sale->discount, 2) }}</span>
+                    <span class="tv" style="color:#dc2626">− ৳{{ $money($sale->discount) }}</span>
                 </div>
             @endif
             <div class="tot-row grand">
                 <span class="tl">Grand Total</span>
-                <span class="tv">৳{{ number_format($sale->grand_total, 2) }}</span>
+                <span class="tv">৳{{ $money($sale->grand_total) }}</span>
             </div>
             <div class="tot-row paid-row">
                 <span class="tl">Paid</span>
-                <span class="tv">৳{{ number_format($sale->paid, 2) }}</span>
+                <span class="tv">৳{{ $money($sale->paid) }}</span>
             </div>
             @if($sale->due > 0)
                 <div class="tot-row due-row">
                     <span class="tl">Due</span>
-                    <span class="tv">৳{{ number_format($sale->due, 2) }}</span>
+                    <span class="tv">৳{{ $money($sale->due) }}</span>
                 </div>
             @endif
             @if(! is_null($customerTotalDue))
                 <div class="tot-row due-row">
                     <span class="tl">Customer Total Due</span>
-                    <span class="tv">৳{{ number_format($customerTotalDue, 2) }}</span>
+                    <span class="tv">৳{{ $money($customerTotalDue) }}</span>
                 </div>
             @endif
         </div>

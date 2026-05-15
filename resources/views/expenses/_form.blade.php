@@ -56,6 +56,21 @@
                 </div>
 
                 <div>
+                    <label class="{{ $labelClass }}">Sales Man</label>
+                    <select name="sales_man_id" class="{{ $inputClass }}">
+                        <option value="">No sales man</option>
+                        @foreach($salesMen ?? [] as $salesMan)
+                            <option value="{{ $salesMan->id }}" @selected(old('sales_man_id', $expense?->sales_man_id) == $salesMan->id)>
+                                {{ $salesMan->name }}{{ $salesMan->phone ? ' - '.$salesMan->phone : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('sales_man_id')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
                     <label class="{{ $labelClass }}">Date</label>
                     <input type="date"
                            name="date"

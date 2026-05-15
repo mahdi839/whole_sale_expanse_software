@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ClothSewing;
 use App\Models\Product;
+use App\Models\ReceivedCloth;
 use App\Models\Tailor;
 use Illuminate\Http\Request;
 
-class ClothSewingController extends Controller
+class ReceivedClothController extends Controller
 {
     public function index(Request $request)
     {
         $search = $request->input('search');
 
-        $clothSewings = ClothSewing::query()
+        $receivedCloths = ReceivedCloth::query()
             ->with(['product', 'tailor'])
             ->when($search, fn ($query) => $query->where(function ($sub) use ($search) {
                 $sub->where('tailor_name', 'like', "%{$search}%")
@@ -28,45 +28,45 @@ class ClothSewingController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('cloth_sewings.index', compact('clothSewings', 'search'));
+        return view('received_cloths.index', compact('receivedCloths', 'search'));
     }
 
     public function create()
     {
-        $clothSewing = new ClothSewing(['date' => now()->toDateString()]);
+        $receivedCloth = new ReceivedCloth(['date' => now()->toDateString()]);
         $products = Product::orderBy('product_name')->get(['id', 'product_name', 'sku', 'product_code']);
 
-        return view('cloth_sewings.create', compact('clothSewing', 'products'));
+        return view('received_cloths.create', compact('receivedCloth', 'products'));
     }
 
     public function store(Request $request)
     {
         foreach ($this->validatedRows($request) as $row) {
-            ClothSewing::create($row);
+            ReceivedCloth::create($row);
         }
 
-        return redirect()->route('cloth-sewings.index')->with('success', 'Cloth sewing records added successfully.');
+        return redirect()->route('received-cloths.index')->with('success', 'Received cloth records added successfully.');
     }
 
-    public function edit(ClothSewing $clothSewing)
+    public function edit(ReceivedCloth $receivedCloth)
     {
         $products = Product::orderBy('product_name')->get(['id', 'product_name', 'sku', 'product_code']);
 
-        return view('cloth_sewings.edit', compact('clothSewing', 'products'));
+        return view('received_cloths.edit', compact('receivedCloth', 'products'));
     }
 
-    public function update(Request $request, ClothSewing $clothSewing)
+    public function update(Request $request, ReceivedCloth $receivedCloth)
     {
-        $clothSewing->update($this->validatedSingle($request));
+        $receivedCloth->update($this->validatedSingle($request));
 
-        return redirect()->route('cloth-sewings.index')->with('success', 'Cloth sewing record updated successfully.');
+        return redirect()->route('received-cloths.index')->with('success', 'Received cloth record updated successfully.');
     }
 
-    public function destroy(ClothSewing $clothSewing)
+    public function destroy(ReceivedCloth $receivedCloth)
     {
-        $clothSewing->delete();
+        $receivedCloth->delete();
 
-        return redirect()->route('cloth-sewings.index')->with('success', 'Cloth sewing record deleted successfully.');
+        return redirect()->route('received-cloths.index')->with('success', 'Received cloth record deleted successfully.');
     }
 
     private function validatedRows(Request $request): array

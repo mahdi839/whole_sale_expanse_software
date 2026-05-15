@@ -12,6 +12,7 @@ class SalesManController extends Controller
         $search = $request->input('search');
 
         $salesMen = SalesMan::query()
+            ->withSum('expenses as expense_total', 'amount')
             ->when($search, fn ($query) => $query->where(function ($sub) use ($search) {
                 $sub->where('name', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")

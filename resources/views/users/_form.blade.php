@@ -47,14 +47,7 @@
 
         <div>
             <h3 class="text-sm font-semibold text-gray-800 mb-2">Direct Permissions</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                @foreach($permissions as $permission)
-                    <label class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg text-sm">
-                        <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" @checked(in_array($permission->name, old('permissions', $user->permissions->pluck('name')->all())))>
-                        {{ $permission->name }}
-                    </label>
-                @endforeach
-            </div>
+            @include('shared._permission_groups', ['selectedPermissionNames' => $user->permissions->pluck('name')->all()])
         </div>
     </div>
 

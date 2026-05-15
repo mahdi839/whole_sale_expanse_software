@@ -9,6 +9,7 @@ class Expense extends Model
     protected $fillable = [
         'reference',
         'category',
+        'sales_man_id',
         'amount',
         'date',
         'note',
@@ -26,5 +27,10 @@ class Expense extends Model
         $nextId = $last ? $last->id + 1 : 1;
 
         return 'EXP-' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
+    }
+
+    public function salesMan()
+    {
+        return $this->belongsTo(SalesMan::class);
     }
 }

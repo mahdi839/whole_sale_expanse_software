@@ -56,7 +56,7 @@
         ]];
     }
 
-    $returnType   = old('return_type',   $purchaseReturn?->return_type   ?? 'refund');
+    $returnType   = old('return_type',   $purchaseReturn?->return_type   ?? 'credit');
     $returnStatus = old('return_status', $purchaseReturn?->return_status ?? 'pending');
     $discount     = old('discount',      $purchaseReturn?->discount      ?? 0);
 

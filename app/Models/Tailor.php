@@ -19,4 +19,9 @@ class Tailor extends Model
     {
         return $this->hasMany(CashTransaction::class);
     }
+
+    public function receivedCloths()
+    {
+        return $this->hasMany(ReceivedCloth::class);
+    }
 }
