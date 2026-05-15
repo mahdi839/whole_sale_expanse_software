@@ -9,9 +9,11 @@
                 <button class="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg">Search</button>
             </form>
 
-            <a href="{{ route('cloth-sewings.create') }}" class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg">
-                Add Sewing
-            </a>
+            @canany(['manage cloth sewings', 'create cloth sewings'])
+                <a href="{{ route('cloth-sewings.create') }}" class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg">
+                    Add Sewing
+                </a>
+            @endcanany
         </div>
 
         @if(session('success'))
@@ -41,12 +43,16 @@
                                 <td class="px-5 py-3 text-right">{{ number_format($item->item_qty, 2) }}</td>
                                 <td class="px-5 py-3">
                                     <div class="flex justify-end gap-2">
-                                        <a href="{{ route('cloth-sewings.edit', $item) }}" class="px-3 py-1.5 text-xs text-blue-700 bg-blue-50 rounded-lg">Edit</a>
-                                        <form method="POST" action="{{ route('cloth-sewings.destroy', $item) }}" onsubmit="return confirm('Delete this record?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="px-3 py-1.5 text-xs text-red-700 bg-red-50 rounded-lg">Delete</button>
-                                        </form>
+                                        @canany(['manage cloth sewings', 'edit cloth sewings'])
+                                            <a href="{{ route('cloth-sewings.edit', $item) }}" class="px-3 py-1.5 text-xs text-blue-700 bg-blue-50 rounded-lg">Edit</a>
+                                        @endcanany
+                                        @canany(['manage cloth sewings', 'delete cloth sewings'])
+                                            <form method="POST" action="{{ route('cloth-sewings.destroy', $item) }}" onsubmit="return confirm('Delete this record?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="px-3 py-1.5 text-xs text-red-700 bg-red-50 rounded-lg">Delete</button>
+                                            </form>
+                                        @endcanany
                                     </div>
                                 </td>
                             </tr>

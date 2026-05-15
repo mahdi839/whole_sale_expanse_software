@@ -21,6 +21,7 @@ class CashTransaction extends Model
         'customer_id',
         'supplier_id',
         'sales_man_id',
+        'tailor_name',
         'note',
     ];
 

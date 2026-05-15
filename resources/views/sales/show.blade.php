@@ -11,7 +11,9 @@
         <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div class="px-6 py-4 border-b bg-gray-50/60 flex justify-between items-center">
                 <div><h2 class="text-sm font-semibold">Sale Information</h2><p class="text-xs text-gray-400">{{ $sale->created_at->format('d M Y, h:i A') }}</p></div>
-                <a href="{{ route('sales.edit', $sale) }}" class="px-3 py-1.5 text-xs bg-blue-50 text-blue-700 rounded-lg">Edit Sale</a>
+                @canany(['manage sales', 'edit sales'])
+                    <a href="{{ route('sales.edit', $sale) }}" class="px-3 py-1.5 text-xs bg-blue-50 text-blue-700 rounded-lg">Edit Sale</a>
+                @endcanany
             </div>
             <div class="p-6 space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -38,9 +38,36 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('/suppliers', SupplierController::class)->middleware('permission:manage suppliers');
     Route::resource('/cloth-sewings', ClothSewingController::class)
         ->parameters(['cloth-sewings' => 'clothSewing'])
-        ->except(['show']);
+        ->only(['index'])
+        ->middleware('permission:manage cloth sewings|view cloth sewings');
+    Route::resource('/cloth-sewings', ClothSewingController::class)
+        ->parameters(['cloth-sewings' => 'clothSewing'])
+        ->only(['create', 'store'])
+        ->middleware('permission:manage cloth sewings|create cloth sewings');
+    Route::resource('/cloth-sewings', ClothSewingController::class)
+        ->parameters(['cloth-sewings' => 'clothSewing'])
+        ->only(['edit', 'update'])
+        ->middleware('permission:manage cloth sewings|edit cloth sewings');
+    Route::resource('/cloth-sewings', ClothSewingController::class)
+        ->parameters(['cloth-sewings' => 'clothSewing'])
+        ->only(['destroy'])
+        ->middleware('permission:manage cloth sewings|delete cloth sewings');
     Route::resource('/sales-men', SalesManController::class)
-        ->parameters(['sales-men' => 'salesMan']);
+        ->parameters(['sales-men' => 'salesMan'])
+        ->only(['create', 'store'])
+        ->middleware('permission:manage sales men|create sales men');
+    Route::resource('/sales-men', SalesManController::class)
+        ->parameters(['sales-men' => 'salesMan'])
+        ->only(['index', 'show'])
+        ->middleware('permission:manage sales men|view sales men');
+    Route::resource('/sales-men', SalesManController::class)
+        ->parameters(['sales-men' => 'salesMan'])
+        ->only(['edit', 'update'])
+        ->middleware('permission:manage sales men|edit sales men');
+    Route::resource('/sales-men', SalesManController::class)
+        ->parameters(['sales-men' => 'salesMan'])
+        ->only(['destroy'])
+        ->middleware('permission:manage sales men|delete sales men');
 
     Route::resource('/users', UserController::class)->except(['show'])->middleware('permission:manage users');
     Route::resource('/roles', RoleController::class)->except(['show'])->middleware('permission:manage roles');
@@ -61,9 +88,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('stocks/distribute', [StockController::class, 'storeDistribution'])->name('stocks.distribute.store')->middleware('permission:distribute stock');
     Route::resource('stocks', StockController::class)->middleware('permission:manage stock');
 
-    Route::get('sales-export', [SaleController::class, 'exportCsv'])->name('sales.export')->middleware('permission:manage sales');
-    Route::get('sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice')->middleware('permission:manage sales');
-    Route::resource('sales', SaleController::class)->middleware('permission:manage sales');
+    Route::get('sales-export', [SaleController::class, 'exportCsv'])->name('sales.export')->middleware('permission:manage sales|view sales');
+    Route::get('sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice')->middleware('permission:manage sales|view sales');
+    Route::resource('sales', SaleController::class)->only(['create', 'store'])->middleware('permission:manage sales|create sales');
+    Route::resource('sales', SaleController::class)->only(['index', 'show'])->middleware('permission:manage sales|view sales');
+    Route::resource('sales', SaleController::class)->only(['edit', 'update'])->middleware('permission:manage sales|edit sales');
+    Route::resource('sales', SaleController::class)->only(['destroy'])->middleware('permission:manage sales|delete sales');
 
     Route::resource('sale-returns', SaleReturnController::class)->middleware('permission:manage sale returns');
     Route::post('sale-returns/{saleReturn}/approve', [SaleReturnController::class, 'approve'])->name('sale-returns.approve')->middleware('permission:manage sale returns');
@@ -74,8 +104,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('cash-transactions', CashTransactionController::class)
         ->parameters(['cash-transactions' => 'cashTransaction'])
-        ->except(['show'])
-        ->middleware('permission:manage cash');
+        ->only(['index'])
+        ->middleware('permission:manage cash|view cash');
+    Route::resource('cash-transactions', CashTransactionController::class)
+        ->parameters(['cash-transactions' => 'cashTransaction'])
+        ->only(['create', 'store'])
+        ->middleware('permission:manage cash|create cash');
+    Route::resource('cash-transactions', CashTransactionController::class)
+        ->parameters(['cash-transactions' => 'cashTransaction'])
+        ->only(['edit', 'update'])
+        ->middleware('permission:manage cash|edit cash');
+    Route::resource('cash-transactions', CashTransactionController::class)
+        ->parameters(['cash-transactions' => 'cashTransaction'])
+        ->only(['destroy'])
+        ->middleware('permission:manage cash|delete cash');
     Route::get('dues', [DueManagementController::class, 'index'])->name('dues.index')->middleware('permission:manage dues');
     Route::get('dues/customer-wise', [DueManagementController::class, 'customer'])->name('dues.customer')->middleware('permission:manage dues');
     Route::get('dues/customer-wise/export', [DueManagementController::class, 'exportCustomer'])->name('dues.customer.export')->middleware('permission:manage dues');

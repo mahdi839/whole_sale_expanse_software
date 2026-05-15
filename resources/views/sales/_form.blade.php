@@ -581,6 +581,7 @@
             <input type="text" id="new_customer_name" placeholder="Full Name *" class="field-input">
             <input type="text" id="new_customer_phone" placeholder="Phone" class="field-input">
             <input type="text" id="new_customer_alternative_phone" placeholder="Alternative Phone" class="field-input">
+            <textarea id="new_customer_address" placeholder="Address" rows="3" class="field-input"></textarea>
             <div id="modal-error" class="hidden" style="font-size:12px;color:#ef4444"></div>
         </div>
 
@@ -857,6 +858,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
     const name  = document.getElementById('new_customer_name').value.trim();
     const phone = document.getElementById('new_customer_phone').value.trim();
     const alternativePhone = document.getElementById('new_customer_alternative_phone').value.trim();
+    const address = document.getElementById('new_customer_address').value.trim();
     const err   = document.getElementById('modal-error');
 
     if (!name) { err.textContent = 'Name is required'; err.classList.remove('hidden'); return; }
@@ -873,7 +875,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ full_name: name, phone, alternative_phone: alternativePhone })
+            body: JSON.stringify({ full_name: name, phone, alternative_phone: alternativePhone, address })
         });
 
         const data = await res.json();
@@ -887,6 +889,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
         document.getElementById('new_customer_name').value  = '';
         document.getElementById('new_customer_phone').value = '';
         document.getElementById('new_customer_alternative_phone').value = '';
+        document.getElementById('new_customer_address').value = '';
     } catch (ex) {
         err.textContent = ex.message;
         err.classList.remove('hidden');

@@ -9,9 +9,11 @@
                 <button class="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg">Search</button>
             </form>
 
-            <a href="{{ route('sales-men.create') }}" class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg">
-                Add Sales Man
-            </a>
+            @canany(['manage sales men', 'create sales men'])
+                <a href="{{ route('sales-men.create') }}" class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg">
+                    Add Sales Man
+                </a>
+            @endcanany
         </div>
 
         @if(session('success'))
@@ -44,12 +46,16 @@
                                         <a href="{{ route('sales-men.show', $salesMan) }}" class="inline-flex items-center justify-center w-8 h-8 text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100" title="View transactions">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                                         </a>
-                                        <a href="{{ route('sales-men.edit', $salesMan) }}" class="px-3 py-1.5 text-xs text-blue-700 bg-blue-50 rounded-lg">Edit</a>
-                                        <form method="POST" action="{{ route('sales-men.destroy', $salesMan) }}" onsubmit="return confirm('Delete this sales man?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="px-3 py-1.5 text-xs text-red-700 bg-red-50 rounded-lg">Delete</button>
-                                        </form>
+                                        @canany(['manage sales men', 'edit sales men'])
+                                            <a href="{{ route('sales-men.edit', $salesMan) }}" class="px-3 py-1.5 text-xs text-blue-700 bg-blue-50 rounded-lg">Edit</a>
+                                        @endcanany
+                                        @canany(['manage sales men', 'delete sales men'])
+                                            <form method="POST" action="{{ route('sales-men.destroy', $salesMan) }}" onsubmit="return confirm('Delete this sales man?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="px-3 py-1.5 text-xs text-red-700 bg-red-50 rounded-lg">Delete</button>
+                                            </form>
+                                        @endcanany
                                     </div>
                                 </td>
                             </tr>

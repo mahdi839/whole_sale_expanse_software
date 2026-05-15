@@ -326,15 +326,19 @@
                 </x-sidebar-dropdown>
                 @endcan
 
+                @canany(['manage cloth sewings', 'view cloth sewings'])
                 <x-sidebar-link :href="route('cloth-sewings.index')" :active="request()->routeIs('cloth-sewings.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 7h16"/><path d="M6 7v11a2 2 0 002 2h8a2 2 0 002-2V7"/><path d="M9 7V4h6v3"/><path d="M9 12h6"/><path d="M9 16h4"/></svg></x-slot>
                     Cloth Sewing
                 </x-sidebar-link>
+                @endcanany
 
+                @canany(['manage sales men', 'view sales men'])
                 <x-sidebar-link :href="route('sales-men.index')" :active="request()->routeIs('sales-men.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="7" r="4"/><path d="M5 21a7 7 0 0114 0"/><path d="M18 8h4"/><path d="M20 6v4"/></svg></x-slot>
                     Sales Men
                 </x-sidebar-link>
+                @endcanany
 
                 @canany(['manage shops', 'manage stock', 'distribute stock'])
                     <x-sidebar-dropdown label="Stock Management" :active="request()->routeIs('shops.*') || request()->routeIs('stocks.*')">
@@ -355,19 +359,19 @@
                 </x-sidebar-dropdown>
                 @endcanany
 
-                @canany(['manage sales', 'manage sale returns'])
+                @canany(['manage sales', 'view sales', 'manage sale returns'])
                 <x-sidebar-dropdown label="Sales Management" :active="request()->routeIs('sales.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg></x-slot>
-                    @can('manage sales')<x-sidebar-sub-link :href="route('sales.index')">Sales Orders</x-sidebar-sub-link>@endcan
+                    @canany(['manage sales', 'view sales'])<x-sidebar-sub-link :href="route('sales.index')">Sales Orders</x-sidebar-sub-link>@endcanany
                     @can('manage sale returns')<x-sidebar-sub-link :href="route('sale-returns.index')">Return Sales</x-sidebar-sub-link>@endcan
                 </x-sidebar-dropdown>
                 @endcanany
 
-                @canany(['manage expenses', 'manage cash'])
+                @canany(['manage expenses', 'manage cash', 'view cash'])
                 <x-sidebar-dropdown label="Accounts" :active="request()->routeIs('expenses.*') || request()->routeIs('cash-transactions.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></x-slot>
                     @can('manage expenses')<x-sidebar-sub-link :href="route('expenses.index')">Expenses</x-sidebar-sub-link>@endcan
-                    @can('manage cash')<x-sidebar-sub-link :href="route('cash-transactions.index')">Cash Management</x-sidebar-sub-link>@endcan
+                    @canany(['manage cash', 'view cash'])<x-sidebar-sub-link :href="route('cash-transactions.index')">Cash Management</x-sidebar-sub-link>@endcanany
                 </x-sidebar-dropdown>
                 @endcanany
 

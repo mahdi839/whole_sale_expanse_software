@@ -32,6 +32,12 @@ class DueManagementController extends Controller
                     ->when($filters['date'], fn ($q) => $q->whereDate('created_at', $filters['date']))
                     ->latest()
                     ->limit(1),
+                'total_due_sale_qty' => DB::table('sale_items')
+                    ->selectRaw('COALESCE(SUM(sale_items.qty), 0)')
+                    ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+                    ->whereColumn('sales.customer_id', 'customers.id')
+                    ->where('sales.due', '>', 0)
+                    ->when($filters['date'], fn ($q) => $q->whereDate('sales.created_at', $filters['date'])),
             ])
             ->where('due', '>', 0)
             ->whereExists(function ($query) use ($filters) {

@@ -43,7 +43,9 @@
                 <div class="flex flex-col sm:flex-row gap-2">
                     <button class="h-10 px-4 bg-gray-800 text-white rounded-lg text-sm">Filter</button>
                     <a href="{{ route('cash-transactions.index') }}" class="h-10 px-4 bg-cyan-600 text-white rounded-lg text-sm inline-flex items-center justify-center">Reset</a>
-                    <a href="{{ route('cash-transactions.create') }}" class="sm:ml-auto h-10 px-4 bg-blue-600 text-white rounded-lg text-sm inline-flex items-center justify-center">+ New Cash Entry</a>
+                    @canany(['manage cash', 'create cash'])
+                        <a href="{{ route('cash-transactions.create') }}" class="sm:ml-auto h-10 px-4 bg-blue-600 text-white rounded-lg text-sm inline-flex items-center justify-center">+ New Cash Entry</a>
+                    @endcanany
                 </div>
             </form>
         </div>
@@ -71,19 +73,23 @@
                                     @endif
                                 </td>
                                 <td class="px-5 py-3">{{ ucwords(str_replace('_', ' ', $transaction->type)) }}</td>
-                                <td class="px-5 py-3">{{ $transaction->customer?->full_name ?? $transaction->supplier?->name ?? $transaction->salesMan?->name ?? '—' }}</td>
+                                <td class="px-5 py-3">{{ $transaction->customer?->full_name ?? $transaction->supplier?->name ?? $transaction->salesMan?->name ?? $transaction->tailor_name ?? '—' }}</td>
                                 <td class="px-5 py-3 text-right font-semibold {{ $transaction->direction === 'in' ? 'text-emerald-600' : 'text-red-600' }}">
                                     {{ $transaction->direction === 'in' ? '+' : '-' }}৳{{ number_format($transaction->amount, 2) }}
                                 </td>
                                 <td class="px-5 py-3">{{ optional($transaction->date)->format('d M Y') }}</td>
                                 <td class="px-5 py-3 text-right">
                                     @if(! $transaction->source_type)
-                                        <a href="{{ route('cash-transactions.edit', $transaction) }}" class="px-2.5 py-1 text-xs bg-blue-50 text-blue-700 rounded-lg">Edit</a>
-                                        <form method="POST" action="{{ route('cash-transactions.destroy', $transaction) }}" class="inline" onsubmit="return confirm('Delete cash entry?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="px-2.5 py-1 text-xs bg-red-50 text-red-700 rounded-lg">Delete</button>
-                                        </form>
+                                        @canany(['manage cash', 'edit cash'])
+                                            <a href="{{ route('cash-transactions.edit', $transaction) }}" class="px-2.5 py-1 text-xs bg-blue-50 text-blue-700 rounded-lg">Edit</a>
+                                        @endcanany
+                                        @canany(['manage cash', 'delete cash'])
+                                            <form method="POST" action="{{ route('cash-transactions.destroy', $transaction) }}" class="inline" onsubmit="return confirm('Delete cash entry?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="px-2.5 py-1 text-xs bg-red-50 text-red-700 rounded-lg">Delete</button>
+                                            </form>
+                                        @endcanany
                                     @else
                                         <span class="text-xs text-gray-400">Source controlled</span>
                                     @endif

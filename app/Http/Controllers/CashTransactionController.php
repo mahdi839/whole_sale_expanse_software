@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CashTransaction;
+use App\Models\ClothSewing;
 use App\Models\Customer;
 use App\Models\Purchase;
 use App\Models\Sale;
@@ -37,6 +38,7 @@ class CashTransactionController extends Controller
                     $sub->where('reference', 'like', "%{$s}%")
                         ->orWhere('note', 'like', "%{$s}%")
                         ->orWhere('payment_method', 'like', "%{$s}%")
+                        ->orWhere('tailor_name', 'like', "%{$s}%")
                         ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
                         ->orWhereHas('supplier', fn($sp) => $sp->where('name', 'like', "%{$s}%"))
                         ->orWhereHas('salesMan', fn($sm) => $sm->where('name', 'like', "%{$s}%"));
@@ -63,8 +65,14 @@ class CashTransactionController extends Controller
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
+        $tailors = ClothSewing::query()
+            ->whereNotNull('tailor_name')
+            ->select('tailor_name')
+            ->distinct()
+            ->orderBy('tailor_name')
+            ->pluck('tailor_name');
 
-        return view('cash_transactions.create', compact('transaction', 'customers', 'suppliers', 'salesMen'));
+        return view('cash_transactions.create', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors'));
     }
 
     public function store(Request $request)
@@ -85,8 +93,14 @@ class CashTransactionController extends Controller
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
+        $tailors = ClothSewing::query()
+            ->whereNotNull('tailor_name')
+            ->select('tailor_name')
+            ->distinct()
+            ->orderBy('tailor_name')
+            ->pluck('tailor_name');
 
-        return view('cash_transactions.edit', compact('transaction', 'customers', 'suppliers', 'salesMen'));
+        return view('cash_transactions.edit', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors'));
     }
 
     public function update(Request $request, CashTransaction $cashTransaction)
@@ -125,6 +139,7 @@ class CashTransactionController extends Controller
             'customer_id' => 'nullable|exists:customers,id',
             'supplier_id' => 'nullable|exists:suppliers,id',
             'sales_man_id' => 'nullable|exists:sales_men,id',
+            'tailor_name' => 'nullable|string|max:255',
             'note' => 'nullable|string|max:2000',
         ]);
 
