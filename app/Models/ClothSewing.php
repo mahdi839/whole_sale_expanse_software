@@ -8,6 +8,7 @@ class ClothSewing extends Model
 {
     protected $fillable = [
         'tailor_name',
+        'tailor_id',
         'product_id',
         'item_qty',
         'date',
@@ -21,5 +22,10 @@ class ClothSewing extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function tailor()
+    {
+        return $this->belongsTo(Tailor::class);
     }
 }

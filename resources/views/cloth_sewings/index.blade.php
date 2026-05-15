@@ -37,7 +37,7 @@
                         @forelse($clothSewings as $item)
                             <tr>
                                 <td class="px-5 py-3 whitespace-nowrap">{{ $item->date->format('d M Y') }}</td>
-                                <td class="px-5 py-3 font-medium text-gray-800">{{ $item->tailor_name }}</td>
+                                <td class="px-5 py-3 font-medium text-gray-800">{{ $item->tailor?->name ?? $item->tailor_name }}</td>
                                 <td class="px-5 py-3 text-gray-700">{{ $item->product?->product_name ?? '-' }}</td>
                                 <td class="px-5 py-3"><span class="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">{{ $item->product?->sku ?? '-' }}</span></td>
                                 <td class="px-5 py-3 text-right">{{ number_format($item->item_qty, 2) }}</td>

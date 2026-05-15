@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\CashTransaction;
-use App\Models\ClothSewing;
 use App\Models\Customer;
 use App\Models\Purchase;
 use App\Models\Sale;
 use App\Models\SalesMan;
 use App\Models\Supplier;
+use App\Models\Tailor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -27,7 +27,7 @@ class CashTransactionController extends Controller
         ];
 
         $query = CashTransaction::query()
-            ->with(['customer', 'supplier', 'salesMan'])
+            ->with(['customer', 'supplier', 'salesMan', 'tailor'])
             ->when($filters['direction'], fn($q) => $q->where('direction', $filters['direction']))
             ->when($filters['type'], fn($q) => $q->where('type', $filters['type']))
             ->when($filters['date_from'], fn($q) => $q->whereDate('date', '>=', $filters['date_from']))
@@ -38,10 +38,10 @@ class CashTransactionController extends Controller
                     $sub->where('reference', 'like', "%{$s}%")
                         ->orWhere('note', 'like', "%{$s}%")
                         ->orWhere('payment_method', 'like', "%{$s}%")
-                        ->orWhere('tailor_name', 'like', "%{$s}%")
                         ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
                         ->orWhereHas('supplier', fn($sp) => $sp->where('name', 'like', "%{$s}%"))
-                        ->orWhereHas('salesMan', fn($sm) => $sm->where('name', 'like', "%{$s}%"));
+                        ->orWhereHas('salesMan', fn($sm) => $sm->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('tailor', fn($tailor) => $tailor->where('name', 'like', "%{$s}%"));
                 });
             });
 
@@ -65,12 +65,7 @@ class CashTransactionController extends Controller
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
-        $tailors = ClothSewing::query()
-            ->whereNotNull('tailor_name')
-            ->select('tailor_name')
-            ->distinct()
-            ->orderBy('tailor_name')
-            ->pluck('tailor_name');
+        $tailors = Tailor::orderBy('name')->get(['id', 'name']);
 
         return view('cash_transactions.create', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors'));
     }
@@ -93,12 +88,7 @@ class CashTransactionController extends Controller
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
-        $tailors = ClothSewing::query()
-            ->whereNotNull('tailor_name')
-            ->select('tailor_name')
-            ->distinct()
-            ->orderBy('tailor_name')
-            ->pluck('tailor_name');
+        $tailors = Tailor::orderBy('name')->get(['id', 'name']);
 
         return view('cash_transactions.edit', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors'));
     }
@@ -139,7 +129,7 @@ class CashTransactionController extends Controller
             'customer_id' => 'nullable|exists:customers,id',
             'supplier_id' => 'nullable|exists:suppliers,id',
             'sales_man_id' => 'nullable|exists:sales_men,id',
-            'tailor_name' => 'nullable|string|max:255',
+            'tailor_id' => 'nullable|exists:tailors,id',
             'note' => 'nullable|string|max:2000',
         ]);
 

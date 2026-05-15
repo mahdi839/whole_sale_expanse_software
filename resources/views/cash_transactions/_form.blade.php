@@ -77,15 +77,15 @@
 
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Tailor</label>
-        <select name="tailor_name" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+        <select name="tailor_id" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
             <option value="">No tailor</option>
             @foreach($tailors ?? [] as $tailor)
-                <option value="{{ $tailor }}" @selected(old('tailor_name', $transaction?->tailor_name) === $tailor)>
-                    {{ $tailor }}
+                <option value="{{ $tailor->id }}" @selected(old('tailor_id', $transaction?->tailor_id) == $tailor->id)>
+                    {{ $tailor->name }}
                 </option>
             @endforeach
         </select>
-        @error('tailor_name')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        @error('tailor_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 </div>
 

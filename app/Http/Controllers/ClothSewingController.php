@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ClothSewing;
 use App\Models\Product;
+use App\Models\Tailor;
 use Illuminate\Http\Request;
 
 class ClothSewingController extends Controller
@@ -13,9 +14,10 @@ class ClothSewingController extends Controller
         $search = $request->input('search');
 
         $clothSewings = ClothSewing::query()
-            ->with('product')
+            ->with(['product', 'tailor'])
             ->when($search, fn ($query) => $query->where(function ($sub) use ($search) {
                 $sub->where('tailor_name', 'like', "%{$search}%")
+                    ->orWhereHas('tailor', fn ($tailor) => $tailor->where('name', 'like', "%{$search}%"))
                     ->orWhereHas('product', fn ($product) => $product
                         ->where('product_name', 'like', "%{$search}%")
                         ->orWhere('sku', 'like', "%{$search}%")
@@ -67,11 +69,17 @@ class ClothSewingController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'tailor_name' => 'required|string|max:255',
             'product_id' => 'required|exists:products,id',
             'item_qty' => 'required|numeric|min:0.01',
             'date' => 'required|date',
         ]);
+
+        $tailor = Tailor::firstOrCreate(['name' => trim($data['tailor_name'])]);
+        $data['tailor_id'] = $tailor->id;
+        $data['tailor_name'] = $tailor->name;
+
+        return $data;
     }
 }
