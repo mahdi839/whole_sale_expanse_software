@@ -140,7 +140,7 @@
                     <div>
                         <p class="text-xs text-gray-400 mb-1">Supplier</p>
                         <p class="text-sm font-medium text-gray-800 break-words">
-                            {{ $return->supplier?->name ?? 'â€”' }}
+                            {{ $return->supplier?->name ?? 'N/A' }}
                         </p>
                     </div>
 
@@ -266,7 +266,7 @@
                                     </div>
                                 </td>
                                 <td class="px-5 py-3">
-                                    {{ $return->supplier?->name ?? 'â€”' }}
+                                    {{ $return->supplier?->name ?? 'N/A' }}
                                 </td>
 
                                 <td class="px-5 py-3 text-xs text-gray-600">

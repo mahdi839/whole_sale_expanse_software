@@ -127,6 +127,11 @@
                         </div>
 
                         <div class="bg-gray-50 rounded-lg p-2">
+                            <p class="text-gray-400">Purchase Price</p>
+                            <p class="mt-1 font-medium text-gray-700">৳{{ number_format($product->purchase_price, 2) }}</p>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-lg p-2">
                             <p class="text-gray-400">Sell Price</p>
                             <p class="mt-1 font-medium text-gray-700">৳{{ number_format($product->selling_price, 2) }}</p>
                         </div>
@@ -206,6 +211,7 @@
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Product Name</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Design Code</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Product Code</th>
+                            <th class="text-right px-5 py-3 font-medium text-gray-500">Purchase Price</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Sell Price</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Stock</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden sm:table-cell">Added</th>
@@ -248,6 +254,10 @@
 
                                 <td class="px-5 py-3">
                                     <span class="text-xs font-mono text-gray-600">{{ $product->product_code ?? '—' }}</span>
+                                </td>
+
+                                <td class="px-5 py-3 text-right font-medium text-gray-700">
+                                    ৳{{ number_format($product->purchase_price, 2) }}
                                 </td>
 
                                 <td class="px-5 py-3 text-right font-medium text-gray-700">
@@ -306,7 +316,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-5 py-16 text-center">
+                                <td colspan="9" class="px-5 py-16 text-center">
                                     <div class="flex flex-col items-center gap-3 text-gray-400">
                                         <svg class="w-10 h-10" fill="none" stroke="currentColor"
                                             stroke-width="1.5" viewBox="0 0 24 24">

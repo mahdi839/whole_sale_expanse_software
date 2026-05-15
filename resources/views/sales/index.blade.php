@@ -1,4 +1,4 @@
-<x-app-layout>
+﻿<x-app-layout>
     <x-slot name="header">Sales</x-slot>
 
     <div class="space-y-4">
@@ -71,7 +71,7 @@
                     <div class="sm:ml-auto flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                         <a href="{{ route('sales.export', request()->query()) }}"
                             class="h-10 px-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm inline-flex items-center justify-center gap-1 w-full sm:w-auto">
-                            ⬇ CSV
+                             CSV
                         </a>
                         @canany(['manage sales', 'create sales'])
                             <a href="{{ route('sales.create') }}"
@@ -85,7 +85,7 @@
         </div>
 
         {{-- Totals summary --}}
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Total Sales</p>
                 <p class="text-xl font-semibold text-gray-800">{{ number_format($totals->total_sales ?? 0) }}</p>
@@ -93,17 +93,22 @@
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Grand Total</p>
                 <p class="text-xl font-semibold text-blue-600 break-words">
-                    ৳{{ number_format($totals->total_amount ?? 0, 2) }}</p>
+                    {{ number_format($totals->total_amount ?? 0, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Total Paid</p>
                 <p class="text-xl font-semibold text-green-600 break-words">
-                    ৳{{ number_format($totals->total_paid ?? 0, 2) }}</p>
+                    {{ number_format($totals->total_paid ?? 0, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Total Due</p>
                 <p class="text-xl font-semibold text-red-600 break-words">
-                    ৳{{ number_format($totals->total_due ?? 0, 2) }}</p>
+                    {{ number_format($totals->total_due ?? 0, 2) }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                <p class="text-xs text-gray-400 uppercase">Return Amount</p>
+                <p class="text-xl font-semibold text-orange-600 break-words">
+                    ৳{{ number_format($totals->total_return_amount ?? 0, 2) }}</p>
             </div>
         </div>
 
@@ -172,7 +177,7 @@
                     <div>
                         <p class="text-xs text-gray-400 mb-1">Customer</p>
                         <p class="text-sm font-medium text-gray-800 break-words">
-                            {{ $sale->customer?->full_name ?? '—' }}</p>
+                            {{ $sale->customer?->full_name ?? 'N/A' }}</p>
                     </div>
 
                     @if ($sale->bell_no || $sale->cash_memo)
@@ -195,9 +200,9 @@
                                 <div class="flex items-center justify-between gap-2 text-xs">
                                     <span class="text-gray-700 break-words min-w-0">
                                         {{ $item->product->product_name }}
-                                        <span class="text-gray-400">×{{ $item->qty }}</span>
+                                        <span class="text-gray-400">{{ $item->qty }}</span>
                                     </span>
-                                    <span class="shrink-0 text-gray-500 font-mono">৳{{ number_format($item->price_on_sale, 2) }}/pc</span>
+                                    <span class="shrink-0 text-gray-500 font-mono">{{ number_format($item->price_on_sale, 2) }}/pc</span>
                                 </div>
                             @endforeach
                             @if ($sale->items->count() > 2)
@@ -206,7 +211,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div class="grid grid-cols-2 gap-2 text-xs">
                         <div class="bg-gray-50 rounded-lg p-2">
                             <p class="text-gray-400">Total</p>
                             <p class="mt-1 font-medium text-blue-600 break-words">৳{{ number_format($sale->grand_total, 2) }}</p>
@@ -218,6 +223,10 @@
                         <div class="bg-gray-50 rounded-lg p-2">
                             <p class="text-gray-400">Due</p>
                             <p class="mt-1 font-medium text-red-600 break-words">৳{{ number_format($sale->due, 2) }}</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-2">
+                            <p class="text-gray-400">Return</p>
+                            <p class="mt-1 font-medium text-orange-600 break-words">৳{{ number_format($sale->return_amount, 2) }}</p>
                         </div>
                     </div>
 
@@ -234,7 +243,7 @@
                             'bg-green-50 text-green-700' => $sale->status === 'success',
                             'bg-orange-50 text-orange-700' => $sale->status === 'returned',
                             'bg-gray-100 text-gray-600' => blank($sale->status),
-                        ])>{{ $sale->status ? ucfirst($sale->status) : '—' }}</span>
+                        ])>{{ $sale->status ? ucfirst($sale->status) : 'N/A' }}</span>
                     </div>
                 </div>
             @empty
@@ -261,6 +270,7 @@
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Grand Total</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Due</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Return</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Refs</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Payment</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Status</th>
@@ -274,9 +284,9 @@
                                 $waMessage = urlencode(
                                     'Hello ' . ($sale->customer?->full_name ?? 'Customer') .
                                     ', your invoice ' . $sale->reference .
-                                    '. Total: ৳' . number_format($sale->grand_total, 2) .
-                                    ', Paid: ৳' . number_format($sale->paid, 2) .
-                                    ', Due: ৳' . number_format($sale->due, 2)
+                                    '. Total: ' . number_format($sale->grand_total, 2) .
+                                    ', Paid: ' . number_format($sale->paid, 2) .
+                                    ', Due: ' . number_format($sale->due, 2)
                                 );
                             @endphp
 
@@ -293,13 +303,13 @@
                                 </td>
 
                                 <td class="px-4 py-3">
-                                    {{ $sale->customer?->full_name ?? '—' }}<br>
+                                    {{ $sale->customer?->full_name ?? 'N/A' }}<br>
                                     <span class="text-xs text-gray-400">{{ $sale->created_at->format('d M Y') }}</span>
                                 </td>
 
                                 <td class="px-4 py-3 text-xs text-gray-600">
                                     @foreach ($sale->items->take(2) as $item)
-                                        <div>{{ $item->product->product_name }} <span class="text-gray-400">(×{{ $item->qty }})</span></div>
+                                        <div>{{ $item->product->product_name }} <span class="text-gray-400">({{ $item->qty }})</span></div>
                                     @endforeach
                                     @if ($sale->items->count() > 2)
                                         <div class="text-gray-400">+{{ $sale->items->count() - 2 }} more</div>
@@ -309,23 +319,27 @@
                                 <td class="px-4 py-3 text-right text-xs">
                                     @foreach ($sale->items->take(2) as $item)
                                         <div class="text-gray-700 font-mono">
-                                            ৳{{ number_format($item->price_on_sale, 2) }}</div>
+                                            {{ number_format($item->price_on_sale, 2) }}</div>
                                     @endforeach
                                     @if ($sale->items->count() > 2)
-                                        <div class="text-gray-300">—</div>
+                                        <div class="text-gray-300">...</div>
                                     @endif
                                 </td>
 
                                 <td class="px-4 py-3 text-right font-medium text-blue-600">
-                                    ৳{{ number_format($sale->grand_total, 2) }}
+                                    {{ number_format($sale->grand_total, 2) }}
                                 </td>
 
                                 <td class="px-4 py-3 text-right text-green-600">
-                                    ৳{{ number_format($sale->paid, 2) }}
+                                    {{ number_format($sale->paid, 2) }}
                                 </td>
 
                                 <td class="px-4 py-3 text-right text-red-600">
-                                    ৳{{ number_format($sale->due, 2) }}
+                                    {{ number_format($sale->due, 2) }}
+                                </td>
+
+                                <td class="px-4 py-3 text-right text-orange-600">
+                                    ৳{{ number_format($sale->return_amount, 2) }}
                                 </td>
 
                                 <td class="px-4 py-3">
@@ -339,7 +353,7 @@
                                                 {{ $sale->bell_no }}</span>
                                         @endif
                                         @if (!$sale->cash_memo && !$sale->bell_no)
-                                            <span class="text-gray-300">—</span>
+                                            <span class="text-gray-300">N/A</span>
                                         @endif
                                     </div>
                                 </td>
@@ -359,7 +373,7 @@
                                         'bg-green-50 text-green-700' => $sale->status === 'success',
                                         'bg-orange-50 text-orange-700' => $sale->status === 'returned',
                                         'bg-gray-100 text-gray-600' => blank($sale->status),
-                                    ])>{{ $sale->status ? ucfirst($sale->status) : '—' }}</span>
+                                    ])>{{ $sale->status ? ucfirst($sale->status) : 'N/A' }}</span>
                                 </td>
 
                                 <td class="px-4 py-3 text-right">
@@ -415,7 +429,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12" class="px-5 py-20 text-center text-gray-400">
+                                <td colspan="13" class="px-5 py-20 text-center text-gray-400">
                                     No sales found.
                                     @canany(['manage sales', 'create sales'])
                                         <a href="{{ route('sales.create') }}"

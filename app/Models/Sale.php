@@ -18,6 +18,7 @@ class Sale extends Model
         'grand_total',
         'paid',
         'due',
+        'return_amount',
         'cash_memo',
         'bell_no',
         'payment_method',
@@ -31,6 +32,7 @@ class Sale extends Model
         'grand_total' => 'decimal:2',
         'paid'        => 'decimal:2',
         'due'         => 'decimal:2',
+        'return_amount' => 'decimal:2',
     ];
 
     public function customer()

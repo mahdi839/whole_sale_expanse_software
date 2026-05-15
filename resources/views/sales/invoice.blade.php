@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -339,13 +339,13 @@
         {{-- Payment method --}}
         <div class="inv-info-cell">
             <div class="cell-label">Payment Method</div>
-            <div class="cell-val">{{ $sale->payment_method ?? '—' }}</div>
+            <div class="cell-val">{{ $sale->payment_method ?? 'N/A' }}</div>
         </div>
 
         {{-- Reference numbers --}}
         <div class="inv-info-cell">
-            <div class="cell-label">Cash Memo</div>
-            <div class="cell-val">{{ $sale->cash_memo ?? '—' }}</div>
+            <div class="cell-label">Return Amount</div>
+            <div class="cell-val">৳{{ $money($sale->return_amount) }}</div>
         </div>
 
         @if($sale->bell_no)
@@ -374,10 +374,10 @@
                     <tr>
                         <td style="color:#94a3b8;width:32px">{{ $i + 1 }}</td>
                         <td style="font-weight:600">{{ $item->product->product_name }}</td>
-                        <td style="font-family:monospace;font-size:12px;color:#94a3b8">{{ $item->product->sku ?? '—' }}</td>
+                        <td style="font-family:monospace;font-size:12px;color:#94a3b8">{{ $item->product->sku ?? 'N/A' }}</td>
                         <td class="r">{{ $qty($item->qty) }}</td>
-                        <td class="r" style="font-family:monospace">৳{{ $money($item->price_on_sale) }}</td>
-                        <td class="r" style="font-family:monospace;font-weight:600">৳{{ $money($item->line_total) }}</td>
+                        <td class="r" style="font-family:monospace">{{ $money($item->price_on_sale) }}</td>
+                        <td class="r" style="font-family:monospace;font-weight:600">{{ $money($item->line_total) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -393,32 +393,32 @@
             </div>
             <div class="tot-row">
                 <span class="tl">Subtotal</span>
-                <span class="tv">৳{{ $money($sale->items->sum('line_total')) }}</span>
+                <span class="tv">{{ $money($sale->items->sum('line_total')) }}</span>
             </div>
             @if($sale->discount > 0)
                 <div class="tot-row">
                     <span class="tl">Discount</span>
-                    <span class="tv" style="color:#dc2626">− ৳{{ $money($sale->discount) }}</span>
+                    <span class="tv" style="color:#dc2626">âˆ’ {{ $money($sale->discount) }}</span>
                 </div>
             @endif
             <div class="tot-row grand">
                 <span class="tl">Grand Total</span>
-                <span class="tv">৳{{ $money($sale->grand_total) }}</span>
+                <span class="tv">{{ $money($sale->grand_total) }}</span>
             </div>
             <div class="tot-row paid-row">
                 <span class="tl">Paid</span>
-                <span class="tv">৳{{ $money($sale->paid) }}</span>
+                <span class="tv">{{ $money($sale->paid) }}</span>
             </div>
             @if($sale->due > 0)
                 <div class="tot-row due-row">
                     <span class="tl">Due</span>
-                    <span class="tv">৳{{ $money($sale->due) }}</span>
+                    <span class="tv">{{ $money($sale->due) }}</span>
                 </div>
             @endif
             @if(! is_null($customerTotalDue))
                 <div class="tot-row due-row">
                     <span class="tl">Customer Total Due</span>
-                    <span class="tv">৳{{ $money($customerTotalDue) }}</span>
+                    <span class="tv">{{ $money($customerTotalDue) }}</span>
                 </div>
             @endif
         </div>

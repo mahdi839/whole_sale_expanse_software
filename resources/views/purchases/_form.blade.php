@@ -2,7 +2,30 @@
     $purchase = $purchase ?? null;
 
     $initialCart = [];
-    if ($purchase && $purchase->relationLoaded('items') && $purchase->items->count()) {
+    $oldItems = old('items');
+    if (is_array($oldItems) && count($oldItems)) {
+        $initialCart = collect($oldItems)
+            ->map(function ($item) use ($products) {
+                $product = $products->firstWhere('id', (int) ($item['product_id'] ?? 0));
+                $qty = (float) ($item['qty'] ?? 1);
+                $price = (float) ($item['price'] ?? $product?->buying_price ?? 0);
+
+                return [
+                    'product_id' => $item['product_id'] ?? null,
+                    'product_name' => $product?->product_name ?? 'Unknown',
+                    'sku' => $product?->sku ?? '',
+                    'stock_qty' => (float) ($product?->stock?->stock_qty ?? 0),
+                    'qty' => $qty,
+                    'price' => $price,
+                    'line_total' => $qty * $price,
+                    'bale_no' => $item['bale_no'] ?? '',
+                    'batch' => $item['batch'] ?? '',
+                ];
+            })
+            ->filter(fn ($item) => $item['product_id'])
+            ->values()
+            ->toArray();
+    } elseif ($purchase && $purchase->relationLoaded('items') && $purchase->items->count()) {
         $initialCart = $purchase->items
             ->map(
                 fn($item) => [
@@ -440,6 +463,31 @@
         position: relative;
     }
 
+    .sup-row {
+        display: flex;
+        gap: 8px;
+    }
+
+    .sup-row .sup-wrap {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .supplier-add-btn {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+        border-radius: 8px;
+        border: 1.5px solid #bfdbfe;
+        background: #eff6ff;
+        color: #2563eb;
+        cursor: pointer;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     .sup-display {
         width: 100%;
         height: 38px;
@@ -673,6 +721,7 @@
 
         <div class="field-group">
             <div class="field-label">Supplier</div>
+            <div class="sup-row">
             <div class="sup-wrap" id="sup-wrap">
                 <input type="text" id="sup-display" class="sup-display" placeholder="— Select supplier —" readonly>
                 <input type="hidden" name="supplier_id" id="supplier_id"
@@ -687,6 +736,8 @@
                     </div>
                     <div class="sup-list" id="sup-list"></div>
                 </div>
+            </div>
+            <button type="button" class="supplier-add-btn" onclick="openSupplierModal()" title="Add supplier">+</button>
             </div>
         </div>
 
@@ -834,6 +885,34 @@
 </div>
 
 <input type="hidden" name="reference" value="{{ $nextReference ?? $purchase?->reference }}">
+
+<div
+    id="supplierModal"
+    class="hidden"
+    style="position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:16px"
+    onclick="closeSupplierModal(event)"
+>
+    <div
+        style="background:#fff;border-radius:14px;width:100%;max-width:440px;box-shadow:0 20px 50px rgba(0,0,0,.15)"
+        onclick="event.stopPropagation()"
+    >
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #f1f5f9">
+            <span style="font-weight:700;font-size:14px">New Supplier</span>
+            <button type="button" onclick="closeSupplierModal()" style="border:none;background:none;font-size:18px;color:#94a3b8;cursor:pointer">×</button>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+            <input type="text" id="new_supplier_name" placeholder="Supplier Name *" class="field-input">
+            <input type="text" id="new_supplier_phone" placeholder="Phone" class="field-input">
+            <input type="email" id="new_supplier_email" placeholder="Email" class="field-input">
+            <textarea id="new_supplier_address" placeholder="Address" rows="3" class="field-input"></textarea>
+            <div id="supplier-modal-error" class="hidden" style="font-size:12px;color:#ef4444"></div>
+        </div>
+        <div style="padding:12px 20px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:8px">
+            <button type="button" onclick="closeSupplierModal()" style="height:36px;padding:0 16px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer;background:#fff">Cancel</button>
+            <button type="button" id="save-supplier-btn" style="height:36px;padding:0 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:#2563eb;color:#fff;cursor:pointer">Save</button>
+        </div>
+    </div>
+</div>
 
 @push('scripts')
     <script>
@@ -1213,6 +1292,75 @@
         // ─────────────────────────────────────────────────────────────
         // Helpers
         // ─────────────────────────────────────────────────────────────
+        function openSupplierModal() {
+            const modal = document.getElementById('supplierModal');
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+
+        function closeSupplierModal(event) {
+            if (!event || event.target === document.getElementById('supplierModal')) {
+                const modal = document.getElementById('supplierModal');
+                modal.style.display = 'none';
+                modal.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('save-supplier-btn')?.addEventListener('click', async () => {
+            const name = document.getElementById('new_supplier_name').value.trim();
+            const phone = document.getElementById('new_supplier_phone').value.trim();
+            const email = document.getElementById('new_supplier_email').value.trim();
+            const address = document.getElementById('new_supplier_address').value.trim();
+            const error = document.getElementById('supplier-modal-error');
+            const button = document.getElementById('save-supplier-btn');
+
+            if (!name) {
+                error.textContent = 'Supplier name is required';
+                error.classList.remove('hidden');
+                return;
+            }
+
+            error.classList.add('hidden');
+            button.disabled = true;
+
+            try {
+                const response = await fetch('{{ route('suppliers.store') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ name, phone, email, address })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || 'Could not save supplier');
+                }
+
+                ALL_SUPPLIERS.push({
+                    id: String(data.id),
+                    name: data.name,
+                    phone: data.phone || ''
+                });
+
+                document.getElementById('supplier_id').value = data.id;
+                document.getElementById('sup-display').value = data.name + (data.phone ? ' · ' + data.phone : '');
+
+                closeSupplierModal();
+                document.getElementById('new_supplier_name').value = '';
+                document.getElementById('new_supplier_phone').value = '';
+                document.getElementById('new_supplier_email').value = '';
+                document.getElementById('new_supplier_address').value = '';
+            } catch (exception) {
+                error.textContent = exception.message;
+                error.classList.remove('hidden');
+            } finally {
+                button.disabled = false;
+            }
+        });
+
         function escHtml(s) {
             return String(s).replace(/[&<>"']/g, c => (
                 { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]

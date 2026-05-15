@@ -14,11 +14,13 @@ class Product extends Model
         'product_name',
         'sku',
         'product_code',
+        'purchase_price',
         'selling_price',
         'image',
     ];
 
     protected $casts = [
+        'purchase_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
     ];
 

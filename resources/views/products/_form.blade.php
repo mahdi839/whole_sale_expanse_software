@@ -203,7 +203,7 @@
     <input
         type="text" id="product_name" name="product_name"
         value="{{ old('product_name', $product?->product_name) }}"
-        placeholder="e.g. Wireless Mouse"
+        placeholder="e.g. Kashmiri"
         class="pf-input @error('product_name') pf-error @enderror"
     />
     @error('product_name')
@@ -256,6 +256,29 @@
         </p>
     @enderror
     <p class="pf-hint">Enter the middle code. The system stores it with 2 random digits before and after.</p>
+</div>
+
+{{-- Purchase Price --}}
+<div class="pf-field">
+    <label for="purchase_price" class="pf-label">
+        Purchase Price<span class="req">*</span>
+    </label>
+    <input
+        type="number" id="purchase_price" name="purchase_price"
+        value="{{ old('purchase_price', $product?->purchase_price ?? 0) }}"
+        step="0.01" min="0"
+        placeholder="0.00"
+        class="pf-input @error('purchase_price') pf-error @enderror"
+    />
+    @error('purchase_price')
+        <p class="pf-err-msg">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            {{ $message }}
+        </p>
+    @enderror
+    <p class="pf-hint">This price is used for sale profit calculation.</p>
 </div>
 
 {{-- Sell Price --}}

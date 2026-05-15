@@ -72,7 +72,8 @@ class SaleController extends Controller
             count(*)         as total_sales,
             sum(grand_total) as total_amount,
             sum(paid)        as total_paid,
-            sum(due)         as total_due
+            sum(due)         as total_due,
+            sum(return_amount) as total_return_amount
         ')->first();
 
         $shops = auth()->user()->canManageAllShops()
@@ -90,7 +91,7 @@ class SaleController extends Controller
         $customers     = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
         $products      = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
             ->orderBy('product_name')
-            ->get(['id', 'product_name', 'sku', 'product_code', 'selling_price']);
+            ->get(['id', 'product_name', 'sku', 'product_code', 'purchase_price', 'selling_price']);
         $shops = auth()->user()->canManageAllShops()
             ? Shop::where('is_active', true)->orderBy('name')->get()
             : collect([auth()->user()->shop]);
@@ -126,6 +127,7 @@ class SaleController extends Controller
                 'grand_total'    => $grandTotal,
                 'paid'           => $paid,
                 'due'            => $due,
+                'return_amount'  => $validated['return_amount'] ?? 0,
                 'cash_memo'      => $validated['cash_memo'] ?? null,
                 'bell_no'        => $validated['bell_no'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
@@ -140,12 +142,8 @@ class SaleController extends Controller
                 $price     = (float) $item['price_on_sale'];
                 $lineTotal = $qty * $price;
                 $purchaseItem = $this->resolvePurchaseItem($product->id, $item['purchase_item_id'] ?? null);
-                if ($purchaseItem && $this->getBatchAvailableQty($purchaseItem->id) < $qty) {
-                    throw ValidationException::withMessages([
-                        'items' => 'Not enough batch quantity for ' . $product->product_name . '.',
-                    ]);
-                }
-                $costPrice  = (float) ($purchaseItem?->price ?? 0);
+               
+                $costPrice  = (float) ($product->purchase_price ?? 0);
                 $profit     = $price - $costPrice;
                 $lineProfit = $profit * $qty;
 
@@ -210,7 +208,7 @@ class SaleController extends Controller
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
         $products  = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
             ->orderBy('product_name')
-            ->get(['id', 'product_name', 'sku', 'product_code', 'selling_price']);
+            ->get(['id', 'product_name', 'sku', 'product_code', 'purchase_price', 'selling_price']);
         $shops = auth()->user()->canManageAllShops()
             ? Shop::where('is_active', true)->orderBy('name')->get()
             : collect([auth()->user()->shop]);
@@ -268,6 +266,7 @@ class SaleController extends Controller
                 'grand_total'    => $grandTotal,
                 'paid'           => $paid,
                 'due'            => $due,
+                'return_amount'  => $validated['return_amount'] ?? 0,
                 'cash_memo'      => $validated['cash_memo'] ?? null,
                 'bell_no'        => $validated['bell_no'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
@@ -281,12 +280,7 @@ class SaleController extends Controller
                 $price   = (float) $item['price_on_sale'];
 
                 $purchaseItem = $this->resolvePurchaseItem($product->id, $item['purchase_item_id'] ?? null);
-                if ($purchaseItem && $this->getBatchAvailableQty($purchaseItem->id) < $qty) {
-                    throw ValidationException::withMessages([
-                        'items' => 'Not enough batch quantity for ' . $product->product_name . '.',
-                    ]);
-                }
-                $costPrice  = (float) ($purchaseItem?->price ?? 0);
+                $costPrice  = (float) ($product->purchase_price ?? 0);
                 $profit     = $price - $costPrice;
                 $lineProfit = $profit * $qty;
 
@@ -502,6 +496,7 @@ class SaleController extends Controller
             'payment_method'         => 'nullable|string|max:100',
             'payment_status'         => 'required|in:due,paid,partial',
             'paid'                   => 'nullable|numeric|min:0',
+            'return_amount'          => 'nullable|numeric|min:0',
             'note'                   => 'nullable|string|max:2000',
             'items'                  => 'required|array|min:1',
             'items.*.product_id'     => 'required|exists:products,id',

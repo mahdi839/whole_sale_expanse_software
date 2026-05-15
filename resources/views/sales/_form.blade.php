@@ -1,9 +1,38 @@
-{{-- resources/views/sales/_form.blade.php --}}
+﻿{{-- resources/views/sales/_form.blade.php --}}
 @php
     $sale = $sale ?? null;
 
     $initialCart = [];
-    if ($sale && $sale->relationLoaded('items') && $sale->items->count()) {
+    $oldItems = old('items');
+    if (is_array($oldItems) && count($oldItems)) {
+        $initialCart = collect($oldItems)
+            ->map(function ($item) use ($products, $sale) {
+                $product = $products->firstWhere('id', (int) ($item['product_id'] ?? 0));
+                $qty = (float) ($item['qty'] ?? 1);
+                $price = (float) ($item['price_on_sale'] ?? $product?->selling_price ?? 0);
+                $purchaseItemId = $item['purchase_item_id'] ?? '';
+                $batch = '';
+
+                if ($product && $purchaseItemId) {
+                    $batch = $product->purchaseItems->firstWhere('id', (int) $purchaseItemId)?->batch ?? '';
+                }
+
+                return [
+                    'product_id'    => $item['product_id'] ?? null,
+                    'product_name'  => $product?->product_name ?? 'Unknown',
+                    'sku'           => $product?->sku ?? '',
+                    'purchase_item_id' => $purchaseItemId,
+                    'batch'         => $batch,
+                    'stock_qty'     => (float) ($product?->stocks?->firstWhere('shop_id', old('shop_id', $sale?->shop_id))?->stock_qty ?? 0),
+                    'qty'           => $qty,
+                    'price_on_sale' => $price,
+                    'line_total'    => $qty * $price,
+                ];
+            })
+            ->filter(fn ($item) => $item['product_id'])
+            ->values()
+            ->toArray();
+    } elseif ($sale && $sale->relationLoaded('items') && $sale->items->count()) {
         $initialCart = $sale->items
             ->map(fn($item) => [
                 'product_id'    => $item->product_id,
@@ -389,7 +418,7 @@
                     <circle cx="11" cy="11" r="8"/>
                     <path d="m21 21-4.35-4.35"/>
                 </svg>
-                <input type="text" id="product-search" placeholder="Search by name or design code…" autocomplete="off">
+                <input type="text" id="product-search" placeholder="Search by name or design code" autocomplete="off">
                 <div class="search-dropdown" id="search-dropdown">
                     @foreach ($products as $product)
                         <div class="search-option"
@@ -401,7 +430,7 @@
                                 <div style="font-weight:600;color:#1e293b;word-break:break-word">{{ $product->product_name }}</div>
                                 <div class="sku">{{ $product->sku }}</div>
                             </div>
-                            <div style="font-size:12px;font-weight:600;color:#2563eb;flex-shrink:0">৳{{ number_format($product->selling_price ?? 0, 2) }}</div>
+                            <div style="font-size:12px;font-weight:600;color:#2563eb;flex-shrink:0">{{ number_format($product->selling_price ?? 0, 2) }}</div>
                         </div>
                     @endforeach
                 </div>
@@ -451,7 +480,7 @@
                     <option value="">Walk-in / No customer</option>
                     @foreach ($customers as $customer)
                         <option value="{{ $customer->id }}" @selected(old('customer_id', $sale?->customer_id) == $customer->id)>
-                            {{ $customer->full_name }}{{ $customer->phone ? ' · ' . $customer->phone : '' }}
+                            {{ $customer->full_name }}{{ $customer->phone ? ' آ· ' . $customer->phone : '' }}
                         </option>
                     @endforeach
                 </select>
@@ -470,17 +499,17 @@
         <div style="display:flex;flex-direction:column;gap:8px">
             <div class="totals-row">
                 <span class="label">Subtotal</span>
-                <span class="val" id="subtotal-display">৳0.00</span>
+                <span class="val" id="subtotal-display">0.00</span>
             </div>
             <div class="field-group">
-                <div class="field-label">Discount (৳)</div>
+                <div class="field-label">Discount ()</div>
                 <input type="number" name="discount" id="discount"
                        value="{{ old('discount', $sale?->discount ?? 0) }}"
                        step="0.01" min="0" class="field-input">
             </div>
             <div class="totals-row grand" style="padding-top:4px;border-top:1px solid #e5e7eb;margin-top:4px">
                 <span class="label">Grand Total</span>
-                <span class="val" id="grand-total-display">৳0.00</span>
+                <span class="val" id="grand-total-display">0.00</span>
             </div>
         </div>
 
@@ -497,14 +526,14 @@
         </div>
 
         <div id="paid-field" class="field-group" style="display:none">
-            <div class="field-label">Paid Amount (৳)</div>
+            <div class="field-label">Paid Amount ()</div>
             <input type="number" name="paid" id="paid"
                    value="{{ old('paid', $sale?->paid ?? 0) }}"
                    step="0.01" min="0" class="field-input">
         </div>
 
         <div id="due-field" class="field-group" style="display:none">
-            <div class="field-label">Due Amount (৳)</div>
+            <div class="field-label">Due Amount ()</div>
             <input type="number" name="due" id="due"
                    value="{{ old('due', $sale?->due ?? 0) }}"
                    step="0.01" min="0" readonly class="field-input">
@@ -513,7 +542,7 @@
         <div class="field-group">
             <div class="field-label">Payment Method</div>
             <select name="payment_method" class="field-input">
-                <option value="">— Select —</option>
+                <option value=""> Select Payment Method</option>
                 @foreach (['Cash','Bank','Bkash','Nagad','Card'] as $method)
                     <option value="{{ $method }}" @selected(old('payment_method', $sale?->payment_method) == $method)>{{ $method }}</option>
                 @endforeach
@@ -522,32 +551,17 @@
 
         <hr class="divider">
 
-        {{-- Reference Numbers --}}
+        {{-- Sale return tracking --}}
         <div class="field-group">
-            <div class="field-label">Cash Memo #</div>
-            <input type="text" name="cash_memo"
-                   value="{{ old('cash_memo', $sale?->cash_memo) }}"
-                   placeholder="e.g. CM-001"
-                   class="field-input">
-        </div>
-
-        {{-- Bell No with helper hint --}}
-        <div class="field-group">
-            <div class="field-label" style="display:flex;align-items:center;gap:5px">
-                Bell No
-                <span
-                    title="Bell No is the counter/token number called at the shop — like a queue token used in cash counters."
-                    style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#e2e8f0;color:#64748b;font-size:9px;font-weight:700;cursor:help;flex-shrink:0"
-                >?</span>
-            </div>
-            <input type="text" name="bell_no"
-                   value="{{ old('bell_no', $sale?->bell_no) }}"
-                   placeholder="e.g. Token 42"
-                   class="field-input">
+            <div class="field-label">Return Amount ()</div>
+            <input type="number" name="return_amount"
+                   value="{{ old('return_amount', $sale?->return_amount ?? 0) }}"
+                   step="0.01" min="0" class="field-input">
             <p style="font-size:11px;color:#94a3b8;margin:0;line-height:1.4">
-                Counter/token number — like a queue bell number used at cash counters.
+                Tracking only. It does not change sale total, due, or profit.
             </p>
         </div>
+
 
         {{-- Note --}}
         <div class="field-group">
@@ -574,7 +588,7 @@
     >
         <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #f1f5f9">
             <span style="font-weight:700;font-size:14px">New Customer</span>
-            <button type="button" onclick="closeCustomerModal()" style="border:none;background:none;font-size:18px;color:#94a3b8;cursor:pointer">✕</button>
+            <button type="button" onclick="closeCustomerModal()" style="border:none;background:none;font-size:18px;color:#94a3b8;cursor:pointer">âœ•</button>
         </div>
 
         <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
@@ -644,9 +658,9 @@ searchInput.addEventListener('input', () => {
             <div class="search-option" data-id="${p.id}" data-name="${escHtml(p.name)}" data-sku="${escHtml(p.sku)}" data-price="${p.price}">
                 <div style="flex:1;min-width:0">
                     <div style="font-weight:600;color:#1e293b;word-break:break-word">${escHtml(p.name)}</div>
-                    <div class="sku">${escHtml(p.sku)} · Stock: ${formatQty(getAvailableStock(p.id))}</div>
+                    <div class="sku">${escHtml(p.sku)} آ· Stock: ${formatQty(getAvailableStock(p.id))}</div>
                 </div>
-                <div style="font-size:12px;font-weight:600;color:#2563eb;flex-shrink:0">৳${p.price.toFixed(2)}</div>
+                <div style="font-size:12px;font-weight:600;color:#2563eb;flex-shrink:0">${p.price.toFixed(2)}</div>
             </div>`).join('')
         : '<div style="padding:14px 16px;font-size:13px;color:#94a3b8">No products found</div>';
 
@@ -698,10 +712,10 @@ function renderCart() {
     <div class="prod-info">
         <div class="prod-name">${escHtml(item.product_name)}</div>
         <div class="prod-sku">${escHtml(item.sku)}</div>
-        <div class="prod-stock">Available: ${formatQty(item.stock_qty)}${item.batch ? ' · Batch: ' + escHtml(item.batch) : ''}</div>
+        <div class="prod-stock">Available: ${formatQty(item.stock_qty)}${item.batch ? ' آ· Batch: ' + escHtml(item.batch) : ''}</div>
     </div>
     <div class="qty-stepper">
-        <button type="button" class="btn-minus" data-idx="${idx}">−</button>
+        <button type="button" class="btn-minus" data-idx="${idx}">-</button>
         <input type="number" name="items[${idx}][qty]" class="item-qty" data-idx="${idx}" value="${item.qty}" step="0.01" min="0.01">
         <button type="button" class="btn-plus" data-idx="${idx}">+</button>
     </div>
@@ -711,10 +725,7 @@ function renderCart() {
            data-idx="${idx}"
            value="${formatMoney(item.price_on_sale)}"
            inputmode="decimal" autocomplete="off" title="Unit price">
-    <select name="items[${idx}][purchase_item_id]" class="price-edit item-batch" data-idx="${idx}" title="Batch">
-        ${getBatchOptions(item.product_id, item.purchase_item_id)}
-    </select>
-    <div class="line-total item-total">৳${item.line_total.toFixed(2)}</div>
+    <div class="line-total item-total">${item.line_total.toFixed(2)}</div>
     <button type="button" class="btn-remove" data-idx="${idx}" title="Remove">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path d="M18 6 6 18M6 6l12 12"/>
@@ -772,7 +783,7 @@ function updateItem(idx) {
     const qtyInp = cartList.querySelector(`.item-qty[data-idx="${idx}"]`);
     if (qtyInp) qtyInp.value = cartItems[idx].qty;
     const totalEl = cartList.querySelectorAll('.item-total')[idx];
-    if (totalEl) totalEl.textContent = '৳' + cartItems[idx].line_total.toFixed(2);
+    if (totalEl) totalEl.textContent =  cartItems[idx].line_total.toFixed(2);
     recalc();
 }
 
@@ -789,8 +800,8 @@ function recalc() {
     const disc  = parseFloat(discountInput.value) || 0;
     const grand = Math.max(0, sub - disc);
 
-    subtotalSpan.textContent = '৳' + sub.toFixed(2);
-    grandSpan.textContent    = '৳' + grand.toFixed(2);
+    subtotalSpan.textContent = '' + sub.toFixed(2);
+    grandSpan.textContent    = '' + grand.toFixed(2);
     updatePayment(grand);
 }
 
@@ -882,7 +893,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
         if (!res.ok) throw new Error(data.message || 'Error saving customer');
 
         const sel = document.getElementById('customer_id');
-        sel.add(new Option(data.full_name + (data.phone ? ' · ' + data.phone : ''), data.id, true, true));
+        sel.add(new Option(data.full_name + (data.phone ? ' آ· ' + data.phone : ''), data.id, true, true));
         sel.value = data.id;
 
         closeCustomerModal();
@@ -944,7 +955,7 @@ function getBatchOptions(productId, selectedId) {
 
     return batches.map(batch => {
         const selected = String(batch.id) === String(selectedId) ? ' selected' : '';
-        const label = `${escHtml(batch.batch)} · Cost: ৳${Number(batch.price).toFixed(2)} · Qty: ${formatQty(batch.available_qty)}`;
+        const label = `${escHtml(batch.batch)} آ· Cost: ${Number(batch.price).toFixed(2)} آ· Qty: ${formatQty(batch.available_qty)}`;
         return `<option value="${batch.id}"${selected}>${label}</option>`;
     }).join('');
 }
