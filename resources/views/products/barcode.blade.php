@@ -3,6 +3,73 @@
 
     <style>
         .barcode-controls { display: block; }
+        .barcode-actions {
+            position: sticky;
+            top: 12px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+        }
+        .barcode-action-copy {
+            min-width: 0;
+        }
+        .barcode-action-title {
+            color: #1f2937;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .barcode-action-subtitle {
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .barcode-print-button {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            height: 42px;
+            padding: 0 18px;
+            border: 0;
+            border-radius: 8px;
+            background: #059669;
+            color: #ffffff !important;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .barcode-print-button:hover {
+            background: #047857;
+        }
+        .barcode-generate-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 40px;
+            padding: 0 16px;
+            border: 0;
+            border-radius: 8px;
+            background: #1f2937;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .barcode-form-actions {
+            display: flex;
+            gap: 8px;
+        }
         .label-sheet {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -137,6 +204,7 @@
                 width: 100%;
             }
             .barcode-controls,
+            .barcode-actions,
             nav,
             header { display: none !important; }
             .label-sheet {
@@ -170,13 +238,12 @@
         </nav>
 
         <div class="barcode-controls bg-white border border-gray-200 rounded-xl p-5">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-4 border-b border-gray-100">
-                <div>
-                    <h2 class="text-sm font-semibold text-gray-800">Barcode Sticker Print</h2>
-                    <p class="text-xs text-gray-500 mt-1">Set quantity, generate stickers, then print the full sheet.</p>
+            <div class="barcode-actions mb-4">
+                <div class="barcode-action-copy">
+                    <h2 class="barcode-action-title">Barcode Sticker Print</h2>
+                    <p class="barcode-action-subtitle">Set quantity, generate stickers, then print the full sheet.</p>
                 </div>
-                <button id="printTopBtn" type="button"
-                    class="inline-flex items-center justify-center h-10 px-5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">
+                <button id="printTopBtn" type="button" class="barcode-print-button">
                     Print Stickers
                 </button>
             </div>
@@ -192,11 +259,11 @@
                     <input id="labelQty" type="number" min="1" max="300" value="1"
                            class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                 </div>
-                <div class="flex gap-2">
-                    <button id="generateBtn" type="button" class="flex-1 h-10 px-4 bg-gray-800 text-white rounded-lg text-sm">
+                <div class="barcode-form-actions">
+                    <button id="generateBtn" type="button" class="barcode-generate-button flex-1">
                         Generate
                     </button>
-                    <button id="printBtn" type="button" class="flex-1 h-10 px-4 bg-emerald-600 text-white rounded-lg text-sm">
+                    <button id="printBtn" type="button" class="barcode-print-button flex-1">
                         Print
                     </button>
                 </div>
