@@ -342,11 +342,12 @@
             <div class="cell-val">{{ $sale->payment_method ?? 'N/A' }}</div>
         </div>
 
-        {{-- Reference numbers --}}
-        <div class="inv-info-cell">
-            <div class="cell-label">Return Amount</div>
-            <div class="cell-val">৳{{ $money($sale->return_amount) }}</div>
-        </div>
+        @if($sale->return_amount > 0)
+            <div class="inv-info-cell">
+                <div class="cell-label">Return Credit</div>
+                <div class="cell-val">৳{{ $money($sale->return_amount) }}</div>
+            </div>
+        @endif
 
         @if($sale->bell_no)
             <div class="inv-info-cell">
@@ -382,6 +383,34 @@
                 @endforeach
             </tbody>
         </table>
+
+        @if($sale->appliedReturns->count())
+            <table class="items" style="margin-top:18px">
+                <thead>
+                    <tr>
+                        <th colspan="2">Returned Products</th>
+                        <th>Sale Code</th>
+                        <th class="r">Qty</th>
+                        <th class="r">Unit Price</th>
+                        <th class="r">Credit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($sale->appliedReturns as $return)
+                        @foreach($return->items as $item)
+                            <tr>
+                                <td style="color:#94a3b8;width:32px">{{ $loop->parent->iteration }}.{{ $loop->iteration }}</td>
+                                <td style="font-weight:600">{{ $item->product?->product_name ?? 'Unknown' }}</td>
+                                <td style="font-family:monospace;font-size:12px;color:#94a3b8">{{ $return->sale?->reference ?? 'N/A' }}</td>
+                                <td class="r">{{ $qty($item->qty) }}</td>
+                                <td class="r" style="font-family:monospace">{{ $money($item->price_on_sale) }}</td>
+                                <td class="r" style="font-family:monospace;font-weight:600;color:#0f766e">- {{ $money($item->line_total) }}</td>
+                            </tr>
+                        @endforeach
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
     </div>
 
     {{-- Totals --}}
@@ -401,9 +430,15 @@
                     <span class="tv" style="color:#dc2626">âˆ’ {{ $money($sale->discount) }}</span>
                 </div>
             @endif
+            @if($sale->return_amount > 0)
+                <div class="tot-row">
+                    <span class="tl">Return Credit</span>
+                    <span class="tv" style="color:#0f766e">- {{ $money($sale->return_amount) }}</span>
+                </div>
+            @endif
             <div class="tot-row grand">
-                <span class="tl">Grand Total</span>
-                <span class="tv">{{ $money($sale->grand_total) }}</span>
+                <span class="tl">Payable</span>
+                <span class="tv">{{ $money(max(0, (float) $sale->grand_total - (float) $sale->return_amount)) }}</span>
             </div>
             <div class="tot-row paid-row">
                 <span class="tl">Paid</span>

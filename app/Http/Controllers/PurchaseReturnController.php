@@ -9,7 +9,6 @@ use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnItem;
 use App\Models\Stock;
 use App\Models\Supplier;
-use App\Services\CashLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -345,13 +344,6 @@ class PurchaseReturnController extends Controller
 
         $this->syncSupplierFinancials($ret->supplier_id);
         $this->syncPurchaseStatus($ret);
-
-        app(CashLedger::class)->syncSource('purchase_return', $ret->id, 'in', 'purchase_return_refund', (float) $ret->return_amount, [
-            'date' => $ret->date?->toDateString() ?? now()->toDateString(),
-            'payment_method' => $ret->payment_method,
-            'supplier_id' => $ret->supplier_id,
-            'note' => 'Purchase return refund: ' . $ret->reference,
-        ]);
     }
 
     private function reverseReturnEffects(PurchaseReturn $ret): void
@@ -360,7 +352,6 @@ class PurchaseReturnController extends Controller
 
         $this->syncSupplierFinancials($ret->supplier_id);
         $this->syncPurchaseStatus($ret);
-        app(CashLedger::class)->deleteSource('purchase_return', $ret->id);
     }
 
     private function syncSupplierFinancials(?int $supplierId): void

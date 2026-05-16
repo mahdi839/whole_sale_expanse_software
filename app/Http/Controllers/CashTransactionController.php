@@ -228,7 +228,7 @@ class CashTransactionController extends Controller
 
     private function applySalePaymentDelta(Sale $sale, float $delta): void
     {
-        $grandTotal = (float) $sale->grand_total;
+        $grandTotal = max(0, (float) $sale->grand_total - (float) $sale->return_amount);
         $paid = min($grandTotal, max(0, (float) $sale->paid + $delta));
         $due = max(0, $grandTotal - $paid);
 

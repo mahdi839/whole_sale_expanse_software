@@ -1,6 +1,7 @@
 ﻿{{-- resources/views/sales/_form.blade.php --}}
 @php
     $sale = $sale ?? null;
+    $returnableSales = $returnableSales ?? collect();
 
     $initialCart = [];
     $oldItems = old('items');
@@ -49,6 +50,57 @@
             ->toArray();
     }
 
+    $initialReturnItems = [];
+    $oldReturns = old('returns');
+    if (is_array($oldReturns) && count($oldReturns)) {
+        $initialReturnItems = collect($oldReturns)
+            ->filter(fn ($item) => ! empty($item['sale_id']) && ! empty($item['sale_item_id']) && ! empty($item['product_id']))
+            ->map(function ($item) use ($returnableSales) {
+                $returnSale = ($returnableSales ?? collect())->firstWhere('id', (int) ($item['sale_id'] ?? 0));
+                $returnItem = collect($returnSale['items'] ?? [])->firstWhere('id', (int) ($item['sale_item_id'] ?? 0));
+                $qty = (float) ($item['qty'] ?? 1);
+                $price = (float) ($returnItem['price_on_sale'] ?? 0);
+
+                return [
+                    'sale_id' => (int) $item['sale_id'],
+                    'sale_reference' => $returnSale['reference'] ?? '',
+                    'sale_item_id' => (int) $item['sale_item_id'],
+                    'product_id' => (int) $item['product_id'],
+                    'product_name' => $returnItem['product_name'] ?? 'Unknown',
+                    'sku' => $returnItem['sku'] ?? '',
+                    'available_qty' => (float) ($returnItem['available_qty'] ?? $qty),
+                    'qty' => $qty,
+                    'price_on_sale' => $price,
+                    'line_total' => $qty * $price,
+                ];
+            })
+            ->values()
+            ->toArray();
+    } elseif ($sale && $sale->relationLoaded('appliedReturns') && $sale->appliedReturns->count()) {
+        $initialReturnItems = $sale->appliedReturns
+            ->flatMap(function ($return) use ($returnableSales) {
+                return $return->items->map(function ($item) use ($return, $returnableSales) {
+                    $returnSale = ($returnableSales ?? collect())->firstWhere('id', (int) $return->sale_id);
+                    $returnableItem = collect($returnSale['items'] ?? [])->firstWhere('id', (int) $item->sale_item_id);
+
+                    return [
+                        'sale_id' => $return->sale_id,
+                        'sale_reference' => $return->sale?->reference ?? '',
+                        'sale_item_id' => $item->sale_item_id,
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product?->product_name ?? 'Unknown',
+                        'sku' => $item->product?->sku ?? '',
+                        'available_qty' => (float) ($returnableItem['available_qty'] ?? $item->qty),
+                        'qty' => (float) $item->qty,
+                        'price_on_sale' => (float) $item->price_on_sale,
+                        'line_total' => (float) $item->line_total,
+                    ];
+                });
+            })
+            ->values()
+            ->toArray();
+    }
+
     $productPayload = $products->map(function ($product) {
         return [
             'id' => (string) $product->id,
@@ -74,6 +126,8 @@
             })->values(),
         ];
     })->values();
+
+    $returnableSalesPayload = ($returnableSales ?? collect())->values();
 @endphp
 
 <style>
@@ -214,6 +268,58 @@
     }
 
     .cart-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .return-panel {
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .return-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 88px 92px 82px 28px;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid #eef2f7;
+        border-radius: 8px;
+        background: #f8fafc;
+    }
+
+    .return-row .return-product {
+        min-width: 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .return-row .return-meta {
+        margin-top: 2px;
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 400;
+        word-break: break-word;
+    }
+
+    .return-row input {
+        width: 100%;
+        height: 32px;
+        padding: 0 8px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 12px;
+        text-align: right;
+        background: #fff;
+    }
+
+    @media (max-width: 640px) {
+        .return-row { grid-template-columns: 1fr 1fr; }
+        .return-row .return-product { grid-column: 1 / -1; }
+        .return-row .btn-remove { justify-self: end; }
+    }
 
     .cart-card {
         display: flex;
@@ -450,6 +556,33 @@
             </div>
             <div id="cart-list" class="cart-list"></div>
         </div>
+
+        {{-- Return products from previous sales --}}
+        <div class="return-panel">
+            <div style="display:flex;align-items:end;gap:10px;flex-wrap:wrap">
+                <div style="flex:1;min-width:220px">
+                    <div class="field-label">Return Product From Sale</div>
+                    <select id="return-sale-select" class="field-input">
+                        <option value="">Select sale code</option>
+                    </select>
+                </div>
+                <div style="flex:1;min-width:220px">
+                    <div class="field-label">Product</div>
+                    <select id="return-product-select" class="field-input" disabled>
+                        <option value="">Select product</option>
+                    </select>
+                </div>
+                <button type="button" id="add-return-product"
+                        style="height:38px;padding:0 14px;border:none;border-radius:8px;background:#0f766e;color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+                    Add Return
+                </button>
+            </div>
+            @error('returns')
+                <p style="font-size:12px;color:#ef4444;margin:0">{{ $message }}</p>
+            @enderror
+            <div id="return-empty" style="font-size:12px;color:#94a3b8">No return products selected.</div>
+            <div id="return-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
     </div>
 
     {{-- ==================== RIGHT SIDEBAR ==================== --}}
@@ -507,8 +640,12 @@
                        value="{{ old('discount', $sale?->discount ?? 0) }}"
                        step="0.01" min="0" class="field-input">
             </div>
+            <div class="totals-row" id="return-credit-row" style="display:none">
+                <span class="label">Return Credit</span>
+                <span class="val" id="return-credit-display">0.00</span>
+            </div>
             <div class="totals-row grand" style="padding-top:4px;border-top:1px solid #e5e7eb;margin-top:4px">
-                <span class="label">Grand Total</span>
+                <span class="label">Payable</span>
                 <span class="val" id="grand-total-display">0.00</span>
             </div>
         </div>
@@ -550,18 +687,6 @@
         </div>
 
         <hr class="divider">
-
-        {{-- Sale return tracking --}}
-        <div class="field-group">
-            <div class="field-label">Return Amount ()</div>
-            <input type="number" name="return_amount"
-                   value="{{ old('return_amount', $sale?->return_amount ?? 0) }}"
-                   step="0.01" min="0" class="field-input">
-            <p style="font-size:11px;color:#94a3b8;margin:0;line-height:1.4">
-                Tracking only. It does not change sale total, due, or profit.
-            </p>
-        </div>
-
 
         {{-- Note --}}
         <div class="field-group">
@@ -620,8 +745,10 @@
 //  State
 // ============================================================
 let cartItems = @json($initialCart);
+let returnItems = @json($initialReturnItems);
 
 const ALL_PRODUCTS = @json($productPayload);
+const RETURNABLE_SALES = @json($returnableSalesPayload);
 
 const shopInput = document.querySelector('[name="shop_id"]');
 cartItems = cartItems.map(item => ({ ...item, stock_qty: getAvailableStock(item.product_id) }));
@@ -636,11 +763,19 @@ const cartEmpty     = document.getElementById('cart-empty');
 const discountInput = document.getElementById('discount');
 const subtotalSpan  = document.getElementById('subtotal-display');
 const grandSpan     = document.getElementById('grand-total-display');
+const returnCreditRow = document.getElementById('return-credit-row');
+const returnCreditSpan = document.getElementById('return-credit-display');
 const payStatus     = document.getElementById('payment_status');
 const paidField     = document.getElementById('paid-field');
 const dueField      = document.getElementById('due-field');
 const paidInput     = document.getElementById('paid');
 const dueInput      = document.getElementById('due');
+const customerSelect = document.getElementById('customer_id');
+const returnSaleSelect = document.getElementById('return-sale-select');
+const returnProductSelect = document.getElementById('return-product-select');
+const addReturnBtn = document.getElementById('add-return-product');
+const returnList = document.getElementById('return-list');
+const returnEmpty = document.getElementById('return-empty');
 
 // ============================================================
 //  Search
@@ -793,16 +928,126 @@ function removeItem(idx) {
 }
 
 // ============================================================
+//  Sale returns applied to this invoice
+// ============================================================
+function initReturnSelectors() {
+    const customerId = customerSelect?.value || '';
+    const sales = RETURNABLE_SALES.filter(sale => !customerId || !sale.customer_id || String(sale.customer_id) === String(customerId));
+
+    returnSaleSelect.innerHTML = '<option value="">Select sale code</option>' + sales.map(sale => {
+        const customer = sale.customer_name ? ` - ${escHtml(sale.customer_name)}` : '';
+        const date = sale.created_at ? ` (${escHtml(sale.created_at)})` : '';
+        return `<option value="${sale.id}">${escHtml(sale.reference)}${customer}${date}</option>`;
+    }).join('');
+}
+
+customerSelect?.addEventListener('change', () => {
+    returnSaleSelect.value = '';
+    returnProductSelect.innerHTML = '<option value="">Select product</option>';
+    returnProductSelect.disabled = true;
+    returnItems = [];
+    renderReturns();
+    initReturnSelectors();
+});
+
+returnSaleSelect.addEventListener('change', () => {
+    const sale = getReturnSale(returnSaleSelect.value);
+    returnProductSelect.disabled = !sale;
+    returnProductSelect.innerHTML = '<option value="">Select product</option>';
+
+    if (!sale) return;
+
+    returnProductSelect.innerHTML += sale.items.map(item => {
+        const label = `${escHtml(item.product_name)}${item.sku ? ' - ' + escHtml(item.sku) : ''} | Qty: ${formatQty(item.available_qty)} | ${formatMoney(item.price_on_sale)}`;
+        return `<option value="${item.id}">${label}</option>`;
+    }).join('');
+});
+
+addReturnBtn.addEventListener('click', () => {
+    const sale = getReturnSale(returnSaleSelect.value);
+    const item = getReturnSaleItem(returnSaleSelect.value, returnProductSelect.value);
+    if (!sale || !item) return;
+
+    const existing = returnItems.find(ret => String(ret.sale_item_id) === String(item.id));
+    if (existing) {
+        existing.qty = Math.min(toNumber(existing.available_qty), toNumber(existing.qty) + 1);
+        existing.line_total = toNumber(existing.qty) * toNumber(existing.price_on_sale);
+    } else {
+        returnItems.push({
+            sale_id: sale.id,
+            sale_reference: sale.reference,
+            sale_item_id: item.id,
+            product_id: item.product_id,
+            product_name: item.product_name,
+            sku: item.sku || '',
+            available_qty: item.available_qty,
+            qty: 1,
+            price_on_sale: item.price_on_sale,
+            line_total: toNumber(item.price_on_sale),
+        });
+    }
+
+    renderReturns();
+});
+
+function renderReturns() {
+    returnEmpty.style.display = returnItems.length ? 'none' : 'block';
+    returnList.innerHTML = '';
+
+    returnItems.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'return-row';
+        row.innerHTML = `
+            <input type="hidden" name="returns[${idx}][sale_id]" value="${item.sale_id}">
+            <input type="hidden" name="returns[${idx}][sale_item_id]" value="${item.sale_item_id}">
+            <input type="hidden" name="returns[${idx}][product_id]" value="${item.product_id}">
+            <div class="return-product">
+                ${escHtml(item.product_name)}
+                <div class="return-meta">${escHtml(item.sale_reference || '')}${item.sku ? ' - ' + escHtml(item.sku) : ''} | Available: ${formatQty(item.available_qty)}</div>
+            </div>
+            <input type="number" name="returns[${idx}][qty]" class="return-qty" data-idx="${idx}" value="${item.qty}" min="0.01" max="${item.available_qty}" step="0.01" title="Return quantity">
+            <input type="text" value="${formatMoney(item.price_on_sale)}" readonly title="Return price">
+            <div class="line-total">${formatMoney(item.line_total)}</div>
+            <button type="button" class="btn-remove return-remove" data-idx="${idx}" title="Remove">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                </svg>
+            </button>`;
+        returnList.appendChild(row);
+    });
+
+    returnList.querySelectorAll('.return-qty').forEach(inp => inp.addEventListener('change', e => {
+        const i = +e.target.dataset.idx;
+        const max = toNumber(returnItems[i].available_qty);
+        const qty = Math.min(max, Math.max(0.01, toNumber(e.target.value) || 1));
+        returnItems[i].qty = qty;
+        returnItems[i].line_total = qty * toNumber(returnItems[i].price_on_sale);
+        renderReturns();
+    }));
+
+    returnList.querySelectorAll('.return-remove').forEach(btn => btn.addEventListener('click', e => {
+        returnItems.splice(+e.currentTarget.dataset.idx, 1);
+        renderReturns();
+    }));
+
+    recalc();
+}
+
+// ============================================================
 //  Totals
 // ============================================================
 function recalc() {
     const sub   = cartItems.reduce((s, i) => s + i.line_total, 0);
     const disc  = parseFloat(discountInput.value) || 0;
     const grand = Math.max(0, sub - disc);
+    const returnCredit = returnItems.reduce((s, i) => s + toNumber(i.line_total), 0);
+    const payable = Math.max(0, grand - returnCredit);
 
     subtotalSpan.textContent = '' + sub.toFixed(2);
-    grandSpan.textContent    = '' + grand.toFixed(2);
-    updatePayment(grand);
+    returnCreditSpan.textContent = '- ' + returnCredit.toFixed(2);
+    returnCreditRow.style.display = returnCredit > 0 ? 'flex' : 'none';
+    grandSpan.textContent    = '' + payable.toFixed(2);
+    updatePayment(payable);
 }
 
 function updatePayment(grand) {
@@ -845,7 +1090,9 @@ shopInput?.addEventListener('change', () => {
 });
 
 function getGrand() {
-    return Math.max(0, cartItems.reduce((s, i) => s + i.line_total, 0) - (parseFloat(discountInput.value) || 0));
+    const gross = Math.max(0, cartItems.reduce((s, i) => s + i.line_total, 0) - (parseFloat(discountInput.value) || 0));
+    const returnCredit = returnItems.reduce((s, i) => s + toNumber(i.line_total), 0);
+    return Math.max(0, gross - returnCredit);
 }
 
 // ============================================================
@@ -947,6 +1194,15 @@ function getFirstBatch(productId) {
     return getProductBatches(productId).find(batch => Number(batch.available_qty) > 0) || getProductBatches(productId)[0] || null;
 }
 
+function getReturnSale(saleId) {
+    return RETURNABLE_SALES.find(sale => String(sale.id) === String(saleId));
+}
+
+function getReturnSaleItem(saleId, saleItemId) {
+    const sale = getReturnSale(saleId);
+    return sale?.items?.find(item => String(item.id) === String(saleItemId));
+}
+
 function getBatchOptions(productId, selectedId) {
     const batches = getProductBatches(productId);
     if (!batches.length) {
@@ -968,7 +1224,9 @@ function formatQty(qty) {
 // ============================================================
 //  Init
 // ============================================================
+initReturnSelectors();
 renderCart();
+renderReturns();
 recalc();
 setTimeout(recalc, 100);
 </script>

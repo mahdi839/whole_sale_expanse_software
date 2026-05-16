@@ -9,7 +9,6 @@ use App\Models\SaleItem;
 use App\Models\SaleReturn;
 use App\Models\SaleReturnItem;
 use App\Models\Stock;
-use App\Services\CashLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -356,13 +355,6 @@ class SaleReturnController extends Controller
                 ]);
             }
         }
-
-        app(CashLedger::class)->syncSource('sale_return', $ret->id, 'out', 'sale_return_refund', (float) $ret->return_amount, [
-            'date' => $ret->created_at?->toDateString() ?? now()->toDateString(),
-            'payment_method' => $ret->payment_method,
-            'customer_id' => $ret->customer_id,
-            'note' => 'Sale return refund: ' . $ret->reference,
-        ]);
     }
 
     private function reverseReturnEffects(SaleReturn $ret): void
@@ -394,7 +386,6 @@ class SaleReturnController extends Controller
         }
 
         $this->syncSaleStatus($ret);
-        app(CashLedger::class)->deleteSource('sale_return', $ret->id);
     }
 
     private function syncSaleStatus(SaleReturn $ret): void

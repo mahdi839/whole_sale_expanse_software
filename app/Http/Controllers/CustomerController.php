@@ -195,7 +195,7 @@ class CustomerController extends Controller
                 'note' => ucfirst($return->return_type).' / '.ucfirst($return->return_status),
                 'url' => route('sale-returns.show', $return),
             ]))
-            ->merge($customer->cashTransactions()->latest('date')->latest()->get()->map(fn ($cash) => [
+            ->merge($customer->cashTransactions()->whereNull('source_type')->latest('date')->latest()->get()->map(fn ($cash) => [
                 'date' => $cash->date,
                 'type' => 'Payment',
                 'reference' => $cash->reference,

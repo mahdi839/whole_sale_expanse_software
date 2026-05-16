@@ -60,6 +60,11 @@ class Sale extends Model
         return $this->hasMany(SaleReturn::class);
     }
 
+    public function appliedReturns()
+    {
+        return $this->hasMany(SaleReturn::class, 'applied_sale_id');
+    }
+
     public static function generateReference(): string
     {
         $last = static::orderByDesc('id')->value('reference');

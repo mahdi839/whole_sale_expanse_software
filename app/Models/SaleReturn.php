@@ -12,6 +12,7 @@ class SaleReturn extends Model
     protected $fillable = [
         'reference',
         'sale_id',
+        'applied_sale_id',
         'customer_id',
         'discount',
         'subtotal',
@@ -32,6 +33,11 @@ class SaleReturn extends Model
     public function sale()
     {
         return $this->belongsTo(Sale::class);
+    }
+
+    public function appliedSale()
+    {
+        return $this->belongsTo(Sale::class, 'applied_sale_id');
     }
 
     public function customer()

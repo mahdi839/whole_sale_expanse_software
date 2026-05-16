@@ -160,7 +160,7 @@ class SupplierController extends Controller
                 'note' => ucfirst($return->return_type).' / '.ucfirst($return->return_status).($return->note ? ' - '.$return->note : ''),
                 'url' => route('purchase-returns.show', $return),
             ]))
-            ->merge($supplier->cashTransactions()->latest('date')->latest()->get()->map(fn ($cash) => [
+            ->merge($supplier->cashTransactions()->whereNull('source_type')->latest('date')->latest()->get()->map(fn ($cash) => [
                 'date' => $cash->date,
                 'type' => 'Payment',
                 'reference' => $cash->reference,

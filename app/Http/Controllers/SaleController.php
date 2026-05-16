@@ -6,9 +6,10 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SaleReturn;
+use App\Models\SaleReturnItem;
 use App\Models\Shop;
 use App\Models\Stock;
-use App\Services\CashLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -92,11 +93,12 @@ class SaleController extends Controller
         $products      = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
             ->orderBy('product_name')
             ->get(['id', 'product_name', 'sku', 'product_code', 'purchase_price', 'selling_price']);
+        $returnableSales = $this->returnableSales();
         $shops = auth()->user()->canManageAllShops()
             ? Shop::where('is_active', true)->orderBy('name')->get()
             : collect([auth()->user()->shop]);
 
-        return view('sales.create', compact('nextReference', 'customers', 'products', 'shops'));
+        return view('sales.create', compact('nextReference', 'customers', 'products', 'shops', 'returnableSales'));
     }
 
     public function store(Request $request)
@@ -109,10 +111,12 @@ class SaleController extends Controller
             $itemsInput = $request->input('items', []);
             $itemsTotal = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
             $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0);
+            $returnAmount = $this->validatedReturnItems($request->input('returns', []))->sum('line_total');
+            $netPayable = max(0, $grandTotal - $returnAmount);
 
             [$paid, $due] = $this->resolvePaymentAmounts(
                 $validated['payment_status'],
-                $grandTotal,
+                $netPayable,
                 (float) ($validated['paid'] ?? 0)
             );
 
@@ -127,7 +131,7 @@ class SaleController extends Controller
                 'grand_total'    => $grandTotal,
                 'paid'           => $paid,
                 'due'            => $due,
-                'return_amount'  => $validated['return_amount'] ?? 0,
+                'return_amount'  => $returnAmount,
                 'cash_memo'      => $validated['cash_memo'] ?? null,
                 'bell_no'        => $validated['bell_no'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
@@ -181,12 +185,7 @@ class SaleController extends Controller
                 }
             }
 
-            app(CashLedger::class)->syncSource('sale', $sale->id, 'in', 'sale_payment', (float) $sale->paid, [
-                'date' => $sale->created_at->toDateString(),
-                'payment_method' => $sale->payment_method,
-                'customer_id' => $sale->customer_id,
-                'note' => 'Sale payment: ' . $sale->reference,
-            ]);
+            $this->createAppliedSaleReturns($sale, $request->input('returns', []));
         });
 
         return redirect()->route('sales.index')
@@ -204,16 +203,17 @@ class SaleController extends Controller
     public function edit(Sale $sale)
     {
         $this->authorizeSaleShop($sale);
-        $sale->load('items.product.stocks');
+        $sale->load('items.product.stocks', 'appliedReturns.items.product', 'appliedReturns.sale');
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
         $products  = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
             ->orderBy('product_name')
             ->get(['id', 'product_name', 'sku', 'product_code', 'purchase_price', 'selling_price']);
+        $returnableSales = $this->returnableSales($sale);
         $shops = auth()->user()->canManageAllShops()
             ? Shop::where('is_active', true)->orderBy('name')->get()
             : collect([auth()->user()->shop]);
 
-        return view('sales.edit', compact('sale', 'customers', 'products', 'shops'));
+        return view('sales.edit', compact('sale', 'customers', 'products', 'shops', 'returnableSales'));
     }
 
     public function update(Request $request, Sale $sale)
@@ -243,17 +243,19 @@ class SaleController extends Controller
                 }
             }
 
-            app(CashLedger::class)->deleteSource('sale', $sale->id);
+            $this->deleteAppliedSaleReturns($sale);
 
             $sale->items()->delete();
 
             $itemsInput = $request->input('items', []);
             $itemsTotal = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
             $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0);
+            $returnAmount = $this->validatedReturnItems($request->input('returns', []))->sum('line_total');
+            $netPayable = max(0, $grandTotal - $returnAmount);
 
             [$paid, $due] = $this->resolvePaymentAmounts(
                 $validated['payment_status'],
-                $grandTotal,
+                $netPayable,
                 (float) ($validated['paid'] ?? 0)
             );
 
@@ -266,7 +268,7 @@ class SaleController extends Controller
                 'grand_total'    => $grandTotal,
                 'paid'           => $paid,
                 'due'            => $due,
-                'return_amount'  => $validated['return_amount'] ?? 0,
+                'return_amount'  => $returnAmount,
                 'cash_memo'      => $validated['cash_memo'] ?? null,
                 'bell_no'        => $validated['bell_no'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
@@ -317,12 +319,7 @@ class SaleController extends Controller
                 }
             }
 
-            app(CashLedger::class)->syncSource('sale', $sale->id, 'in', 'sale_payment', (float) $sale->paid, [
-                'date' => $sale->created_at->toDateString(),
-                'payment_method' => $sale->payment_method,
-                'customer_id' => $sale->customer_id,
-                'note' => 'Sale payment: ' . $sale->reference,
-            ]);
+            $this->createAppliedSaleReturns($sale, $request->input('returns', []));
         });
 
         return redirect()->route('sales.index')
@@ -353,7 +350,7 @@ class SaleController extends Controller
                 }
             }
 
-            app(CashLedger::class)->deleteSource('sale', $sale->id);
+            $this->deleteAppliedSaleReturns($sale);
 
             $sale->items()->delete();
             $sale->delete();
@@ -369,7 +366,7 @@ class SaleController extends Controller
     public function invoice(Sale $sale)
     {
         $this->authorizeSaleShop($sale);
-        $sale->load(['customer', 'items.product', 'shop']);
+        $sale->load(['customer', 'items.product', 'shop', 'appliedReturns.items.product', 'appliedReturns.sale']);
         $totalQty = $sale->items->sum(fn($item) => (float) $item->qty);
         $totalQtyDisplay = floor($totalQty) == $totalQty
             ? number_format($totalQty, 0)
@@ -484,6 +481,208 @@ class SaleController extends Controller
 
         return max(0, (float) $purchaseItem->qty - (float) $returnedToSupplier - (float) $sold + (float) $returnedByCustomer);
     }
+
+    private function returnableSales(?Sale $currentSale = null)
+    {
+        return Sale::query()
+            ->with(['customer', 'items.product', 'items.returnItems.saleReturn'])
+            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('shop_id', auth()->user()->shop_id))
+            ->when($currentSale, fn($q) => $q->whereKeyNot($currentSale->id))
+            ->latest()
+            ->limit(250)
+            ->get()
+            ->map(function (Sale $sale) use ($currentSale) {
+                $items = $sale->items->map(function (SaleItem $item) use ($currentSale) {
+                    $returnedQty = $item->returnItems
+                        ->filter(fn($returnItem) => $returnItem->saleReturn?->return_status === 'approved'
+                            && $returnItem->saleReturn?->applied_sale_id !== $currentSale?->id)
+                        ->sum(fn($returnItem) => (float) $returnItem->qty);
+
+                    $availableQty = max(0, (float) $item->qty - (float) $returnedQty);
+
+                    return [
+                        'id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product?->product_name ?? 'Unknown',
+                        'sku' => $item->product?->sku ?? '',
+                        'qty' => (float) $item->qty,
+                        'returned_qty' => (float) $returnedQty,
+                        'available_qty' => $availableQty,
+                        'price_on_sale' => (float) $item->price_on_sale,
+                    ];
+                })->filter(fn($item) => $item['available_qty'] > 0)->values();
+
+                return [
+                    'id' => $sale->id,
+                    'reference' => $sale->reference,
+                    'customer_id' => $sale->customer_id,
+                    'customer_name' => $sale->customer?->full_name ?? 'Walk-in Customer',
+                    'created_at' => $sale->created_at?->format('Y-m-d'),
+                    'items' => $items,
+                ];
+            })
+            ->filter(fn($sale) => $sale['items']->isNotEmpty())
+            ->values();
+    }
+
+    private function validatedReturnItems(array $returns)
+    {
+        return collect($returns)
+            ->filter(fn($item) => ! empty($item['sale_id']) && ! empty($item['sale_item_id']) && ! empty($item['product_id']))
+            ->map(function ($item) {
+                $sale = Sale::with('items.returnItems.saleReturn')->findOrFail($item['sale_id']);
+                $this->authorizeSaleShop($sale);
+
+                $saleItem = $sale->items->firstWhere('id', (int) $item['sale_item_id']);
+                if (! $saleItem || (int) $saleItem->product_id !== (int) $item['product_id']) {
+                    throw ValidationException::withMessages([
+                        'returns' => 'Selected return item does not match the original sale.',
+                    ]);
+                }
+
+                $qty = (float) ($item['qty'] ?? 0);
+                if ($qty <= 0) {
+                    throw ValidationException::withMessages([
+                        'returns' => 'Return quantity must be greater than zero.',
+                    ]);
+                }
+
+                $returnedQty = $saleItem->returnItems
+                    ->filter(fn($returnItem) => $returnItem->saleReturn?->return_status === 'approved')
+                    ->sum(fn($returnItem) => (float) $returnItem->qty);
+                $availableQty = max(0, (float) $saleItem->qty - (float) $returnedQty);
+
+                if ($qty > $availableQty) {
+                    throw ValidationException::withMessages([
+                        'returns' => 'Return quantity is higher than available quantity for ' . ($saleItem->product?->product_name ?? 'selected product') . '.',
+                    ]);
+                }
+
+                $price = (float) $saleItem->price_on_sale;
+
+                return [
+                    'sale' => $sale,
+                    'sale_item' => $saleItem,
+                    'product_id' => (int) $saleItem->product_id,
+                    'qty' => $qty,
+                    'price_on_sale' => $price,
+                    'line_total' => $qty * $price,
+                ];
+            })
+            ->values();
+    }
+
+    private function createAppliedSaleReturns(Sale $sale, array $returns): void
+    {
+        $items = $this->validatedReturnItems($returns);
+
+        $items->groupBy(fn($item) => $item['sale']->id)->each(function ($group) use ($sale) {
+            $originalSale = $group->first()['sale'];
+            $subtotal = $group->sum('line_total');
+
+            if ($sale->customer_id && $originalSale->customer_id && (int) $sale->customer_id !== (int) $originalSale->customer_id) {
+                throw ValidationException::withMessages([
+                    'returns' => 'Returned products must belong to the selected customer.',
+                ]);
+            }
+
+            $saleReturn = SaleReturn::create([
+                'reference' => SaleReturn::generateReference(),
+                'sale_id' => $originalSale->id,
+                'applied_sale_id' => $sale->id,
+                'customer_id' => $originalSale->customer_id ?? $sale->customer_id,
+                'discount' => 0,
+                'subtotal' => $subtotal,
+                'return_amount' => $subtotal,
+                'return_type' => 'credit',
+                'return_status' => 'approved',
+                'payment_method' => $sale->payment_method,
+                'cash_memo' => $sale->cash_memo,
+                'note' => 'Applied on sale ' . $sale->reference,
+            ]);
+
+            foreach ($group as $item) {
+                SaleReturnItem::create([
+                    'sale_return_id' => $saleReturn->id,
+                    'sale_item_id' => $item['sale_item']->id,
+                    'product_id' => $item['product_id'],
+                    'qty' => $item['qty'],
+                    'price_on_sale' => $item['price_on_sale'],
+                    'line_total' => $item['line_total'],
+                ]);
+            }
+
+            $this->applySaleReturnEffects($saleReturn->fresh('items'));
+        });
+    }
+
+    private function deleteAppliedSaleReturns(Sale $sale): void
+    {
+        $sale->loadMissing('appliedReturns.items');
+
+        foreach ($sale->appliedReturns as $saleReturn) {
+            $this->reverseSaleReturnEffects($saleReturn);
+            $saleReturn->items()->delete();
+            $saleReturn->delete();
+        }
+    }
+
+    private function applySaleReturnEffects(SaleReturn $ret): void
+    {
+        $ret->loadMissing(['items', 'sale']);
+
+        foreach ($ret->items as $item) {
+            $stock = Stock::firstOrCreate(
+                ['product_id' => $item->product_id, 'shop_id' => $ret->sale?->shop_id],
+                ['stock_qty' => 0]
+            );
+
+            $stock->increment('stock_qty', (float) $item->qty);
+        }
+
+        if ($ret->customer_id) {
+            $customer = Customer::find($ret->customer_id);
+            if ($customer) {
+                $customer->decrement('total_sale', (float) $ret->return_amount);
+                $customer->recalculateDue();
+            }
+        }
+
+        $ret->sale?->update(['status' => 'returned']);
+    }
+
+    private function reverseSaleReturnEffects(SaleReturn $ret): void
+    {
+        $ret->loadMissing(['items', 'sale']);
+
+        foreach ($ret->items as $item) {
+            $stock = Stock::where('product_id', $item->product_id)
+                ->where('shop_id', $ret->sale?->shop_id)
+                ->first();
+
+            if ($stock) {
+                $stock->decrement('stock_qty', (float) $item->qty);
+            }
+        }
+
+        if ($ret->customer_id) {
+            $customer = Customer::find($ret->customer_id);
+            if ($customer) {
+                $customer->increment('total_sale', (float) $ret->return_amount);
+                $customer->recalculateDue();
+            }
+        }
+
+        if ($ret->sale_id) {
+            $hasApprovedReturns = SaleReturn::where('sale_id', $ret->sale_id)
+                ->where('return_status', 'approved')
+                ->where('id', '!=', $ret->id)
+                ->exists();
+
+            $ret->sale?->update(['status' => $hasApprovedReturns ? 'returned' : 'success']);
+        }
+    }
+
     private function validateSale(Request $request, ?int $saleId = null): array
     {
         return $request->validate([
@@ -496,13 +695,17 @@ class SaleController extends Controller
             'payment_method'         => 'nullable|string|max:100',
             'payment_status'         => 'required|in:due,paid,partial',
             'paid'                   => 'nullable|numeric|min:0',
-            'return_amount'          => 'nullable|numeric|min:0',
             'note'                   => 'nullable|string|max:2000',
             'items'                  => 'required|array|min:1',
             'items.*.product_id'     => 'required|exists:products,id',
             'items.*.purchase_item_id' => 'nullable|exists:purchase_items,id',
             'items.*.qty'            => 'required|numeric|min:0.01',
             'items.*.price_on_sale'  => 'required|numeric|min:0',
+            'returns'                  => 'nullable|array',
+            'returns.*.sale_id'        => 'required_with:returns|exists:sales,id',
+            'returns.*.sale_item_id'   => 'required_with:returns|exists:sale_items,id',
+            'returns.*.product_id'     => 'required_with:returns|exists:products,id',
+            'returns.*.qty'            => 'required_with:returns|numeric|min:0.01',
         ]);
     }
 

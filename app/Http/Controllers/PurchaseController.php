@@ -8,7 +8,6 @@ use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Stock;
 use App\Models\Supplier;
-use App\Services\CashLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -144,13 +143,6 @@ class PurchaseController extends Controller
 
             // Update supplier financials
             $this->syncSupplierFinancials($purchase->supplier_id);
-
-            app(CashLedger::class)->syncSource('purchase', $purchase->id, 'out', 'purchase_payment', (float) $purchase->paid_amount, [
-                'date' => $purchase->date?->toDateString() ?? now()->toDateString(),
-                'payment_method' => $purchase->payment_method,
-                'supplier_id' => $purchase->supplier_id,
-                'note' => 'Purchase payment: ' . $purchase->reference,
-            ]);
         });
 
         return redirect()->route('purchases.index')
@@ -244,13 +236,6 @@ class PurchaseController extends Controller
 
             // Update current supplier totals
             $this->syncSupplierFinancials($purchase->supplier_id);
-
-            app(CashLedger::class)->syncSource('purchase', $purchase->id, 'out', 'purchase_payment', (float) $purchase->paid_amount, [
-                'date' => $purchase->date?->toDateString() ?? now()->toDateString(),
-                'payment_method' => $purchase->payment_method,
-                'supplier_id' => $purchase->supplier_id,
-                'note' => 'Purchase payment: ' . $purchase->reference,
-            ]);
         });
 
         return redirect()->route('purchases.index')
@@ -267,7 +252,6 @@ class PurchaseController extends Controller
             }
 
             $purchase->items()->delete();
-            app(CashLedger::class)->deleteSource('purchase', $purchase->id);
             $purchase->delete();
 
             // Update supplier financials after delete
