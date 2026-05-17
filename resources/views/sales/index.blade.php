@@ -202,7 +202,10 @@
                                         {{ $item->product->product_name }}
                                         <span class="text-gray-400">{{ $item->qty }}</span>
                                     </span>
-                                    <span class="shrink-0 text-gray-500 font-mono">{{ number_format($item->price_on_sale, 2) }}/pc</span>
+                                    <span class="shrink-0 text-right text-gray-500 font-mono">
+                                        <span class="block">P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}</span>
+                                        <span class="block">S: {{ number_format($item->price_on_sale, 2) }}/pc</span>
+                                    </span>
                                 </div>
                             @endforeach
                             @if ($sale->items->count() > 2)
@@ -266,6 +269,7 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Shop</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Customer</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Products</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Purchase Price</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Unit Price</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Grand Total</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
@@ -313,6 +317,16 @@
                                     @endforeach
                                     @if ($sale->items->count() > 2)
                                         <div class="text-gray-400">+{{ $sale->items->count() - 2 }} more</div>
+                                    @endif
+                                </td>
+
+                                <td class="px-4 py-3 text-right text-xs">
+                                    @foreach ($sale->items->take(2) as $item)
+                                        <div class="text-gray-700 font-mono">
+                                            {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}</div>
+                                    @endforeach
+                                    @if ($sale->items->count() > 2)
+                                        <div class="text-gray-300">...</div>
                                     @endif
                                 </td>
 
@@ -429,7 +443,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="13" class="px-5 py-20 text-center text-gray-400">
+                                <td colspan="14" class="px-5 py-20 text-center text-gray-400">
                                     No sales found.
                                     @canany(['manage sales', 'create sales'])
                                         <a href="{{ route('sales.create') }}"
