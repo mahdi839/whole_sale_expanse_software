@@ -5,7 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice {{ $sale->reference }}</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
 
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -287,8 +293,34 @@
 
         /* ---- Print styles ---- */
         @media print {
-            body { background: #fff; padding: 0; }
-            .invoice-wrap { box-shadow: none; border-radius: 0; }
+            @page { margin: 10mm; }
+
+            html,
+            body {
+                background: #fff !important;
+            }
+
+            body { padding: 0; }
+
+            .invoice-wrap {
+                box-shadow: none;
+                border-radius: 0;
+                overflow: hidden;
+            }
+
+            .inv-header {
+                background: #1e3a5f !important;
+                color: #fff !important;
+            }
+
+            table.items thead tr {
+                background: #f8fafc !important;
+            }
+
+            .pay-badge.paid { background: #dcfce7 !important; color: #15803d !important; }
+            .pay-badge.due { background: #fee2e2 !important; color: #dc2626 !important; }
+            .pay-badge.partial { background: #fef3c7 !important; color: #d97706 !important; }
+
             .inv-logo { box-shadow: none; }
             .screen-only { display: none !important; }
         }
