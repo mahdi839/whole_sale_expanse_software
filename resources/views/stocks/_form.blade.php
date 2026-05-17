@@ -2,6 +2,13 @@
 @php
     $selectedProductId = old('product_id', $stock?->product_id ?? null);
     $selectedProduct = collect($products ?? [])->firstWhere('id', (int) $selectedProductId);
+    $stockProducts = collect($products ?? [])
+        ->map(fn ($product) => [
+            'id' => $product->id,
+            'name' => $product->product_name,
+            'sku' => $product->sku,
+        ])
+        ->values();
 @endphp
 <style>
     .stock-product-picker { position: relative; }
@@ -88,11 +95,7 @@
 
 @push('scripts')
 <script>
-    const stockProducts = @json(collect($products ?? [])->map(fn ($product) => [
-        'id' => $product->id,
-        'name' => $product->product_name,
-        'sku' => $product->sku,
-    ])->values());
+    const stockProducts = @json($stockProducts);
 
     const stockPicker = document.getElementById('stock-product-picker');
     const stockDisplay = document.getElementById('stock-product-display');

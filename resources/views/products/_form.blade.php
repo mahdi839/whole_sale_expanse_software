@@ -364,6 +364,21 @@
 
         <p id="file-name"></p>
     </div>
+    <p id="image-client-error" class="pf-err-msg hidden">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        Product image must be 2 MB or smaller.
+    </p>
+
+    @if (request('upload_error') === 'too_large')
+        <p class="pf-err-msg">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            The uploaded file is too large. Product images must be 2 MB or smaller.
+        </p>
+    @endif
 
     @error('image')
         <p class="pf-err-msg">
@@ -377,6 +392,8 @@
 
 @push('scripts')
     <script>
+        const productImageMaxBytes = 2 * 1024 * 1024;
+
         function previewImage(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -384,6 +401,21 @@
             const preview = document.getElementById('new-preview');
             const prompt  = document.getElementById('drop-prompt');
             const name    = document.getElementById('file-name');
+            const input   = document.getElementById('image');
+            const error   = document.getElementById('image-client-error');
+
+            if (file.size > productImageMaxBytes) {
+                input.value = '';
+                preview.removeAttribute('src');
+                preview.style.display = 'none';
+                prompt.classList.remove('hidden');
+                name.textContent = '';
+                name.style.display = 'none';
+                error.classList.remove('hidden');
+                return;
+            }
+
+            error.classList.add('hidden');
 
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -409,6 +441,7 @@
             e.preventDefault();
             zone.classList.remove('pf-dz-active');
             const input = document.getElementById('image');
+            if (!e.dataTransfer.files.length) return;
             input.files = e.dataTransfer.files;
             previewImage({ target: input });
         });
