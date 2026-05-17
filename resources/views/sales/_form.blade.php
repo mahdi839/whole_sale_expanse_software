@@ -613,7 +613,7 @@
                     <option value="">Walk-in / No customer</option>
                     @foreach ($customers as $customer)
                         <option value="{{ $customer->id }}" @selected(old('customer_id', $sale?->customer_id) == $customer->id)>
-                            {{ $customer->full_name }}{{ $customer->phone ? ' آ· ' . $customer->phone : '' }}
+                            {{ $customer->full_name }}{{ $customer->phone ? ' (' . $customer->phone . ')' : '' }}
                         </option>
                     @endforeach
                 </select>
@@ -793,7 +793,7 @@ searchInput.addEventListener('input', () => {
             <div class="search-option" data-id="${p.id}" data-name="${escHtml(p.name)}" data-sku="${escHtml(p.sku)}" data-price="${p.price}">
                 <div style="flex:1;min-width:0">
                     <div style="font-weight:600;color:#1e293b;word-break:break-word">${escHtml(p.name)}</div>
-                    <div class="sku">${escHtml(p.sku)} آ· Stock: ${formatQty(getAvailableStock(p.id))}</div>
+                    <div class="sku">${escHtml(p.sku)} (Stock: ${formatQty(getAvailableStock(p.id))})</div>
                 </div>
                 <div style="font-size:12px;font-weight:600;color:#2563eb;flex-shrink:0">${p.price.toFixed(2)}</div>
             </div>`).join('')
@@ -847,7 +847,7 @@ function renderCart() {
     <div class="prod-info">
         <div class="prod-name">${escHtml(item.product_name)}</div>
         <div class="prod-sku">${escHtml(item.sku)}</div>
-        <div class="prod-stock">Available: ${formatQty(item.stock_qty)}${item.batch ? ' آ· Batch: ' + escHtml(item.batch) : ''}</div>
+        <div class="prod-stock">Available: ${formatQty(item.stock_qty)}${item.batch ? ' Batch: ' + escHtml(item.batch) : ''}</div>
     </div>
     <div class="qty-stepper">
         <button type="button" class="btn-minus" data-idx="${idx}">-</button>
@@ -1140,7 +1140,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
         if (!res.ok) throw new Error(data.message || 'Error saving customer');
 
         const sel = document.getElementById('customer_id');
-        sel.add(new Option(data.full_name + (data.phone ? ' آ· ' + data.phone : ''), data.id, true, true));
+        sel.add(new Option(data.full_name + (data.phone ? ' (' . $customer->phone . ')' : ''), data.id, true, true));
         sel.value = data.id;
 
         closeCustomerModal();
@@ -1211,7 +1211,7 @@ function getBatchOptions(productId, selectedId) {
 
     return batches.map(batch => {
         const selected = String(batch.id) === String(selectedId) ? ' selected' : '';
-        const label = `${escHtml(batch.batch)} آ· Cost: ${Number(batch.price).toFixed(2)} آ· Qty: ${formatQty(batch.available_qty)}`;
+        const label = `${escHtml(batch.batch)} (Cost: ${Number(batch.price).toFixed(2)}) (Qty: ${formatQty(batch.available_qty)})`;
         return `<option value="${batch.id}"${selected}>${label}</option>`;
     }).join('');
 }
