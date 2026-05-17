@@ -12,7 +12,7 @@
                 <tr>
                     <td class="px-5 py-3"><span class="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-md text-xs font-mono">{{ $due->reference }}</span></td>
                     <td class="px-5 py-3">{{ $due->party_type === 'customer' ? $due->customer?->full_name : $due->supplier?->name }}</td>
-                    <td class="px-5 py-3 text-right text-red-600 font-semibold">à§³{{ number_format($due->amount, 2) }}</td>
+                    <td class="px-5 py-3 text-right text-red-600 font-semibold">{{ number_format($due->amount, 2) }}</td>
                     <td class="px-5 py-3">{{ optional($due->date)->format('d M Y') }}</td>
                     <td class="px-5 py-3 text-right">
                         <a href="{{ route('dues.edit', $due) }}" class="px-2.5 py-1 text-xs bg-blue-50 text-blue-700 rounded-lg">Edit</a>

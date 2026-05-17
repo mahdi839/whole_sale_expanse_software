@@ -100,14 +100,14 @@
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Subtotal</p>
                 <p class="text-xl font-semibold text-gray-800 break-words">
-                    à§³{{ number_format($totals->total_subtotal ?? 0, 2) }}
+                    {{ number_format($totals->total_subtotal ?? 0, 2) }}
                 </p>
             </div>
 
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Return Amount</p>
                 <p class="text-xl font-semibold text-red-600 break-words">
-                    à§³{{ number_format($totals->total_return_amount ?? 0, 2) }}
+                    {{ number_format($totals->total_return_amount ?? 0, 2) }}
                 </p>
             </div>
         </div>
@@ -132,7 +132,7 @@
                         <div class="text-right shrink-0">
                             <p class="text-xs text-gray-400">Amount</p>
                             <p class="text-sm font-semibold text-red-600">
-                                à§³{{ number_format($return->return_amount, 2) }}
+                                {{ number_format($return->return_amount, 2) }}
                             </p>
                         </div>
                     </div>

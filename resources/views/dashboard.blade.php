@@ -68,8 +68,8 @@
         {{-- ── Stat cards row 1 ────────────────────────────────────── --}}
         <div @class([
             'grid grid-cols-2 gap-3',
-            'sm:grid-cols-5' => $canViewProfit,
-            'sm:grid-cols-4' => ! $canViewProfit,
+            'sm:grid-cols-3 lg:grid-cols-6' => $canViewProfit,
+            'sm:grid-cols-3 lg:grid-cols-5' => ! $canViewProfit,
         ])>
 
             @if($canViewProfit)
@@ -114,6 +114,29 @@
                     <p class="text-xs text-gray-400 uppercase tracking-wide leading-tight">Products</p>
                     <p class="text-xl font-medium mt-0.5">{{ number_format($stats['total_products']) }}</p>
                     <p class="text-xs text-gray-400 mt-0.5">In catalogue</p>
+                </div>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-xl p-4 flex items-start gap-3">
+                <div class="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" stroke-width="1.8"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 7l9-4 9 4-9 4-9-4z" />
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 12l9 4 9-4M3 17l9 4 9-4" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 uppercase tracking-wide leading-tight">Stock Value</p>
+                    <p class="text-xl font-medium mt-0.5 text-indigo-600">
+                        {{ number_format($stats['total_stock_cost_value'], 2) }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        At purchase price · {{ number_format($stats['total_stock_qty']) }} pcs
+                    </p>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        Retail: {{ number_format($stats['total_stock_retail_value'], 2) }}
+                    </p>
                 </div>
             </div>
 
