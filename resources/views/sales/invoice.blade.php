@@ -462,6 +462,12 @@
                     <span class="tv" style="color:#dc2626">âˆ’ {{ $money($sale->discount) }}</span>
                 </div>
             @endif
+            @if($sale->add_money > 0)
+                <div class="tot-row">
+                    <span class="tl">Add Money</span>
+                    <span class="tv" style="color:#4f46e5">+ {{ $money($sale->add_money) }}</span>
+                </div>
+            @endif
             @if($sale->return_amount > 0)
                 <div class="tot-row">
                     <span class="tl">Return Credit</span>

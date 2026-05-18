@@ -106,6 +106,7 @@
             'id' => (string) $product->id,
             'name' => $product->product_name,
             'sku' => $product->sku,
+            'code' => $product->product_code,
             'price' => (float) ($product->selling_price ?? 0),
             'stocks' => $product->stocks->mapWithKeys(fn ($stock) => [
                 (string) $stock->shop_id => (float) $stock->stock_qty,
@@ -640,6 +641,12 @@
                        value="{{ old('discount', $sale?->discount ?? 0) }}"
                        step="0.01" min="0" class="field-input">
             </div>
+            <div class="field-group">
+                <div class="field-label">Add Money ()</div>
+                <input type="number" name="add_money" id="add_money"
+                       value="{{ old('add_money', $sale?->add_money ?? 0) }}"
+                       step="0.01" min="0" class="field-input">
+            </div>
             <div class="totals-row" id="return-credit-row" style="display:none">
                 <span class="label">Return Credit</span>
                 <span class="val" id="return-credit-display">0.00</span>
@@ -761,6 +768,7 @@ const dropdown      = document.getElementById('search-dropdown');
 const cartList      = document.getElementById('cart-list');
 const cartEmpty     = document.getElementById('cart-empty');
 const discountInput = document.getElementById('discount');
+const addMoneyInput = document.getElementById('add_money');
 const subtotalSpan  = document.getElementById('subtotal-display');
 const grandSpan     = document.getElementById('grand-total-display');
 const returnCreditRow = document.getElementById('return-credit-row');
@@ -785,7 +793,9 @@ searchInput.addEventListener('input', () => {
     if (!q) { dropdown.classList.remove('open'); return; }
 
     const matches = ALL_PRODUCTS.filter(p =>
-        p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
+        String(p.name || '').toLowerCase().includes(q) ||
+        String(p.sku || '').toLowerCase().includes(q) ||
+        String(p.code || '').toLowerCase().includes(q)
     );
 
     dropdown.innerHTML = matches.length
@@ -793,7 +803,7 @@ searchInput.addEventListener('input', () => {
             <div class="search-option" data-id="${p.id}" data-name="${escHtml(p.name)}" data-sku="${escHtml(p.sku)}" data-price="${p.price}">
                 <div style="flex:1;min-width:0">
                     <div style="font-weight:600;color:#1e293b;word-break:break-word">${escHtml(p.name)}</div>
-                    <div class="sku">${escHtml(p.sku)} (Stock: ${formatQty(getAvailableStock(p.id))})</div>
+                    <div class="sku">${escHtml(p.sku || p.code || '')} (Stock: ${formatQty(getAvailableStock(p.id))})</div>
                 </div>
                 <div style="font-size:12px;font-weight:600;color:#2563eb;flex-shrink:0">${p.price.toFixed(2)}</div>
             </div>`).join('')
@@ -1039,7 +1049,8 @@ function renderReturns() {
 function recalc() {
     const sub   = cartItems.reduce((s, i) => s + i.line_total, 0);
     const disc  = parseFloat(discountInput.value) || 0;
-    const grand = Math.max(0, sub - disc);
+    const addMoney = parseFloat(addMoneyInput.value) || 0;
+    const grand = Math.max(0, sub - disc + addMoney);
     const returnCredit = returnItems.reduce((s, i) => s + toNumber(i.line_total), 0);
     const payable = Math.max(0, grand - returnCredit);
 
@@ -1069,6 +1080,7 @@ function updatePayment(grand) {
 }
 
 discountInput.addEventListener('input', recalc);
+addMoneyInput.addEventListener('input', recalc);
 payStatus.addEventListener('change', recalc);
 paidInput.addEventListener('input', () => {
     if (payStatus.value === 'partial') {
@@ -1090,7 +1102,7 @@ shopInput?.addEventListener('change', () => {
 });
 
 function getGrand() {
-    const gross = Math.max(0, cartItems.reduce((s, i) => s + i.line_total, 0) - (parseFloat(discountInput.value) || 0));
+    const gross = Math.max(0, cartItems.reduce((s, i) => s + i.line_total, 0) - (parseFloat(discountInput.value) || 0) + (parseFloat(addMoneyInput.value) || 0));
     const returnCredit = returnItems.reduce((s, i) => s + toNumber(i.line_total), 0);
     return Math.max(0, gross - returnCredit);
 }
@@ -1140,7 +1152,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
         if (!res.ok) throw new Error(data.message || 'Error saving customer');
 
         const sel = document.getElementById('customer_id');
-        sel.add(new Option(data.full_name + (data.phone ? ' (' . $customer->phone . ')' : ''), data.id, true, true));
+        sel.add(new Option(data.full_name + (data.phone ? ` (${data.phone})` : ''), data.id, true, true));
         sel.value = data.id;
 
         closeCustomerModal();

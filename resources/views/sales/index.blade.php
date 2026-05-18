@@ -85,7 +85,7 @@
         </div>
 
         {{-- Totals summary --}}
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-6 gap-3">
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Total Sales</p>
                 <p class="text-xl font-semibold text-gray-800">{{ number_format($totals->total_sales ?? 0) }}</p>
@@ -94,6 +94,11 @@
                 <p class="text-xs text-gray-400 uppercase">Grand Total</p>
                 <p class="text-xl font-semibold text-blue-600 break-words">
                     {{ number_format($totals->total_amount ?? 0, 2) }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                <p class="text-xs text-gray-400 uppercase">Add Money</p>
+                <p class="text-xl font-semibold text-indigo-600 break-words">
+                    ৳{{ number_format($totals->total_add_money ?? 0, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Total Paid</p>
@@ -224,6 +229,10 @@
                             <p class="mt-1 font-medium text-green-600 break-words">৳{{ number_format($sale->paid, 2) }}</p>
                         </div>
                         <div class="bg-gray-50 rounded-lg p-2">
+                            <p class="text-gray-400">Add Money</p>
+                            <p class="mt-1 font-medium text-indigo-600 break-words">৳{{ number_format($sale->add_money, 2) }}</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-2">
                             <p class="text-gray-400">Due</p>
                             <p class="mt-1 font-medium text-red-600 break-words">৳{{ number_format($sale->due, 2) }}</p>
                         </div>
@@ -272,6 +281,7 @@
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Purchase Price</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Unit Price</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Grand Total</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Add Money</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Due</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Return</th>
@@ -342,6 +352,10 @@
 
                                 <td class="px-4 py-3 text-right font-medium text-blue-600">
                                     {{ number_format($sale->grand_total, 2) }}
+                                </td>
+
+                                <td class="px-4 py-3 text-right text-indigo-600">
+                                    {{ number_format($sale->add_money, 2) }}
                                 </td>
 
                                 <td class="px-4 py-3 text-right text-green-600">
@@ -443,7 +457,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="14" class="px-5 py-20 text-center text-gray-400">
+                                <td colspan="15" class="px-5 py-20 text-center text-gray-400">
                                     No sales found.
                                     @canany(['manage sales', 'create sales'])
                                         <a href="{{ route('sales.create') }}"

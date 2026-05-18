@@ -32,6 +32,7 @@
                         <tfoot>
                             <tr><td colspan="3" class="text-right pt-3 font-medium">Subtotal</td><td class="text-right pt-3">৳{{ number_format($sale->items->sum('line_total'), 2) }}</td></tr>
                             <tr><td colspan="3" class="text-right">Discount</td><td class="text-right text-red-600">- ৳{{ number_format($sale->discount, 2) }}</td></tr>
+                            <tr><td colspan="3" class="text-right">Add Money</td><td class="text-right text-indigo-600">+ ৳{{ number_format($sale->add_money, 2) }}</td></tr>
                             <tr><td colspan="3" class="text-right font-bold">Grand Total</td><td class="text-right font-bold text-blue-600">৳{{ number_format($sale->grand_total, 2) }}</td></tr>
                             <tr><td colspan="3" class="text-right text-green-600">Paid</td><td class="text-right text-green-600">৳{{ number_format($sale->paid, 2) }}</td></tr>
                             <tr><td colspan="3" class="text-right text-red-600">Due</td><td class="text-right text-red-600">৳{{ number_format($sale->due, 2) }}</td></tr>

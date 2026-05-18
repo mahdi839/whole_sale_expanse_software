@@ -15,6 +15,7 @@ class Sale extends Model
         'user_id',
         'customer_id',
         'discount',
+        'add_money',
         'grand_total',
         'paid',
         'due',
@@ -29,6 +30,7 @@ class Sale extends Model
 
     protected $casts = [
         'discount'    => 'decimal:2',
+        'add_money'   => 'decimal:2',
         'grand_total' => 'decimal:2',
         'paid'        => 'decimal:2',
         'due'         => 'decimal:2',

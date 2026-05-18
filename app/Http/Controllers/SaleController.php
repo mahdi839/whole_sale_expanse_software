@@ -72,6 +72,7 @@ class SaleController extends Controller
         $totals = $totalsQuery->selectRaw('
             count(*)         as total_sales,
             sum(grand_total) as total_amount,
+            sum(add_money)   as total_add_money,
             sum(paid)        as total_paid,
             sum(due)         as total_due,
             sum(return_amount) as total_return_amount
@@ -110,7 +111,8 @@ class SaleController extends Controller
             $reference  = $validated['reference'] ?? Sale::generateReference();
             $itemsInput = $request->input('items', []);
             $itemsTotal = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
-            $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0);
+            $addMoney = (float) ($validated['add_money'] ?? 0);
+            $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0) + $addMoney;
             $returnAmount = $this->validatedReturnItems($request->input('returns', []))->sum('line_total');
             $netPayable = max(0, $grandTotal - $returnAmount);
 
@@ -128,6 +130,7 @@ class SaleController extends Controller
                 'user_id'        => auth()->id(),
                 'customer_id'    => $validated['customer_id'] ?? null,
                 'discount'       => $validated['discount'] ?? 0,
+                'add_money'      => $addMoney,
                 'grand_total'    => $grandTotal,
                 'paid'           => $paid,
                 'due'            => $due,
@@ -249,7 +252,8 @@ class SaleController extends Controller
 
             $itemsInput = $request->input('items', []);
             $itemsTotal = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
-            $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0);
+            $addMoney = (float) ($validated['add_money'] ?? 0);
+            $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0) + $addMoney;
             $returnAmount = $this->validatedReturnItems($request->input('returns', []))->sum('line_total');
             $netPayable = max(0, $grandTotal - $returnAmount);
 
@@ -265,6 +269,7 @@ class SaleController extends Controller
                 'shop_id'        => $shopId,
                 'customer_id'    => $validated['customer_id'] ?? null,
                 'discount'       => $validated['discount'] ?? 0,
+                'add_money'      => $addMoney,
                 'grand_total'    => $grandTotal,
                 'paid'           => $paid,
                 'due'            => $due,
@@ -394,6 +399,7 @@ class SaleController extends Controller
                 'Products',
                 'Grand Total',
                 'Discount',
+                'Add Money',
                 'Paid',
                 'Due',
                 'Cash Memo',
@@ -415,6 +421,7 @@ class SaleController extends Controller
                     $productsSummary,
                     $sale->grand_total,
                     $sale->discount,
+                    $sale->add_money,
                     $sale->paid,
                     $sale->due,
                     $sale->cash_memo,
@@ -690,6 +697,7 @@ class SaleController extends Controller
             'shop_id'                => 'nullable|exists:shops,id',
             'customer_id'            => 'nullable|exists:customers,id',
             'discount'               => 'nullable|numeric|min:0',
+            'add_money'              => 'nullable|numeric|min:0',
             'cash_memo'              => 'nullable|string|max:100',
             'bell_no'                => 'nullable|string|max:100',
             'payment_method'         => 'nullable|string|max:100',
