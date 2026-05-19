@@ -15,7 +15,7 @@
                         </svg>
                     </span>
                     <input type="text" name="search" value="{{ $search ?? '' }}"
-                           placeholder="Search by name, code, phone or email…"
+                           placeholder="Search by name, code, phone or address..."
                            class="w-full pl-9 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-lg
                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"/>
                 </div>
@@ -94,7 +94,7 @@
                             <th class="text-left px-5 py-3 font-medium text-gray-500 whitespace-nowrap">Code</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Name</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden md:table-cell">Phone</th>
-                            <th class="text-left px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Email</th>
+                            <th class="text-left px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Address</th><th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Total Qty</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Purchase</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Paid</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Due</th>
@@ -123,9 +123,7 @@
                                     {{ $supplier->phone ?? '—' }}
                                 </td>
 
-                                <td class="px-5 py-3 text-gray-500 hidden lg:table-cell">
-                                    {{ $supplier->email ?? '—' }}
-                                </td>
+                                <td class="px-5 py-3 text-gray-500 hidden lg:table-cell max-w-xs truncate">{{ $supplier->address ?? '�' }}</td><td class="px-5 py-3 text-right text-indigo-600 hidden lg:table-cell">{{ number_format($supplier->total_purchase_qty ?? 0, 2) }}</td>
 
                                 <td class="px-5 py-3 text-right text-gray-700 hidden lg:table-cell">
                                     ৳{{ number_format($supplier->total_purchase, 2) }}
@@ -185,7 +183,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-5 py-16 text-center">
+                                <td colspan="9" class="px-5 py-16 text-center">
                                     <div class="flex flex-col items-center gap-3 text-gray-400">
                                         <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                             <path d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/>
@@ -223,3 +221,4 @@
 
     </div>
 </x-app-layout>
+

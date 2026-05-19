@@ -639,7 +639,7 @@
                     </div>
                     <div>
                         <label class="form-label">Email</label>
-                        <input name="email" type="email" placeholder="supplier@example.com" class="form-control">
+                        <textarea name="address" placeholder="Address" class="form-control" rows="3"></textarea>
                     </div>
                     <div style="padding-top:4px;">
                         <button type="submit" class="btn-primary" style="width:100%;">Save Supplier</button>

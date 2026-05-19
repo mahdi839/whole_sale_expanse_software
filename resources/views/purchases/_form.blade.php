@@ -902,9 +902,7 @@
         </div>
         <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
             <input type="text" id="new_supplier_name" placeholder="Supplier Name *" class="field-input">
-            <input type="text" id="new_supplier_phone" placeholder="Phone" class="field-input">
-            <input type="email" id="new_supplier_email" placeholder="Email" class="field-input">
-            <textarea id="new_supplier_address" placeholder="Address" rows="3" class="field-input"></textarea>
+            <input type="text" id="new_supplier_phone" placeholder="Phone" class="field-input">            <textarea id="new_supplier_address" placeholder="Address" rows="3" class="field-input"></textarea>
             <div id="supplier-modal-error" class="hidden" style="font-size:12px;color:#ef4444"></div>
         </div>
         <div style="padding:12px 20px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:8px">
@@ -1309,7 +1307,6 @@
         document.getElementById('save-supplier-btn')?.addEventListener('click', async () => {
             const name = document.getElementById('new_supplier_name').value.trim();
             const phone = document.getElementById('new_supplier_phone').value.trim();
-            const email = document.getElementById('new_supplier_email').value.trim();
             const address = document.getElementById('new_supplier_address').value.trim();
             const error = document.getElementById('supplier-modal-error');
             const button = document.getElementById('save-supplier-btn');
@@ -1331,7 +1328,7 @@
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ name, phone, email, address })
+                    body: JSON.stringify({ name, phone , address })
                 });
 
                 const data = await response.json();
@@ -1351,7 +1348,6 @@
                 closeSupplierModal();
                 document.getElementById('new_supplier_name').value = '';
                 document.getElementById('new_supplier_phone').value = '';
-                document.getElementById('new_supplier_email').value = '';
                 document.getElementById('new_supplier_address').value = '';
             } catch (exception) {
                 error.textContent = exception.message;
@@ -1380,3 +1376,4 @@
         setTimeout(recalc, 100);
     </script>
 @endpush
+

@@ -21,7 +21,7 @@
     @enderror
 </div>
 
-{{-- Phone + Email --}}
+{{-- Phone --}}
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div class="space-y-1.5">
         <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
@@ -31,20 +31,6 @@
                class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg
                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"/>
         @error('phone')
-            <p class="text-xs text-red-600">{{ $message }}</p>
-        @enderror
-    </div>
-
-    <div class="space-y-1.5">
-        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-        <input type="email" id="email" name="email"
-               value="{{ old('email', $supplier?->email) }}"
-               placeholder="e.g. supplier@example.com"
-               class="w-full px-3.5 py-2.5 text-sm border rounded-lg transition
-                      @error('email') border-red-400 bg-red-50 focus:ring-red-400
-                      @else border-gray-200 focus:ring-blue-500 @enderror
-                      focus:outline-none focus:ring-2 focus:border-transparent"/>
-        @error('email')
             <p class="text-xs text-red-600">{{ $message }}</p>
         @enderror
     </div>
@@ -61,26 +47,3 @@
         <p class="text-xs text-red-600">{{ $message }}</p>
     @enderror
 </div>
-
-@push('scripts')
-<script>
-function calcDue() {
-    const purchase = parseFloat(document.getElementById('total_purchase').value) || 0;
-    const paid     = parseFloat(document.getElementById('total_paid').value)     || 0;
-    const due      = Math.max(0, purchase - paid);
-
-    const el = document.getElementById('due-display');
-    el.textContent = '৳' + due.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
-
-    if (due > 0) {
-        el.className = 'w-full px-3.5 py-2.5 text-sm font-semibold rounded-lg border select-none transition bg-red-50 border-red-200 text-red-700';
-    } else {
-        el.className = 'w-full px-3.5 py-2.5 text-sm font-semibold rounded-lg border select-none transition bg-green-50 border-green-200 text-green-700';
-    }
-}
-calcDue();
-</script>
-@endpush

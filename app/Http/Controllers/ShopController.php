@@ -10,7 +10,10 @@ class ShopController extends Controller
 {
     public function index()
     {
-        $shops = Shop::withCount(['users', 'sales'])->latest()->paginate(15);
+        $shops = Shop::withCount(['users', 'sales'])
+            ->with('stocks.product')
+            ->latest()
+            ->paginate(15);
 
         return view('shops.index', compact('shops'));
     }
@@ -45,8 +48,13 @@ class ShopController extends Controller
             ->select('stocks.*')
             ->paginate(15)
             ->withQueryString();
+        $stockQty = (float) $shop->stocks()->sum('stock_qty');
+        $stockValue = $shop->stocks()
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->selectRaw('COALESCE(SUM(stocks.stock_qty * products.purchase_price), 0) as value')
+            ->value('value');
 
-        return view('shops.show', compact('shop', 'stocks', 'search'));
+        return view('shops.show', compact('shop', 'stocks', 'search', 'stockQty', 'stockValue'));
     }
 
     public function edit(Shop $shop)

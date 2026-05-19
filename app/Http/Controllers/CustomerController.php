@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Support\SimplePdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
 
 class CustomerController extends Controller
 {
@@ -17,6 +19,12 @@ class CustomerController extends Controller
         $search = $request->input('search');
  
         $customers = Customer::query()
+            ->addSelect([
+                'total_sell_qty' => DB::table('sale_items')
+                    ->selectRaw('COALESCE(SUM(sale_items.qty), 0)')
+                    ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+                    ->whereColumn('sales.customer_id', 'customers.id'),
+            ])
             ->when($search, function ($q) use ($search) {
                 $q->where('full_name', 'like', "%{$search}%")
                   ->orWhere('code',     'like', "%{$search}%")
@@ -28,7 +36,17 @@ class CustomerController extends Controller
             ->paginate(15)
             ->withQueryString();
  
-        return view('customers.index', compact('customers', 'search'));
+        $summary = [
+            'total_sale' => (float) Customer::sum('total_sale'),
+            'total_paid' => (float) Customer::sum('total_paid'),
+            'total_due' => (float) Customer::sum('due'),
+            'count' => Customer::count(),
+            'total_sell_qty' => (float) DB::table('sale_items')
+                ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+                ->sum('sale_items.qty'),
+        ];
+
+        return view('customers.index', compact('customers', 'search', 'summary'));
     }
  
     // -------------------------------------------------------
@@ -50,6 +68,7 @@ class CustomerController extends Controller
             'phone'      => 'nullable|string|max:20',
             'alternative_phone' => 'nullable|string|max:20',
             'address'    => 'nullable|string|max:1000',
+            'image'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'total_sale' => 'nullable|numeric|min:0',
             'total_paid' => 'nullable|numeric|min:0',
         ]);
@@ -57,6 +76,10 @@ class CustomerController extends Controller
         $validated['total_sale'] = $validated['total_sale'] ?? 0;
         $validated['total_paid'] = $validated['total_paid'] ?? 0;
         $validated['due']        = max(0, $validated['total_sale'] - $validated['total_paid']);
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('customers', 'public');
+        }
  
         $customer = Customer::create($validated);
    // If request came from AJAX / fetch / modal
@@ -68,6 +91,7 @@ class CustomerController extends Controller
                 'phone'      => $customer->phone,
                 'alternative_phone' => $customer->alternative_phone,
                 'address'    => $customer->address,
+                'image'      => $customer->image,
                 'total_sale' => $customer->total_sale,
                 'total_paid' => $customer->total_paid,
                 'due'        => $customer->due,
@@ -91,10 +115,14 @@ class CustomerController extends Controller
     public function exportTransactions(Customer $customer)
     {
         [$logs] = $this->customerLogs($customer);
-        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Note'];
+        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Products / Note'];
 
         if (request('format') === 'pdf') {
-            $rows = $logs->map(fn ($log) => [
+            $rows = collect([
+                ['Shop', 'Inaya Creation', 'Logo', 'inaya_creation_logo.jpeg', '', '', '', ''],
+                ['Customer', $customer->full_name, 'Address', $customer->address ?? '-', '', '', '', ''],
+                ['Totals', '', '', '', '', (float) $customer->total_paid, (float) $customer->due, 'Total sale: '.number_format((float) $customer->total_sale, 2)],
+            ])->merge($logs->map(fn ($log) => [
                 optional($log['date'])->format('Y-m-d'),
                 $log['type'],
                 $log['reference'],
@@ -103,9 +131,9 @@ class CustomerController extends Controller
                 $log['paid'],
                 $log['due'],
                 $log['note'],
-            ]);
+            ]));
 
-            return $this->streamPdf('customer-'.$customer->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.pdf', 'Customer Transactions - '.$customer->full_name, $headers, $rows);
+            return $this->streamPdf('customer-'.$customer->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.pdf', 'Inaya Creation - Customer Transactions - '.$customer->full_name, $headers, $rows);
         }
 
         $fileName = 'customer-'.$customer->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.csv';
@@ -131,9 +159,17 @@ class CustomerController extends Controller
             'phone'      => 'nullable|string|max:20',
             'alternative_phone' => 'nullable|string|max:20',
             'address'    => 'nullable|string|max:1000',
+            'image'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'total_sale' => 'nullable|numeric|min:0',
             'total_paid' => 'nullable|numeric|min:0',
         ]);
+
+        if ($request->hasFile('image')) {
+            if ($customer->image) {
+                Storage::disk('public')->delete($customer->image);
+            }
+            $validated['image'] = $request->file('image')->store('customers', 'public');
+        }
  
         $totalSale = $request->has('total_sale')
             ? ($validated['total_sale'] ?? 0)
@@ -161,6 +197,10 @@ class CustomerController extends Controller
     // -------------------------------------------------------
     public function destroy(Customer $customer)
     {
+        if ($customer->image) {
+            Storage::disk('public')->delete($customer->image);
+        }
+
         $customer->delete();
  
         return redirect()->route('customers.index')
@@ -184,15 +224,16 @@ class CustomerController extends Controller
                 'note' => $sale->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->implode(', '),
                 'url' => route('sales.show', $sale),
             ]))
-            ->merge($customer->saleReturns()->latest()->get()->map(fn ($return) => [
+            ->merge($customer->saleReturns()->with('items.product')->latest()->get()->map(fn ($return) => [
                 'date' => $return->created_at,
                 'type' => 'Sale Return',
                 'reference' => $return->reference,
                 'amount' => -1 * (float) $return->return_amount,
-                'qty' => null,
+                'qty' => $return->items->sum(fn ($item) => (float) $item->qty),
                 'paid' => $return->return_type === 'credit' ? 0 : -1 * (float) $return->return_amount,
                 'due' => 0,
-                'note' => ucfirst($return->return_type).' / '.ucfirst($return->return_status),
+                'note' => $return->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', ')
+                    ?: ucfirst($return->return_type).' / '.ucfirst($return->return_status),
                 'url' => route('sale-returns.show', $return),
             ]))
             ->merge($customer->cashTransactions()->whereNull('source_type')->latest('date')->latest()->get()->map(fn ($cash) => [

@@ -69,6 +69,15 @@ class PurchaseController extends Controller
             sum(due_amount)       as total_due
         ')->first();
 
+        $totals->total_qty = (float) PurchaseItem::query()
+            ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
+            ->when($filters['purchase_status'], fn ($q) => $q->where('purchases.purchase_status', $filters['purchase_status']))
+            ->when($filters['payment_status'], fn ($q) => $q->where('purchases.payment_status', $filters['payment_status']))
+            ->when($filters['date'], fn ($q) => $q->whereDate('purchases.date', $filters['date']))
+            ->sum('purchase_items.qty');
+
+        $totals->total_stock = (float) Stock::sum('stock_qty');
+
         return view('purchases.index', compact('purchases', 'filters', 'totals'));
     }
 

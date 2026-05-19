@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -10,6 +11,7 @@ use App\Models\SaleReturn;
 use App\Models\SaleReturnItem;
 use App\Models\Shop;
 use App\Models\Stock;
+use App\Support\SimplePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -77,6 +79,26 @@ class SaleController extends Controller
             sum(due)         as total_due,
             sum(return_amount) as total_return_amount
         ')->first();
+
+        $totals->total_sell_qty = (float) SaleItem::query()
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('sales.shop_id', auth()->user()->shop_id))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn($q) => $q->where('sales.shop_id', $filters['shop_id']))
+            ->when($filters['payment_status'], fn($q) => $q->where('sales.payment_status', $filters['payment_status']))
+            ->when($filters['status'], fn($q) => $q->where('sales.status', $filters['status']))
+            ->when($filters['date_from'], fn($q) => $q->whereDate('sales.created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn($q) => $q->whereDate('sales.created_at', '<=', $filters['date_to']))
+            ->sum('sale_items.qty');
+
+        $totals->total_stock = (float) Stock::when(
+            ! auth()->user()->canManageAllShops(),
+            fn($q) => $q->where('shop_id', auth()->user()->shop_id)
+        )->sum('stock_qty');
+
+        $totals->total_expense = (float) Expense::query()
+            ->when($filters['date_from'], fn($q) => $q->whereDate('date', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn($q) => $q->whereDate('date', '<=', $filters['date_to']))
+            ->sum('amount');
 
         $shops = auth()->user()->canManageAllShops()
             ? Shop::where('is_active', true)->orderBy('name')->get()
@@ -383,54 +405,72 @@ class SaleController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $fileName = 'sales-' . now()->format('Y-m-d-H-i-s') . '.csv';
+        $fileName = 'sales-' . now()->format('Y-m-d-H-i-s') . (request('format') === 'pdf' ? '.pdf' : '.csv');
 
         $sales = Sale::with(['customer', 'items.product'])
             ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('shop_id', auth()->user()->shop_id))
             ->when(auth()->user()->canManageAllShops() && $request->shop_id, fn($q) => $q->where('shop_id', $request->shop_id))
             ->when($request->payment_status, fn($q) => $q->where('payment_status', $request->payment_status))
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->date_from, fn($q) => $q->whereDate('created_at', '>=', $request->date_from))
+            ->when($request->date_to, fn($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->latest()->get();
 
-        $callback = function () use ($sales) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, [
-                'Reference',
-                'Customer',
-                'Products',
-                'Grand Total',
-                'Discount',
-                'Add Money',
-                'Paid',
-                'Due',
-                'Cash Memo',
-                'Bell No',
-                'Payment Method',
-                'Payment Status',
-                'Note',
-                'Date',
+        $headers = [
+            'Reference',
+            'Customer',
+            'Products',
+            'Qty',
+            'Grand Total',
+            'Discount',
+            'Add Money',
+            'Paid',
+            'Due',
+            'Cash Memo',
+            'Bell No',
+            'Payment Method',
+            'Payment Status',
+            'Note',
+            'Date',
+        ];
+
+        $rows = $sales->map(function ($sale) {
+            $productsSummary = $sale->items->map(
+                fn($i) => $i->product->product_name . ' x' . $i->qty . ' @' . $i->price_on_sale
+            )->implode(' | ');
+
+            return [
+                $sale->reference,
+                $sale->customer?->full_name,
+                $productsSummary,
+                $sale->items->sum(fn($item) => (float) $item->qty),
+                $sale->grand_total,
+                $sale->discount,
+                $sale->add_money,
+                $sale->paid,
+                $sale->due,
+                $sale->cash_memo,
+                $sale->bell_no,
+                $sale->payment_method,
+                $sale->payment_status,
+                $sale->note,
+                $sale->created_at->format('Y-m-d'),
+            ];
+        });
+
+        if (request('format') === 'pdf') {
+            return Response::make(SimplePdf::table('Inaya Creation - All Sales', $headers, $rows), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
             ]);
+        }
 
-            foreach ($sales as $sale) {
-                $productsSummary = $sale->items->map(
-                    fn($i) => $i->product->product_name . ' x' . $i->qty . ' @' . $i->price_on_sale
-                )->implode(' | ');
+        $callback = function () use ($rows, $headers) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $headers);
 
-                fputcsv($file, [
-                    $sale->reference,
-                    $sale->customer?->full_name,
-                    $productsSummary,
-                    $sale->grand_total,
-                    $sale->discount,
-                    $sale->add_money,
-                    $sale->paid,
-                    $sale->due,
-                    $sale->cash_memo,
-                    $sale->bell_no,
-                    $sale->payment_method,
-                    $sale->payment_status,
-                    $sale->note,
-                    $sale->created_at->format('Y-m-d'),
-                ]);
+            foreach ($rows as $row) {
+                fputcsv($file, $row);
             }
             fclose($file);
         };
@@ -709,7 +749,7 @@ class SaleController extends Controller
             'items.*.purchase_item_id' => 'nullable|exists:purchase_items,id',
             'items.*.qty'            => 'required|numeric|min:0.01',
             'items.*.price_on_sale'  => 'required|numeric|min:0',
-            'returns'                  => 'nullable|array',
+            'returns'                  => 'nullable|array|max:2',
             'returns.*.sale_id'        => 'required_with:returns|exists:sales,id',
             'returns.*.sale_item_id'   => 'required_with:returns|exists:sale_items,id',
             'returns.*.product_id'     => 'required_with:returns|exists:products,id',

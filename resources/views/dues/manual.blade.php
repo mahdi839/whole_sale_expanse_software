@@ -104,7 +104,7 @@
                 </div>
                 <input name="name" required placeholder="Supplier name" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                 <input name="phone" placeholder="Phone" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
-                <input name="email" placeholder="Email" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                <textarea name="address" placeholder="Address" rows="3" class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg"></textarea>
                 <button class="w-full h-10 bg-blue-600 text-white rounded-lg text-sm">Save Supplier</button>
             </form>
         </div>
@@ -151,3 +151,4 @@
     </script>
     @endpush
 </x-app-layout>
+

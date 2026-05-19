@@ -8,6 +8,7 @@
     <title>{{ config('app.name', 'Inaya Creation') }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
@@ -516,6 +517,26 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.TomSelect) return;
+
+            document.querySelectorAll('select[name*="customer_id"], select[name*="supplier_id"], select[name*="product_id"], select.tom-select').forEach((select) => {
+                if (select.tomselect || select.dataset.noTomSelect === '1') return;
+
+                new TomSelect(select, {
+                    create: false,
+                    allowEmptyOption: true,
+                    maxOptions: 500,
+                    plugins: select.multiple ? ['remove_button'] : [],
+                    render: {
+                        no_results: () => '<div class="no-results">No results found</div>',
+                    },
+                });
+            });
+        });
+    </script>
     @stack('scripts')
 </body>
 </html>

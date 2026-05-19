@@ -18,8 +18,10 @@ class StockController extends Controller
     {
         $centralStocks = Stock::with('product')->central()->latest()->get();
         $shopStocks = Stock::with(['product', 'shop'])->whereNotNull('shop_id')->latest()->get();
+        $centralStockValue = $centralStocks->sum(fn ($stock) => (float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0));
+        $shopStockValue = $shopStocks->sum(fn ($stock) => (float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0));
 
-        return view('stocks.index', compact('centralStocks', 'shopStocks'));
+        return view('stocks.index', compact('centralStocks', 'shopStocks', 'centralStockValue', 'shopStockValue'));
     }
 
     /**

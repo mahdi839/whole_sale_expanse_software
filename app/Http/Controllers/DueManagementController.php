@@ -76,6 +76,12 @@ class DueManagementController extends Controller
                     ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
                     ->latest('date')
                     ->limit(1),
+                'total_due_purchase_qty' => DB::table('purchase_items')
+                    ->selectRaw('COALESCE(SUM(purchase_items.qty), 0)')
+                    ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
+                    ->whereColumn('purchases.supplier_id', 'suppliers.id')
+                    ->where('purchases.due_amount', '>', 0)
+                    ->when($filters['date'], fn ($q) => $q->whereDate('purchases.date', $filters['date'])),
             ])
             ->where('due', '>', 0)
             ->whereExists(function ($query) use ($filters) {
@@ -91,7 +97,7 @@ class DueManagementController extends Controller
                 $query->where(function ($sub) use ($search) {
                     $sub->where('name', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%")
                         ->orWhere('code', 'like', "%{$search}%");
                 });
             })
@@ -147,10 +153,10 @@ class DueManagementController extends Controller
                         ->orWhere('bill_no', 'like', "%{$search}%")
                         ->orWhere('seller_store_name', 'like', "%{$search}%")
                         ->orWhere('purchased_by', 'like', "%{$search}%")
-                        ->orWhereHas('supplier', function ($supplier) use ($search) {
+                    ->orWhereHas('supplier', function ($supplier) use ($search) {
                             $supplier->where('name', 'like', "%{$search}%")
                                 ->orWhere('phone', 'like', "%{$search}%")
-                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhere('address', 'like', "%{$search}%")
                                 ->orWhere('code', 'like', "%{$search}%");
                         });
                 });
@@ -182,7 +188,7 @@ class DueManagementController extends Controller
                         ->orWhereHas('supplier', function ($supplier) use ($search) {
                             $supplier->where('name', 'like', "%{$search}%")
                                 ->orWhere('phone', 'like', "%{$search}%")
-                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhere('address', 'like', "%{$search}%")
                                 ->orWhere('code', 'like', "%{$search}%");
                         });
                 });
@@ -239,6 +245,14 @@ class DueManagementController extends Controller
     {
         $filters = $this->filters(request());
         $rows = Supplier::query()
+            ->addSelect([
+                'total_due_purchase_qty' => DB::table('purchase_items')
+                    ->selectRaw('COALESCE(SUM(purchase_items.qty), 0)')
+                    ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
+                    ->whereColumn('purchases.supplier_id', 'suppliers.id')
+                    ->where('purchases.due_amount', '>', 0)
+                    ->when($filters['date'], fn ($q) => $q->whereDate('purchases.date', $filters['date'])),
+            ])
             ->where('due', '>', 0)
             ->whereExists(function ($query) use ($filters) {
                 $query->selectRaw(1)
@@ -251,16 +265,17 @@ class DueManagementController extends Controller
                 $search = $filters['search'];
                 $sub->where('name', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%");
             }))
             ->orderByDesc('due')
             ->get();
 
-        return $this->export('supplier-wise-dues', 'Supplier Wise Dues', ['Code', 'Supplier', 'Phone', 'Total Purchase', 'Total Paid', 'Due'], $rows->map(fn ($row) => [
+        return $this->export('supplier-wise-dues', 'Supplier Wise Dues', ['Code', 'Supplier', 'Phone', 'Total Qty', 'Total Purchase', 'Total Paid', 'Due'], $rows->map(fn ($row) => [
             $row->code,
             $row->name,
             $row->phone,
+            $row->total_due_purchase_qty ?? 0,
             $row->total_purchase,
             $row->total_paid,
             $row->due,
@@ -312,7 +327,7 @@ class DueManagementController extends Controller
                     ->orWhere('purchased_by', 'like', "%{$search}%")
                     ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%")
                         ->orWhere('code', 'like', "%{$search}%"));
             }))
             ->latest()
@@ -343,7 +358,7 @@ class DueManagementController extends Controller
                         ->orWhere('code', 'like', "%{$search}%"))
                     ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%")
                         ->orWhere('code', 'like', "%{$search}%"));
             }))
             ->latest('date')

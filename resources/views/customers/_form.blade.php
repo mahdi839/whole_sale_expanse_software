@@ -65,6 +65,28 @@
     @enderror
 </div>
 
+{{-- Image --}}
+<div class="space-y-1.5">
+    <label for="image" class="block text-sm font-medium text-gray-700">Image</label>
+    @if($customer?->image)
+        <div class="mb-2 flex items-center gap-3">
+            <img src="{{ asset('storage/'.$customer->image) }}" alt="{{ $customer->full_name }}" class="w-14 h-14 rounded-full object-cover border border-gray-200">
+            <span class="text-xs text-gray-500">Current image</span>
+        </div>
+    @endif
+    <input
+        type="file"
+        id="image"
+        name="image"
+        accept="image/*"
+        class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg
+               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+    />
+    @error('image')
+        <p class="flex items-center gap-1 text-xs text-red-600">{{ $message }}</p>
+    @enderror
+</div>
+
 {{-- Address --}}
 <div class="space-y-1.5">
     <label for="address" class="block text-sm font-medium text-gray-700">Address</label>

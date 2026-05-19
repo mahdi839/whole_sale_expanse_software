@@ -5,13 +5,15 @@
         <div class="flex justify-end"><a href="{{ route('shops.create') }}" class="h-10 px-4 bg-blue-600 text-white rounded-lg text-sm inline-flex items-center">New Shop</a></div>
         <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <table class="w-full text-sm">
-                <thead class="bg-gray-50"><tr><th class="text-left px-4 py-3">Shop</th><th class="text-left px-4 py-3">Executives</th><th class="text-left px-4 py-3">Sales</th><th class="text-right px-4 py-3">Actions</th></tr></thead>
+                <thead class="bg-gray-50"><tr><th class="text-left px-4 py-3">Shop</th><th class="text-left px-4 py-3">Executives</th><th class="text-left px-4 py-3">Sales</th><th class="text-right px-4 py-3">Stock Qty</th><th class="text-right px-4 py-3">Stock Value</th><th class="text-right px-4 py-3">Actions</th></tr></thead>
                 <tbody class="divide-y">
                     @foreach($shops as $shop)
                         <tr>
                             <td class="px-4 py-3"><a class="text-blue-600" href="{{ route('shops.show', $shop) }}">{{ $shop->name }}</a><br><span class="text-xs text-gray-400">{{ $shop->code }}</span></td>
                             <td class="px-4 py-3">{{ $shop->users_count }}</td>
                             <td class="px-4 py-3">{{ $shop->sales_count }}</td>
+                            <td class="px-4 py-3 text-right">{{ number_format($shop->stocks->sum('stock_qty'), 2) }}</td>
+                            <td class="px-4 py-3 text-right">BDT {{ number_format($shop->stocks->sum(fn($stock) => (float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0)), 2) }}</td>
                             <td class="px-4 py-3 text-right">
                                 <a href="{{ route('shops.executives', $shop) }}" class="text-green-600">Executives</a>
                                 <a href="{{ route('shops.edit', $shop) }}" class="text-blue-600 ml-2">Edit</a>

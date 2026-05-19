@@ -974,6 +974,11 @@ returnSaleSelect.addEventListener('change', () => {
 });
 
 addReturnBtn.addEventListener('click', () => {
+    if (returnItems.length >= 2) {
+        alert('You can add maximum two return products on one sale.');
+        return;
+    }
+
     const sale = getReturnSale(returnSaleSelect.value);
     const item = getReturnSaleItem(returnSaleSelect.value, returnProductSelect.value);
     if (!sale || !item) return;
@@ -1152,8 +1157,14 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
         if (!res.ok) throw new Error(data.message || 'Error saving customer');
 
         const sel = document.getElementById('customer_id');
-        sel.add(new Option(data.full_name + (data.phone ? ` (${data.phone})` : ''), data.id, true, true));
-        sel.value = data.id;
+        const label = data.full_name + (data.phone ? ` (${data.phone})` : '');
+        if (sel.tomselect) {
+            sel.tomselect.addOption({ value: data.id, text: label });
+            sel.tomselect.setValue(data.id);
+        } else {
+            sel.add(new Option(label, data.id, true, true));
+            sel.value = data.id;
+        }
 
         closeCustomerModal();
         document.getElementById('new_customer_name').value  = '';

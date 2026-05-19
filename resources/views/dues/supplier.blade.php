@@ -6,7 +6,7 @@
             'route' => route('dues.supplier'),
             'exportRoute' => route('dues.supplier.export', request()->query()),
             'filters' => $filters,
-            'placeholder' => 'Supplier name, phone, email, code...',
+            'placeholder' => 'Supplier name, phone, address, code...',
         ])
 
         <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">

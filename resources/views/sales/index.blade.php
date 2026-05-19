@@ -73,6 +73,10 @@
                             class="h-10 px-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm inline-flex items-center justify-center gap-1 w-full sm:w-auto">
                              CSV
                         </a>
+                        <a href="{{ route('sales.export', array_merge(request()->query(), ['format' => 'pdf'])) }}"
+                            class="h-10 px-4 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm inline-flex items-center justify-center gap-1 w-full sm:w-auto">
+                             PDF
+                        </a>
                         @canany(['manage sales', 'create sales'])
                             <a href="{{ route('sales.create') }}"
                                 class="h-10 px-4 bg-blue-600 text-white rounded-lg text-sm inline-flex items-center justify-center gap-1 w-full sm:w-auto">
@@ -85,7 +89,7 @@
         </div>
 
         {{-- Totals summary --}}
-        <div class="grid grid-cols-2 sm:grid-cols-6 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-9 gap-3">
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Total Sales</p>
                 <p class="text-xl font-semibold text-gray-800">{{ number_format($totals->total_sales ?? 0) }}</p>
@@ -114,6 +118,21 @@
                 <p class="text-xs text-gray-400 uppercase">Return Amount</p>
                 <p class="text-xl font-semibold text-orange-600 break-words">
                     ৳{{ number_format($totals->total_return_amount ?? 0, 2) }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                <p class="text-xs text-gray-400 uppercase">Total Sell Qty</p>
+                <p class="text-xl font-semibold text-indigo-600 break-words">
+                    {{ number_format($totals->total_sell_qty ?? 0, 2) }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                <p class="text-xs text-gray-400 uppercase">Total Stock</p>
+                <p class="text-xl font-semibold text-cyan-600 break-words">
+                    {{ number_format($totals->total_stock ?? 0, 2) }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                <p class="text-xs text-gray-400 uppercase">Total Expense</p>
+                <p class="text-xl font-semibold text-rose-600 break-words">
+                    ৳{{ number_format($totals->total_expense ?? 0, 2) }}</p>
             </div>
         </div>
 

@@ -21,7 +21,7 @@
                     </span>
                 </div>
 
-                <form method="POST" action="{{ route('customers.update', $customer) }}" class="space-y-5">
+                <form method="POST" action="{{ route('customers.update', $customer) }}" enctype="multipart/form-data" class="space-y-5">
                     @csrf
                     @method('PUT')
                     @include('customers._form', ['customer' => $customer])

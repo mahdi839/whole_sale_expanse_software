@@ -46,10 +46,6 @@
                     <dt class="text-gray-500">Phone</dt>
                     <dd class="font-medium text-gray-800">{{ $supplier->phone ?? '-' }}</dd>
                 </div>
-                <div class="flex justify-between py-3">
-                    <dt class="text-gray-500">Email</dt>
-                    <dd class="font-medium text-gray-800">{{ $supplier->email ?? '-' }}</dd>
-                </div>
                 <div class="flex justify-between gap-4 py-3">
                     <dt class="text-gray-500">Address</dt>
                     <dd class="font-medium text-gray-800 text-right">{{ $supplier->address ?? '-' }}</dd>
@@ -73,6 +69,7 @@
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Type</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Reference</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Amount</th>
+                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Qty</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Due</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Note</th>
@@ -87,19 +84,24 @@
                                     <a href="{{ $log['url'] }}" class="font-mono text-xs text-blue-700 hover:underline">{{ $log['reference'] }}</a>
                                 </td>
                                 <td class="px-5 py-3 text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">৳{{ number_format($log['amount'], 2) }}</td>
+                                <td class="px-5 py-3 text-right text-gray-700">{{ is_null($log['qty']) ? '-' : number_format($log['qty'], 2) }}</td>
                                 <td class="px-5 py-3 text-right text-green-600">৳{{ number_format($log['paid'], 2) }}</td>
                                 <td class="px-5 py-3 text-right text-red-600">৳{{ number_format($log['due'], 2) }}</td>
                                 <td class="px-5 py-3 text-gray-500 max-w-xs truncate">{{ $log['note'] ?: '-' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="px-5 py-12 text-center text-gray-400">No transactions found.</td></tr>
+                            <tr><td colspan="8" class="px-5 py-12 text-center text-gray-400">No transactions found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
+                <p class="text-xs text-gray-500 mb-1">Total Qty</p>
+                <p class="text-xl font-semibold text-indigo-600">{{ number_format($totalQty, 2) }}</p>
+            </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Total Purchase</p>
                 <p class="text-xl font-semibold text-gray-800">৳{{ number_format($supplier->total_purchase, 2) }}</p>
@@ -128,3 +130,4 @@
         </div>
     </div>
 </x-app-layout>
+

@@ -16,9 +16,13 @@
             <div class="flex items-start justify-between gap-4 mb-6">
                 <div class="flex items-center gap-4">
                     {{-- Avatar initials --}}
-                    <div class="flex items-center justify-center w-14 h-14 rounded-full bg-blue-100 text-blue-700 text-lg font-semibold shrink-0">
-                        {{ strtoupper(substr($customer->full_name, 0, 2)) }}
-                    </div>
+                    @if($customer->image)
+                        <img src="{{ asset('storage/'.$customer->image) }}" alt="{{ $customer->full_name }}" class="w-14 h-14 rounded-full object-cover border border-gray-200 shrink-0">
+                    @else
+                        <div class="flex items-center justify-center w-14 h-14 rounded-full bg-blue-100 text-blue-700 text-lg font-semibold shrink-0">
+                            {{ strtoupper(substr($customer->full_name, 0, 2)) }}
+                        </div>
+                    @endif
                     <div>
                         <h2 class="text-lg font-semibold text-gray-800">{{ $customer->full_name }}</h2>
                         <span class="inline-flex items-center gap-1 text-xs font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">

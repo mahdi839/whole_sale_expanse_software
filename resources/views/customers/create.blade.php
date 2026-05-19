@@ -21,7 +21,7 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('customers.store') }}" class="space-y-5">
+            <form method="POST" action="{{ route('customers.store') }}" enctype="multipart/form-data" class="space-y-5">
                 @csrf
                 @include('customers._form')
 

@@ -67,35 +67,26 @@
         @endif
 
         {{-- Summary cards --}}
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            @php
-                $all = \App\Models\Customer::query();
-                $totalSale = $all->sum('total_sale');
-                $totalPaid = $all->sum('total_paid');
-                $totalDue  = $all->sum('due');
-                $count     = \App\Models\Customer::count();
-            @endphp
-
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-500 mb-1">Total Customers</p>
-                <p class="text-2xl font-semibold text-gray-800">{{ number_format($count) }}</p>
+                <p class="text-2xl font-semibold text-gray-800">{{ number_format($summary['count']) }}</p>
             </div>
-
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-500 mb-1">Total Sales</p>
-                <p class="text-2xl font-semibold text-gray-800 break-words">৳{{ number_format($totalSale, 2) }}</p>
+                <p class="text-2xl font-semibold text-gray-800 break-words">BDT {{ number_format($summary['total_sale'], 2) }}</p>
             </div>
-
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-500 mb-1">Total Paid</p>
-                <p class="text-2xl font-semibold text-green-600 break-words">৳{{ number_format($totalPaid, 2) }}</p>
+                <p class="text-2xl font-semibold text-green-600 break-words">BDT {{ number_format($summary['total_paid'], 2) }}</p>
             </div>
-
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-500 mb-1">Total Due</p>
-                <p class="text-2xl font-semibold break-words {{ $totalDue > 0 ? 'text-red-600' : 'text-gray-400' }}">
-                    ৳{{ number_format($totalDue, 2) }}
-                </p>
+                <p class="text-2xl font-semibold break-words {{ $summary['total_due'] > 0 ? 'text-red-600' : 'text-gray-400' }}">BDT {{ number_format($summary['total_due'], 2) }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                <p class="text-xs text-gray-500 mb-1">Total Sell Qty</p>
+                <p class="text-2xl font-semibold text-indigo-600">{{ number_format($summary['total_sell_qty'], 2) }}</p>
             </div>
         </div>
 
@@ -104,9 +95,14 @@
             @forelse($customers as $customer)
                 <div class="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
                     <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <p class="text-xs text-gray-400">Code</p>
-                            <p class="font-mono text-sm text-blue-700 break-all">{{ $customer->code }}</p>
+                        <div class="flex items-center gap-3 min-w-0">
+                            @if($customer->image)
+                                <img src="{{ asset('storage/'.$customer->image) }}" alt="{{ $customer->full_name }}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0">
+                            @endif
+                            <div class="min-w-0">
+                                <p class="text-xs text-gray-400">Code</p>
+                                <p class="font-mono text-sm text-blue-700 break-all">{{ $customer->code }}</p>
+                            </div>
                         </div>
 
                         <div class="shrink-0 text-right">
@@ -150,6 +146,10 @@
                         <div class="bg-gray-50 rounded-lg p-2">
                             <p class="text-gray-400">Paid</p>
                             <p class="font-medium text-green-600 break-words">৳{{ number_format($customer->total_paid, 2) }}</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-2">
+                            <p class="text-gray-400">Sell Qty</p>
+                            <p class="font-medium text-indigo-600 break-words">{{ number_format($customer->total_sell_qty ?? 0, 2) }}</p>
                         </div>
                     </div>
 
@@ -223,6 +223,7 @@
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Full Name</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden md:table-cell">Phone</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden xl:table-cell">Address</th>
+                            <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Sell Qty</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Total Sale</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Total Paid</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Due</th>
@@ -242,12 +243,12 @@
 
                                 {{-- Name --}}
                                 <td class="px-5 py-3">
-                                    <a
-                                        href="{{ route('customers.show', $customer) }}"
-                                        class="font-medium text-gray-800 hover:text-blue-600 transition"
-                                    >
-                                        {{ $customer->full_name }}
-                                    </a>
+                                    <div class="flex items-center gap-3">
+                                        @if($customer->image)
+                                            <img src="{{ asset('storage/'.$customer->image) }}" alt="{{ $customer->full_name }}" class="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0">
+                                        @endif
+                                        <a href="{{ route('customers.show', $customer) }}" class="font-medium text-gray-800 hover:text-blue-600 transition">{{ $customer->full_name }}</a>
+                                    </div>
                                 </td>
 
                                 {{-- Phone --}}
@@ -260,6 +261,10 @@
 
                                 <td class="px-5 py-3 text-gray-500 hidden xl:table-cell max-w-xs truncate">
                                     {{ $customer->address ?? '—' }}
+                                </td>
+
+                                <td class="px-5 py-3 text-right text-indigo-600 hidden lg:table-cell">
+                                    {{ number_format($customer->total_sell_qty ?? 0, 2) }}
                                 </td>
 
                                 {{-- Total Sale --}}
@@ -330,7 +335,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-5 py-16 text-center">
+                                <td colspan="9" class="px-5 py-16 text-center">
                                     <div class="flex flex-col items-center gap-3 text-gray-400">
                                         <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                             <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -367,3 +372,6 @@
 
     </div>
 </x-app-layout>
+
+
+

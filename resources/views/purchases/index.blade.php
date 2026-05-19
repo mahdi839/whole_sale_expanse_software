@@ -72,7 +72,7 @@
         </div>
 
         {{-- Summary cards --}}
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-6 gap-3">
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Total Purchases</p>
                 <p class="text-xl font-semibold text-gray-800">{{ number_format($totals->total_purchases ?? 0) }}</p>
@@ -97,6 +97,14 @@
                 <p class="text-xl font-semibold text-red-600 break-words">
                     ৳{{ number_format($totals->total_due ?? 0, 2) }}
                 </p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                <p class="text-xs text-gray-400 uppercase">Total Qty</p>
+                <p class="text-xl font-semibold text-indigo-600 break-words">{{ number_format($totals->total_qty ?? 0, 2) }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                <p class="text-xs text-gray-400 uppercase">Total Stock</p>
+                <p class="text-xl font-semibold text-cyan-600 break-words">{{ number_format($totals->total_stock ?? 0, 2) }}</p>
             </div>
         </div>
 
@@ -241,6 +249,7 @@
                             <th class="px-5 py-3 text-left text-sm font-medium text-gray-400">Supplier</th>
                             <th class="px-5 py-3 text-left text-sm font-medium text-gray-400">Seller Store</th>
                             <th class="px-5 py-3 text-left text-sm font-medium text-gray-400">Products</th>
+                            <th class="px-5 py-3 text-right text-sm font-medium text-gray-400">Total Qty</th>
                             <th class="px-5 py-3 text-left text-sm font-medium text-gray-400 hidden lg:table-cell">
                                 Purchased By</th>
                             <th class="px-5 py-3 text-right text-sm font-medium text-gray-400">Grand Total</th>
@@ -288,6 +297,10 @@
                                             +{{ $purchase->items->count() - 2 }} more
                                         </div>
                                     @endif
+                                </td>
+
+                                <td class="px-5 py-3 text-right text-indigo-600">
+                                    {{ number_format($purchase->items->sum(fn($item) => (float) $item->qty), 2) }}
                                 </td>
 
                                 <td class="px-5 py-3 hidden lg:table-cell">
@@ -352,7 +365,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="px-5 py-20 text-center text-gray-400">
+                                <td colspan="12" class="px-5 py-20 text-center text-gray-400">
                                     No purchases found.
                                     <a href="{{ route('purchases.create') }}" class="text-blue-600 hover:underline">
                                         Create first purchase
@@ -372,3 +385,5 @@
         </div>
     </div>
 </x-app-layout>
+
+

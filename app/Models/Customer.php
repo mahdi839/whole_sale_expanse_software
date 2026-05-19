@@ -15,6 +15,7 @@ class Customer extends Model
         'phone',
         'alternative_phone',
         'address',
+        'image',
         'total_sale',
         'total_paid',
         'due',
