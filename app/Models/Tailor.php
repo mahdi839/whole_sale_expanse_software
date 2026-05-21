@@ -8,6 +8,10 @@ class Tailor extends Model
 {
     protected $fillable = [
         'name',
+        'phone',
+        'address',
+        'profile_picture',
+        'document_path',
     ];
 
     public function clothSewings()

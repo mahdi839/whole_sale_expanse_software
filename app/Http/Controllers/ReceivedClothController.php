@@ -35,8 +35,9 @@ class ReceivedClothController extends Controller
     {
         $receivedCloth = new ReceivedCloth(['date' => now()->toDateString()]);
         $products = Product::orderBy('product_name')->get(['id', 'product_name', 'sku', 'product_code']);
+        $tailors = Tailor::orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('received_cloths.create', compact('receivedCloth', 'products'));
+        return view('received_cloths.create', compact('receivedCloth', 'products', 'tailors'));
     }
 
     public function store(Request $request)
@@ -51,8 +52,9 @@ class ReceivedClothController extends Controller
     public function edit(ReceivedCloth $receivedCloth)
     {
         $products = Product::orderBy('product_name')->get(['id', 'product_name', 'sku', 'product_code']);
+        $tailors = Tailor::orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('received_cloths.edit', compact('receivedCloth', 'products'));
+        return view('received_cloths.edit', compact('receivedCloth', 'products', 'tailors'));
     }
 
     public function update(Request $request, ReceivedCloth $receivedCloth)
@@ -72,18 +74,15 @@ class ReceivedClothController extends Controller
     private function validatedRows(Request $request): array
     {
         $data = $request->validate([
-            'tailor_name' => 'required|string|max:255',
+            'tailor_id' => 'required|exists:tailors,id',
             'date' => 'required|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.item_qty' => 'required|numeric|min:0.01',
         ]);
 
-        $tailor = Tailor::firstOrCreate(['name' => trim($data['tailor_name'])]);
-
         return collect($data['items'])->map(fn ($item) => [
-            'tailor_name' => $tailor->name,
-            'tailor_id' => $tailor->id,
+            'tailor_id' => $data['tailor_id'],
             'product_id' => $item['product_id'],
             'item_qty' => $item['item_qty'],
             'date' => $data['date'],
@@ -93,15 +92,11 @@ class ReceivedClothController extends Controller
     private function validatedSingle(Request $request): array
     {
         $data = $request->validate([
-            'tailor_name' => 'required|string|max:255',
+            'tailor_id' => 'required|exists:tailors,id',
             'product_id' => 'required|exists:products,id',
             'item_qty' => 'required|numeric|min:0.01',
             'date' => 'required|date',
         ]);
-
-        $tailor = Tailor::firstOrCreate(['name' => trim($data['tailor_name'])]);
-        $data['tailor_id'] = $tailor->id;
-        $data['tailor_name'] = $tailor->name;
 
         return $data;
     }

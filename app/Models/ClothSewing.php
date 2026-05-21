@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 class ClothSewing extends Model
 {
     protected $fillable = [
-        'tailor_name',
         'tailor_id',
         'product_id',
         'item_qty',

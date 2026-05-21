@@ -88,7 +88,7 @@
                                         </button>
                                         @canany(['manage cloth sewings', 'edit cloth sewings'])
                                             <button type="button"
-                                                class="open-receive px-3 py-1.5 text-xs text-white bg-green-500 rounded-lg hover:bg-green-100"
+                                                class="open-receive px-3 py-1.5 text-xs text-white bg-green-500 rounded-lg hover:bg-green-700"
                                                 data-tailor-id="{{ $tailor->id }}"
                                                 data-tailor-name="{{ $tailor->name }}"
                                                 data-url="{{ route('cloth-sewings.tailors.receive', $tailor) }}"

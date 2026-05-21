@@ -21,10 +21,19 @@
 
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Tailor Name</label>
-        <input type="text" name="tailor_name" value="{{ old('tailor_name', $record?->tailor?->name ?? $record?->tailor_name) }}"
-            class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
-        @error('tailor_name')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        <div class="flex items-center justify-between gap-3 mb-1">
+            <label class="block text-sm font-medium text-gray-700">Tailor</label>
+            <a href="{{ route('tailors.create') }}" class="text-xs text-blue-600 hover:underline">Add Tailor</a>
+        </div>
+        <select name="tailor_id" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+            <option value="">Select tailor</option>
+            @foreach($tailors as $tailor)
+                <option value="{{ $tailor->id }}" @selected((string) old('tailor_id', $record?->tailor_id) === (string) $tailor->id)>
+                    {{ $tailor->name }}{{ $tailor->phone ? ' - '.$tailor->phone : '' }}
+                </option>
+            @endforeach
+        </select>
+        @error('tailor_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>
