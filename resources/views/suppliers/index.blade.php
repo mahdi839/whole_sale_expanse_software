@@ -56,18 +56,14 @@
         @endif
 
         {{-- Summary cards --}}
-        @php
-            $totals = \App\Models\Supplier::selectRaw(
-                'count(*) as cnt,
-                 sum(total_purchase) as tp,
-                 sum(total_paid) as tpd,
-                 sum(due) as td'
-            )->first();
-        @endphp
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-500 mb-1">Total Suppliers</p>
                 <p class="text-2xl font-semibold text-gray-800">{{ number_format($totals->cnt) }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                <p class="text-xs text-gray-500 mb-1">Total Purchase Qty</p>
+                <p class="text-2xl font-semibold text-indigo-600">{{ number_format($totals->total_purchase_qty ?? 0, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-500 mb-1">Total Purchase</p>

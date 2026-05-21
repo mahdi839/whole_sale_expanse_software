@@ -14,6 +14,15 @@ class SupplierController extends Controller
     {
         $search = $request->input('search');
 
+        $totals = Supplier::query()
+            ->selectRaw('count(*) as cnt, sum(total_purchase) as tp, sum(total_paid) as tpd, sum(due) as td')
+            ->selectSub(function ($query) {
+                $query->from('purchase_items')
+                    ->selectRaw('COALESCE(SUM(purchase_items.qty), 0)')
+                    ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id');
+            }, 'total_purchase_qty')
+            ->first();
+
         $suppliers = Supplier::query()
             ->addSelect([
                 'total_purchase_qty' => DB::table('purchase_items')
@@ -31,7 +40,7 @@ class SupplierController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('suppliers.index', compact('suppliers', 'search'));
+        return view('suppliers.index', compact('suppliers', 'search', 'totals'));
     }
 
     public function create()
