@@ -43,11 +43,11 @@
                 </p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
-                <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Central Value</p>
+                <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Central Stock Value</p>
                 <p class="text-2xl font-semibold text-green-600">BDT {{ number_format($centralStockValue, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
-                <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Shop Value</p>
+                <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Shop Stock Value</p>
                 <p class="text-2xl font-semibold text-blue-600">BDT {{ number_format($shopStockValue, 2) }}</p>
             </div>
         </div>
