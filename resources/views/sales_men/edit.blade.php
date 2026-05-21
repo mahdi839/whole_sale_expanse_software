@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">Edit Sales Man</x-slot>
 
-    <div class="max-w-3xl">
-        <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <div class="min-h-[calc(100vh-11rem)] flex items-center justify-center py-8">
+        <div class="w-full max-w-3xl bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <form method="POST" action="{{ route('sales-men.update', $salesMan) }}" class="space-y-5">
                 @csrf
                 @method('PUT')

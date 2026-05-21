@@ -20,14 +20,6 @@
         @error('joining_date')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Total Expense</label>
-        <input type="number" step="0.01" min="0" name="total_expense" value="{{ old('total_expense', $salesMan->total_expense ?? 0) }}"
-            @if($salesMan->exists) readonly @endif
-            class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
-        @error('total_expense')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
-    </div>
-
     <div class="sm:col-span-2">
         <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
         <textarea name="address" rows="3" class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg">{{ old('address', $salesMan->address) }}</textarea>
