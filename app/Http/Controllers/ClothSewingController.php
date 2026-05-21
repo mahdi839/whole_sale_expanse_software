@@ -170,21 +170,27 @@ class ClothSewingController extends Controller
         $logs = $this->tailorLogs($tailor);
         $summary = $this->tailorProductSummary($tailor);
         $headers = ['Date', 'Type', 'Product', 'Design Code', 'Qty', 'Note'];
-        $rows = collect([
-            ['Shop', 'Inaya Creation', 'Tailor', $tailor->name, '', ''],
-            ['Totals', '', 'Sewing Qty', '', (float) $summary->sum('sewing_qty'), 'Received Qty: '.number_format((float) $summary->sum('received_qty'), 2)],
-        ])->merge($logs->map(fn ($log) => [
+        $totalSewing = (float) $summary->sum('sewing_qty');
+        $totalReceived = (float) $summary->sum('received_qty');
+        $rows = $logs->map(fn ($log) => [
             optional($log['date'])->format('Y-m-d'),
             $log['type'],
             $log['product'],
             $log['design_code'],
             $log['qty'],
             $log['note'],
-        ]));
+        ]);
 
         $fileName = 'tailor-'.$tailor->id.'-cloth-sewing-logs-'.now()->format('Y-m-d-H-i-s').'.pdf';
 
-        return Response::make(SimplePdf::table('Inaya Creation - Cloth Sewing Logs - '.$tailor->name, $headers, $rows), 200, [
+        return Response::make(SimplePdf::table('Inaya Creation - Cloth Sewing Logs - '.$tailor->name, $headers, $rows, null, [
+            'logo_path' => public_path('inaya_creation_logo.jpeg'),
+            'summary' => [
+                ['label' => 'Total Sewing Qty', 'value' => number_format($totalSewing, 2)],
+                ['label' => 'Total Received Qty', 'value' => number_format($totalReceived, 2)],
+                ['label' => 'Balance Qty', 'value' => number_format($totalSewing - $totalReceived, 2)],
+            ],
+        ]), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);

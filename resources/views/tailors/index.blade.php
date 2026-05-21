@@ -29,6 +29,7 @@
                     <thead>
                         <tr class="bg-gray-50 border-b">
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Tailor</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Document</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Phone</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Address</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Sewing Qty</th>
@@ -50,11 +51,18 @@
                                         @endif
                                         <div>
                                             <div class="font-medium text-gray-800">{{ $tailor->name }}</div>
-                                            @if($tailor->document_path)
-                                                <a href="{{ asset('storage/'.$tailor->document_path) }}" target="_blank" class="text-xs text-blue-600 hover:underline">Document</a>
-                                            @endif
                                         </div>
                                     </div>
+                                </td>
+                                <td class="px-5 py-3">
+                                    @if($tailor->document_path)
+                                        <a href="{{ asset('storage/'.$tailor->document_path) }}" target="_blank" class="inline-flex items-center gap-2 text-blue-600 hover:underline">
+                                            <img src="{{ asset('storage/'.$tailor->document_path) }}" alt="{{ $tailor->name }} document" class="w-12 h-9 rounded object-cover border border-gray-200">
+                                            <span class="text-xs">View</span>
+                                        </a>
+                                    @else
+                                        <span class="text-gray-400">-</span>
+                                    @endif
                                 </td>
                                 <td class="px-5 py-3 text-gray-600">{{ $tailor->phone ?? '-' }}</td>
                                 <td class="px-5 py-3 text-gray-600 max-w-xs truncate">{{ $tailor->address ?? '-' }}</td>
@@ -79,7 +87,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-5 py-12 text-center text-gray-400">No tailors found.</td></tr>
+                            <tr><td colspan="7" class="px-5 py-12 text-center text-gray-400">No tailors found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

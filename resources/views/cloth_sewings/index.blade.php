@@ -61,14 +61,21 @@
                                 <td class="px-5 py-3 whitespace-nowrap" data-field="latest-date">{{ $tailor->latest_sewing_date ? \Carbon\Carbon::parse($tailor->latest_sewing_date)->format('d M Y') : '-' }}</td>
                                 <td class="px-5 py-3 font-medium text-gray-800" data-field="tailor-name">{{ $tailor->name }}</td>
                                 <td class="px-5 py-3 text-gray-700" data-field="products">
-                                    <div class="flex flex-wrap gap-1.5">
-                                        @foreach($productRows as $product)
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-50 text-xs text-gray-700 border border-gray-100">
+                                    <div class="space-y-1.5">
+                                        @foreach($productRows as $index => $product)
+                                            <div class="{{ $index >= 3 ? 'hidden extra-product' : '' }} flex items-center justify-between gap-3 px-2 py-1 rounded-lg bg-gray-50 text-xs text-gray-700 border border-gray-100">
                                                 <span>{{ $product['name'] }}</span>
-                                                <span class="font-mono text-gray-400">{{ $product['design_code'] }}</span>
-                                                <span class="text-indigo-600">{{ number_format($product['balance_qty'], 2) }} left</span>
-                                            </span>
+                                                <span class="shrink-0">
+                                                    <span class="font-mono text-gray-400">{{ $product['design_code'] }}</span>
+                                                    <span class="text-indigo-600 ml-2">{{ number_format($product['balance_qty'], 2) }} left</span>
+                                                </span>
+                                            </div>
                                         @endforeach
+                                        @if($productRows->count() > 3)
+                                            <button type="button" class="toggle-products text-xs font-medium text-blue-600 hover:underline">
+                                                See more
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="px-5 py-3 text-right text-indigo-600" data-field="sewing-qty">{{ number_format($totalSewing, 2) }}</td>
@@ -243,15 +250,22 @@
             tr.querySelector('[data-field="sewing-qty"]').textContent = row.total_sewing_qty;
             tr.querySelector('[data-field="received-qty"]').textContent = row.total_received_qty;
             tr.querySelector('[data-field="balance-qty"]').textContent = row.balance_qty;
-            tr.querySelector('[data-field="products"]').innerHTML = `
-                <div class="flex flex-wrap gap-1.5">
-                    ${row.products.map(product => `
-                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-50 text-xs text-gray-700 border border-gray-100">
+            tr.querySelector('[data-field="products"]').innerHTML = productListHtml(row.products);
+        }
+
+        function productListHtml(products) {
+            return `
+                <div class="space-y-1.5">
+                    ${products.map((product, index) => `
+                        <div class="${index >= 3 ? 'hidden extra-product' : ''} flex items-center justify-between gap-3 px-2 py-1 rounded-lg bg-gray-50 text-xs text-gray-700 border border-gray-100">
                             <span>${escapeHtml(product.name)}</span>
-                            <span class="font-mono text-gray-400">${escapeHtml(product.design_code || '-')}</span>
-                            <span class="text-indigo-600">${product.balance_qty} left</span>
-                        </span>
+                            <span class="shrink-0">
+                                <span class="font-mono text-gray-400">${escapeHtml(product.design_code || '-')}</span>
+                                <span class="text-indigo-600 ml-2">${product.balance_qty} left</span>
+                            </span>
+                        </div>
                     `).join('')}
+                    ${products.length > 3 ? '<button type="button" class="toggle-products text-xs font-medium text-blue-600 hover:underline">See more</button>' : ''}
                 </div>
             `;
         }
@@ -354,6 +368,16 @@
         [receiveModal, logsModal].forEach(modal => modal.addEventListener('click', event => {
             if (event.target === modal) hideModals();
         }));
+
+        document.addEventListener('click', event => {
+            if (!event.target.classList.contains('toggle-products')) return;
+
+            const wrap = event.target.closest('[data-field="products"]');
+            const isExpanded = event.target.dataset.expanded === 'true';
+            wrap.querySelectorAll('.extra-product').forEach(item => item.classList.toggle('hidden', isExpanded));
+            event.target.dataset.expanded = isExpanded ? 'false' : 'true';
+            event.target.textContent = isExpanded ? 'See more' : 'See less';
+        });
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, char => ({

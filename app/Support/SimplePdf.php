@@ -66,6 +66,8 @@ class SimplePdf
     private array  $colAlign  = [];   // 'L' | 'R' per column index
     private float  $tableW    = 0.0;
     private string $docTitle  = '';
+    private array  $summary   = [];
+    private ?string $logoPath = null;
 
     // ════════════════════════════════════════════════════════════════════════
     // PUBLIC API
@@ -83,19 +85,22 @@ class SimplePdf
         string   $title,
         array    $headers,
         iterable $rows,
-        ?array   $widths = null
+        ?array   $widths = null,
+        array    $options = []
     ): string {
-        return (new self())->run($title, $headers, $rows, $widths);
+        return (new self())->run($title, $headers, $rows, $widths, $options);
     }
 
     // ════════════════════════════════════════════════════════════════════════
     // CORE
     // ════════════════════════════════════════════════════════════════════════
 
-    private function run(string $title, array $headers, iterable $rows, ?array $widths): string
+    private function run(string $title, array $headers, iterable $rows, ?array $widths, array $options): string
     {
         $this->docTitle  = $title;
         $this->headers   = $headers;
+        $this->summary   = $options['summary'] ?? [];
+        $this->logoPath  = isset($options['logo_path']) && is_file($options['logo_path']) ? $options['logo_path'] : null;
         $rowArr          = is_array($rows) ? $rows : iterator_to_array($rows);
 
         $this->colAlign  = $this->detectAlignment($headers, $rowArr);
@@ -106,6 +111,7 @@ class SimplePdf
 
         $this->newPage();
         $this->drawPageHeader();
+        $this->drawSummary();
         $this->drawTableHeader();
 
         foreach ($rowArr as $idx => $row) {
@@ -158,14 +164,57 @@ class SimplePdf
         $endX  = $x + $w;
         $this->em("q 2 w " . self::ACCENT . " RG {$x} {$lineY} m {$endX} {$lineY} l S Q\n");
 
+        $titleX = $x + ($this->logoPath ? 54 : 14);
+
+        if ($this->logoPath) {
+            $logoSize = 34;
+            $logoX = $x + 14;
+            $logoY = $py + ($h - $logoSize) / 2;
+            $this->em("q {$logoSize} 0 0 {$logoSize} {$logoX} {$logoY} cm /Logo Do Q\n");
+        }
+
         // Title
         $titleY = $py + $h - 26;
-        $this->em("BT /F2 " . self::FS_TITLE . " Tf " . self::HDR_FG . " rg " . ($x + 14) . " {$titleY} Td (" . $this->esc($this->docTitle) . ") Tj ET\n");
+        $this->em("BT /F2 " . self::FS_TITLE . " Tf " . self::HDR_FG . " rg {$titleX} {$titleY} Td (" . $this->esc($this->docTitle) . ") Tj ET\n");
 
         // Generated date
         $subY = $py + 10;
         $sub  = $this->esc('Generated: ' . date('d M Y   H:i'));
-        $this->em("BT /F1 " . self::FS_SUBTITLE . " Tf " . self::SUB_FG . " rg " . ($x + 14) . " {$subY} Td ({$sub}) Tj ET\n");
+        $this->em("BT /F1 " . self::FS_SUBTITLE . " Tf " . self::SUB_FG . " rg {$titleX} {$subY} Td ({$sub}) Tj ET\n");
+    }
+
+    private function drawSummary(): void
+    {
+        if (! $this->summary) {
+            return;
+        }
+
+        $items = array_values($this->summary);
+        $cols = min(4, max(1, count($items)));
+        $gap = 8.0;
+        $x = self::ML;
+        $w = self::PW - self::ML - self::MR;
+        $cardW = ($w - ($gap * ($cols - 1))) / $cols;
+        $cardH = 34.0;
+        $y = $this->curY;
+
+        foreach ($items as $i => $item) {
+            $col = $i % $cols;
+            $row = intdiv($i, $cols);
+            $cx = $x + ($cardW + $gap) * $col;
+            $cy = $y + ($cardH + $gap) * $row;
+            $cpy = self::PH - $cy - $cardH;
+            $label = (string) ($item['label'] ?? '');
+            $value = (string) ($item['value'] ?? '');
+
+            $this->em(self::ROW_EVEN . " rg {$cx} {$cpy} {$cardW} {$cardH} re f\n");
+            $this->em("q 0.5 w " . self::BORDER . " RG {$cx} {$cpy} {$cardW} {$cardH} re S Q\n");
+            $this->em("BT /F1 7 Tf " . self::MUTED_FG . " rg " . ($cx + 8) . " " . ($cpy + 20) . " Td (" . $this->esc(strtoupper($label)) . ") Tj ET\n");
+            $this->em("BT /F2 10 Tf " . self::BODY_FG . " rg " . ($cx + 8) . " " . ($cpy + 8) . " Td (" . $this->esc($value) . ") Tj ET\n");
+        }
+
+        $rows = (int) ceil(count($items) / $cols);
+        $this->curY += ($cardH * $rows) + ($gap * max(0, $rows - 1)) + 12;
     }
 
     private function drawFooter(int $pageNum, int $total): void
@@ -354,6 +403,23 @@ class SimplePdf
             return $nextId;
         };
 
+        $addJpeg = function (string $path) use (&$out, &$xrefOff, &$nextId): ?int {
+            $info = @getimagesize($path);
+            $data = @file_get_contents($path);
+            if (! $info || $data === false || ($info[2] ?? null) !== IMAGETYPE_JPEG) {
+                return null;
+            }
+
+            $nextId++;
+            $xrefOff[$nextId] = strlen($out);
+            $len = strlen($data);
+            $w = (int) $info[0];
+            $h = (int) $info[1];
+            $out .= "{$nextId} 0 obj\n<</Type /XObject /Subtype /Image /Width {$w} /Height {$h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {$len}>>\nstream\n{$data}\nendstream\nendobj\n";
+
+            return $nextId;
+        };
+
         // Reserve 1 & 2 with stubs we'll overwrite via str_replace
         $catalogId = $addObj('<</Type /Catalog /Pages 2 0 R>>');  // obj 1
         $pagesId   = $addObj('<</Type /Pages /Kids [] /Count 0>>'); // obj 2
@@ -361,11 +427,13 @@ class SimplePdf
         // Font objects
         $fontRId = $addObj('<</Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding>>');
         $fontBId = $addObj('<</Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding>>');
+        $logoId = $this->logoPath ? $addJpeg($this->logoPath) : null;
 
         // Page objects
         $pageObjIds = [];
         foreach ($this->pages as $pNum => $content) {
-            $resId  = $addObj("<</Font <</F1 {$fontRId} 0 R /F2 {$fontBId} 0 R>>>>");
+            $xObjects = $logoId ? " /XObject <</Logo {$logoId} 0 R>>" : '';
+            $resId  = $addObj("<</Font <</F1 {$fontRId} 0 R /F2 {$fontBId} 0 R>>{$xObjects}>>");
             $cntId  = $addStream($content);
             $pgId   = $addObj(
                 "<</Type /Page /Parent {$pagesId} 0 R " .
