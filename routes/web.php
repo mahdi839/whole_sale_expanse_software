@@ -64,6 +64,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     $crudResource('/customers', CustomerController::class, 'customers');
     Route::get('/suppliers/{supplier}/transactions/export', [SupplierController::class, 'exportTransactions'])->name('suppliers.transactions.export')->middleware('permission:manage suppliers|view suppliers|manage dues|view dues');
     $crudResource('/suppliers', SupplierController::class, 'suppliers');
+    Route::get('/cloth-sewings/tailors/{tailor}/receive', [ClothSewingController::class, 'receiveData'])->name('cloth-sewings.tailors.receive')->middleware('permission:manage cloth sewings|view cloth sewings');
+    Route::post('/cloth-sewings/tailors/{tailor}/receive', [ClothSewingController::class, 'saveReceived'])->name('cloth-sewings.tailors.receive.save')->middleware('permission:manage cloth sewings|edit cloth sewings|create received cloths');
+    Route::get('/cloth-sewings/tailors/{tailor}/logs', [ClothSewingController::class, 'logs'])->name('cloth-sewings.tailors.logs')->middleware('permission:manage cloth sewings|view cloth sewings');
+    Route::get('/cloth-sewings/tailors/{tailor}/logs/export', [ClothSewingController::class, 'exportLogs'])->name('cloth-sewings.tailors.logs.export')->middleware('permission:manage cloth sewings|view cloth sewings');
     $crudResource('/cloth-sewings', ClothSewingController::class, 'cloth sewings', ['parameters' => ['cloth-sewings' => 'clothSewing'], 'except' => ['show']]);
     $crudResource('/received-cloths', ReceivedClothController::class, 'received cloths', ['parameters' => ['received-cloths' => 'receivedCloth'], 'except' => ['show']]);
     $crudResource('/sales-men', SalesManController::class, 'sales men', ['parameters' => ['sales-men' => 'salesMan']]);

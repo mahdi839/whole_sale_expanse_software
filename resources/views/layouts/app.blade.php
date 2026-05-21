@@ -327,11 +327,10 @@
                 </x-sidebar-dropdown>
                 @endcanany
 
-                @canany(['manage cloth sewings', 'view cloth sewings', 'manage received cloths', 'view received cloths'])
-                <x-sidebar-dropdown label="Cloth Management" :active="request()->routeIs('cloth-sewings.*') || request()->routeIs('received-cloths.*')">
+                @canany(['manage cloth sewings', 'view cloth sewings'])
+                <x-sidebar-dropdown label="Cloth Management" :active="request()->routeIs('cloth-sewings.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 7h16"/><path d="M6 7v11a2 2 0 002 2h8a2 2 0 002-2V7"/><path d="M9 7V4h6v3"/><path d="M9 12h6"/><path d="M9 16h4"/></svg></x-slot>
                     @canany(['manage cloth sewings', 'view cloth sewings'])<x-sidebar-sub-link :href="route('cloth-sewings.index')">Cloth Sewing</x-sidebar-sub-link>@endcanany
-                    @canany(['manage received cloths', 'view received cloths'])<x-sidebar-sub-link :href="route('received-cloths.index')">Received Cloth</x-sidebar-sub-link>@endcanany
                 </x-sidebar-dropdown>
                 @endcanany
 
