@@ -284,7 +284,7 @@
 {{-- Sell Price --}}
 <div class="pf-field">
     <label for="selling_price" class="pf-label">
-        Sell Price<span class="req">*</span>
+        Sale Price<span class="req">*</span>
     </label>
     <input
         type="number" id="selling_price" name="selling_price"

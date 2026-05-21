@@ -132,7 +132,7 @@
                         </div>
 
                         <div class="bg-gray-50 rounded-lg p-2">
-                            <p class="text-gray-400">Sell Price</p>
+                            <p class="text-gray-400">Sale Price</p>
                             <p class="mt-1 font-medium text-gray-700">৳{{ number_format($product->selling_price, 2) }}</p>
                         </div>
 
@@ -212,7 +212,7 @@
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Design Code</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Product Code</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Purchase Price</th>
-                            <th class="text-right px-5 py-3 font-medium text-gray-500">Sell Price</th>
+                            <th class="text-right px-5 py-3 font-medium text-gray-500">Sale Price</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Stock</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden sm:table-cell">Added</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Actions</th>

@@ -85,7 +85,7 @@
                 <p class="text-2xl font-semibold break-words {{ $summary['total_due'] > 0 ? 'text-red-600' : 'text-gray-400' }}">BDT {{ number_format($summary['total_due'], 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4">
-                <p class="text-xs text-gray-500 mb-1">Total Sell Qty</p>
+                <p class="text-xs text-gray-500 mb-1">Total Sale Qty</p>
                 <p class="text-2xl font-semibold text-indigo-600">{{ number_format($summary['total_sell_qty'], 2) }}</p>
             </div>
         </div>
@@ -148,7 +148,7 @@
                             <p class="font-medium text-green-600 break-words">৳{{ number_format($customer->total_paid, 2) }}</p>
                         </div>
                         <div class="bg-gray-50 rounded-lg p-2">
-                            <p class="text-gray-400">Sell Qty</p>
+                            <p class="text-gray-400">Sale Qty</p>
                             <p class="font-medium text-indigo-600 break-words">{{ number_format($customer->total_sell_qty ?? 0, 2) }}</p>
                         </div>
                     </div>
@@ -223,7 +223,7 @@
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Full Name</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden md:table-cell">Phone</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden xl:table-cell">Address</th>
-                            <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Sell Qty</th>
+                            <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Sale Qty</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Total Sale</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Total Paid</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Due</th>
