@@ -71,76 +71,72 @@
             gap: 8px;
         }
         .label-sheet {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 10px;
-            align-items: start;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: flex-start;
         }
         .sticker {
-            width: 280px;
-            min-height: 178px;
-            border: 2px solid #b98725;
-            border-radius: 12px;
+            width: auto;
+            min-height: 140px;
+            border: 1.5px solid #b98725;
+            border-radius: 10px;
             background: #fffdf8;
-            padding: 8px;
+            padding: 6px;
             color: #050505;
             break-inside: avoid;
             page-break-inside: avoid;
             position: relative;
             box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
         }
         .sticker::before {
             content: "";
             position: absolute;
-            inset: 5px;
+            inset: 4px;
             border: 1px solid #c99b3c;
-            border-radius: 8px;
+            border-radius: 7px;
             pointer-events: none;
         }
         .sticker-head {
             display: grid;
-            grid-template-columns: 48px 1fr;
-            gap: 8px;
+            grid-template-columns: 36px 1fr;
+            gap: 6px;
             align-items: center;
-            margin-bottom: 7px;
+            margin-bottom: 5px;
             position: relative;
             z-index: 1;
         }
         .brand-logo {
-            width: 46px;
-            height: 46px;
+            width: 34px;
+            height: 34px;
             object-fit: cover;
             border-radius: 999px;
-            border: 2px solid #b98725;
+            border: 1.5px solid #b98725;
             background: #050505;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
         }
         .brand-title {
             font-family: Georgia, serif;
-            font-size: 22px;
+            font-size: 14px;
             line-height: 1;
-            font-weight: 700;
+            font-weight: 600;
             white-space: nowrap;
-        }
-        .brand-subtitle {
-            margin-top: 5px;
-            color: #b98725;
-            font: 700 8px Arial, sans-serif;
-            letter-spacing: 2px;
         }
         .info-table {
             display: grid;
-            grid-template-columns: 98px 1fr;
+            grid-template-columns: 80px 1fr;
             border: 1px solid #c99b3c;
-            border-radius: 7px;
+            border-radius: 6px;
             overflow: hidden;
             position: relative;
             z-index: 1;
         }
         .info-label,
         .info-value {
-            min-height: 27px;
+            min-height: 20px;
             display: flex;
             align-items: center;
             border-bottom: 1px solid #c99b3c;
@@ -150,24 +146,20 @@
         .info-label {
             background: #050505;
             color: #d5a642;
-            padding: 4px 7px;
-            font: 700 8px Arial, sans-serif;
+            padding: 3px 6px;
+            font: 700 7px Arial, sans-serif;
             letter-spacing: 1px;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
         }
         .info-value {
-            padding: 4px 10px;
-            font: 800 12px Arial, sans-serif;
+            padding: 3px 6px;
+            font: 800 10px Arial, sans-serif;
             overflow-wrap: anywhere;
         }
         .info-value.product-name {
-            font-size: clamp(12px, 2vw, 12px);
+            font-size: 10px;
             line-height: 1.05;
-        }
-        .cut-line {
-            border-top: 1px dashed #111;
-            margin: 7px 4px 5px;
-            position: relative;
-            z-index: 1;
         }
         .barcode-wrap {
             text-align: center;
@@ -176,23 +168,20 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            margin-top: 5px;
         }
         .barcode-svg {
             display: block;
-            width: 190px;
-            height: 34px;
+            width: 140px;
+            height: auto;
+            max-width: 100%;
             margin: 0 auto;
+            overflow: visible;
         }
         .barcode-text {
             margin-top: 1px;
-            font: 10px monospace;
-            letter-spacing: 3px;
-        }
-        .thanks {
-            margin-top: 2px;
-            color: #111;
-            font: 700 7px Arial, sans-serif;
-            letter-spacing: 1.5px;
+            font: 8px monospace;
+            letter-spacing: 2px;
         }
         @media print {
             @page { size: A4; margin: 8mm; }
@@ -210,25 +199,33 @@
             nav,
             header { display: none !important; }
             .label-sheet {
-                grid-template-columns: repeat(3, 1fr);
+                display: flex;
+                flex-wrap: wrap;
                 gap: 4mm;
             }
             .sticker {
-                width: 60mm;
-                min-height: 38mm;
+                width: auto;
+                min-height: 32mm;
                 box-shadow: none;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
             }
-            .brand-title { font-size: 17px; }
-            .brand-subtitle { font-size: 6px; letter-spacing: 1.5px; }
-            .brand-logo { width: 34px; height: 34px; }
-            .sticker-head { grid-template-columns: 36px 1fr; gap: 6px; }
-            .info-table { grid-template-columns: 75px 1fr; }
-            .info-label { font-size: 6px; padding: 3px 5px; }
-            .info-value { font-size: 13px; min-height: 21px; padding: 3px 7px; }
-            .info-value.product-name { font-size: 11px; }
-            .barcode-svg { width: 155px; height: 28px; }
-            .barcode-text { font-size: 8px; letter-spacing: 2px; }
-            .thanks { font-size: 5.5px; }
+            .brand-title { font-size: 13px; }
+            .brand-logo { width: 28px; height: 28px; }
+            .sticker-head { grid-template-columns: 30px 1fr; gap: 5px; }
+            .info-table { grid-template-columns: 62px 1fr; }
+            .info-label {
+                font-size: 5.5px;
+                padding: 2px 4px;
+                background: #050505 !important;
+                color: #d5a642 !important;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+            .info-value { font-size: 9px; min-height: 18px; padding: 2px 6px; }
+            .info-value.product-name { font-size: 9px; }
+            .barcode-svg { width: 120px; }
+            .barcode-text { font-size: 7px; letter-spacing: 1.5px; }
         }
     </style>
 
@@ -325,7 +322,6 @@
                     <img class="brand-logo" src="${escapeAttr(product.logo)}" alt="Inaya creation logo" loading="eager" decoding="sync">
                     <div>
                         <div class="brand-title">Inaya creation</div>
-                        <div class="brand-subtitle">STYLE WITH ELEGANCE</div>
                     </div>
                 </div>
                 <div class="info-table">
@@ -334,10 +330,9 @@
                     <div class="info-label">PRODUCT NAME</div>
                     <div class="info-value product-name">${escapeHtml(product.name || '-')}</div>
                 </div>
-                <div class="barcode-wrap mt-1">
+                <div class="barcode-wrap">
                     <svg class="barcode-svg" role="img" aria-label="Barcode"></svg>
                     <div class="barcode-text">${escapeHtml(product.code || product.design || '0000')}</div>
-                    <div class="thanks">THANK YOU FOR CHOOSING US</div>
                 </div>
             </section>
         `;
@@ -379,6 +374,7 @@
 
         const totalWidth = x + quiet;
         svg.setAttribute('viewBox', `0 0 ${totalWidth} ${height}`);
+        svg.setAttribute('preserveAspectRatio', 'none');
         svg.innerHTML = `<rect width="${totalWidth}" height="${height}" fill="#fff"/>${bars}`;
     }
 
