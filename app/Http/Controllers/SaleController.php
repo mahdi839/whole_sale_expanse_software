@@ -667,7 +667,7 @@ class SaleController extends Controller
                 'return_status' => 'approved',
                 'payment_method' => $sale->payment_method,
                 'cash_memo' => $sale->cash_memo,
-                'note' => 'Applied on sale ' . $sale->reference,
+                'note' =>  $sale->note,
             ]);
 
             foreach ($group as $item) {

@@ -221,7 +221,7 @@ class CustomerController extends Controller
                 'qty' => $sale->items->sum(fn ($item) => (float) $item->qty),
                 'paid' => (float) $sale->paid,
                 'due' => (float) $sale->due,
-                'note' => $sale->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->implode(', '),
+                'note' => $sale->note,
                 'url' => route('sales.show', $sale),
             ]))
             ->merge($customer->saleReturns()->with('items.product')->latest()->get()->map(fn ($return) => [
@@ -232,8 +232,7 @@ class CustomerController extends Controller
                 'qty' => $return->items->sum(fn ($item) => (float) $item->qty),
                 'paid' => $return->return_type === 'credit' ? 0 : -1 * (float) $return->return_amount,
                 'due' => 0,
-                'note' => $return->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', ')
-                    ?: ucfirst($return->return_type).' / '.ucfirst($return->return_status),
+                'note' => $return->note,
                 'url' => route('sale-returns.show', $return),
             ]))
             ->merge($customer->cashTransactions()->whereNull('source_type')->latest('date')->latest()->get()->map(fn ($cash) => [
