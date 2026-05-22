@@ -459,7 +459,29 @@ class SaleController extends Controller
         });
 
         if (request('format') === 'pdf') {
-            return Response::make(SimplePdf::table('Inaya Creation - All Sales', $headers, $rows), 200, [
+            $pdfRows = $sales->flatMap(function ($sale) {
+                return $sale->items->map(function ($item) use ($sale) {
+                    return [
+                        $sale->reference,
+                        $sale->customer?->full_name,
+                        $item->product?->product_name . ' x' . $item->qty . ' @' . $item->price_on_sale,
+                        (float) $item->qty,
+                        $sale->grand_total,
+                        $sale->discount,
+                        $sale->add_money,
+                        $sale->paid,
+                        $sale->due,
+                        $sale->cash_memo,
+                        $sale->bell_no,
+                        $sale->payment_method,
+                        $sale->payment_status,
+                        $sale->note,
+                        $sale->created_at->format('Y-m-d'),
+                    ];
+                });
+            })->values();
+
+            return Response::make(SimplePdf::table('Inaya Creation - All Sales', $headers, $pdfRows), 200, [
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
             ]);
@@ -749,7 +771,7 @@ class SaleController extends Controller
             'items.*.purchase_item_id' => 'nullable|exists:purchase_items,id',
             'items.*.qty'            => 'required|numeric|min:0.01',
             'items.*.price_on_sale'  => 'required|numeric|min:0',
-            'returns'                  => 'nullable|array|max:2',
+            'returns'                  => 'nullable|array',
             'returns.*.sale_id'        => 'required_with:returns|exists:sales,id',
             'returns.*.sale_item_id'   => 'required_with:returns|exists:sale_items,id',
             'returns.*.product_id'     => 'required_with:returns|exists:products,id',

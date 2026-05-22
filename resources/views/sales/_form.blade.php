@@ -974,11 +974,6 @@ returnSaleSelect.addEventListener('change', () => {
 });
 
 addReturnBtn.addEventListener('click', () => {
-    if (returnItems.length >= 2) {
-        alert('You can add maximum two return products on one sale.');
-        return;
-    }
-
     const sale = getReturnSale(returnSaleSelect.value);
     const item = getReturnSaleItem(returnSaleSelect.value, returnProductSelect.value);
     if (!sale || !item) return;

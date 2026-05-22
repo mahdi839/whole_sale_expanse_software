@@ -12,18 +12,33 @@
         })->values();
     @endphp
 
-    <form method="POST" action="{{ route('stocks.distribute.store') }}" class="bg-white border border-gray-200 rounded-xl p-5 space-y-4 max-w-3xl">
+    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-4">
+    <form method="POST" action="{{ route('stocks.distribute.store') }}" class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
         @csrf
         @if($errors->any())
             <div class="px-4 py-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl">{{ $errors->first() }}</div>
         @endif
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Shop</label>
-            <select name="shop_id" class="w-full border-gray-300 rounded-lg">
-                @foreach($shops as $shop)
-                    <option value="{{ $shop->id }}">{{ $shop->name }} ({{ $shop->code }})</option>
-                @endforeach
-            </select>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Shop</label>
+                <select name="shop_id" class="w-full border-gray-300 rounded-lg">
+                    @foreach($shops as $shop)
+                        <option value="{{ $shop->id }}" @selected(old('shop_id') == $shop->id)>{{ $shop->name }} ({{ $shop->code }})</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input type="date" name="distribution_date" value="{{ old('distribution_date', now()->toDateString()) }}" class="w-full border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Distributor</label>
+                <input name="distributor" value="{{ old('distributor', auth()->user()->name) }}" class="w-full border-gray-300 rounded-lg" placeholder="Distributor name">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Receiver</label>
+                <input name="receiver" value="{{ old('receiver') }}" class="w-full border-gray-300 rounded-lg" placeholder="Receiver name">
+            </div>
         </div>
 
         <div class="space-y-3" id="items">
@@ -54,10 +69,45 @@
 
         <div class="flex gap-2">
             <button type="button" onclick="addItem()" class="px-4 py-2 bg-gray-100 rounded-lg text-sm">Add Product</button>
-            <button class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">Distribute</button>
+            <button class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">Create Pending Distribution</button>
             <a href="{{ route('stocks.index') }}" class="px-4 py-2 bg-gray-100 rounded-lg text-sm">Cancel</a>
         </div>
     </form>
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b font-semibold text-sm text-gray-700">Recent Distributions</div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-100 bg-gray-50">
+                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Date</th>
+                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Shop</th>
+                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Receiver</th>
+                        <th class="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">Qty</th>
+                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @forelse($distributions as $distribution)
+                        <tr>
+                            <td class="px-4 py-3">{{ $distribution->distribution_date?->format('d M Y') }}</td>
+                            <td class="px-4 py-3">{{ $distribution->shop?->name }}</td>
+                            <td class="px-4 py-3">{{ $distribution->receiver }}</td>
+                            <td class="px-4 py-3 text-right font-medium">{{ number_format($distribution->items->sum('qty'), 2) }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium {{ $distribution->status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700' }}">
+                                    {{ ucfirst($distribution->status) }}
+                                </span>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">No distributions yet.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
 
     @push('scripts')
     <script>

@@ -15,7 +15,7 @@
         'Inventory' => [
             'Products' => ['manage products', 'view products', 'create products', 'edit products', 'delete products'],
             'Shops' => ['manage shops', 'view shops', 'create shops', 'edit shops', 'delete shops'],
-            'Stock' => ['manage stock', 'view stock', 'create stock', 'edit stock', 'delete stock', 'distribute stock'],
+            'Stock' => ['manage stock', 'view stock', 'create stock', 'edit stock', 'delete stock', 'distribute stock', 'view stock distributions', 'receive stock distributions'],
         ],
         'Purchasing' => [
             'Purchases' => ['manage purchases', 'view purchases', 'create purchases', 'edit purchases', 'delete purchases'],
@@ -45,6 +45,7 @@
         'delete' => 'Delete',
         'approve' => 'Approve',
         'distribute' => 'Distribute',
+        'receive' => 'Receive',
     ];
 
     $groupedPermissionNames = collect($permissionGroups)->flatMap(fn ($section) => collect($section)->flatten())->all();

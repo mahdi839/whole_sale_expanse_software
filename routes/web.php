@@ -98,6 +98,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('purchase-returns.export')->middleware('permission:manage purchase returns|view purchase returns');
     Route::get('stocks/distribute/create', [StockController::class, 'distribute'])->name('stocks.distribute')->middleware('permission:distribute stock');
     Route::post('stocks/distribute', [StockController::class, 'storeDistribution'])->name('stocks.distribute.store')->middleware('permission:distribute stock');
+    Route::get('stocks/distributions/pending', [StockController::class, 'pendingDistributions'])->name('stocks.distributions.pending')->middleware('permission:view stock distributions|receive stock distributions');
+    Route::post('stocks/distributions/{distribution}/receive', [StockController::class, 'receiveDistribution'])->name('stocks.distributions.receive')->middleware('permission:receive stock distributions');
     $crudResource('stocks', StockController::class, 'stock');
 
     Route::get('sales-export', [SaleController::class, 'exportCsv'])->name('sales.export')->middleware('permission:manage sales|view sales');

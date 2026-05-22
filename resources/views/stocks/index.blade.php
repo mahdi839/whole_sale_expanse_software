@@ -169,5 +169,45 @@
             </div>
         </div>
 
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div class="px-5 py-3 border-b font-semibold text-sm text-gray-700">Stock Distribution History</div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-100 bg-gray-50">
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Date</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Shop</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Distributor</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Receiver</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Products</th>
+                            <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase">Qty</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @forelse($distributions as $distribution)
+                            <tr>
+                                <td class="px-5 py-3.5">{{ $distribution->distribution_date?->format('d M Y') }}</td>
+                                <td class="px-5 py-3.5">{{ $distribution->shop?->name }}</td>
+                                <td class="px-5 py-3.5">{{ $distribution->distributor }}</td>
+                                <td class="px-5 py-3.5">{{ $distribution->receiver }}</td>
+                                <td class="px-5 py-3.5">
+                                    {{ $distribution->items->map(fn($item) => ($item->product?->product_name ?? 'Product #'.$item->product_id).' x '.number_format($item->qty, 2))->implode(' | ') }}
+                                </td>
+                                <td class="px-5 py-3.5 text-right font-medium">{{ number_format($distribution->items->sum('qty'), 2) }}</td>
+                                <td class="px-5 py-3.5">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium {{ $distribution->status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700' }}">
+                                        {{ ucfirst($distribution->status) }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="7" class="px-5 py-12 text-center text-gray-400">No stock distributions yet.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </x-app-layout>

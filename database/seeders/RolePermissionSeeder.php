@@ -45,6 +45,8 @@ class RolePermissionSeeder extends Seeder
         'edit stock',
         'delete stock',
         'distribute stock',
+        'view stock distributions',
+        'receive stock distributions',
         'manage sales',
         'manage sale returns',
         'manage expenses',
