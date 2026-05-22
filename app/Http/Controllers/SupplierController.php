@@ -79,6 +79,10 @@ class SupplierController extends Controller
     public function exportTransactions(Supplier $supplier)
     {
         $logs = $this->supplierLogs($supplier);
+        $totalQty = (float) DB::table('purchase_items')
+            ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
+            ->where('purchases.supplier_id', $supplier->id)
+            ->sum('purchase_items.qty');
         $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Products / Note'];
         $rows = $logs->map(fn ($log) => [
             optional($log['date'])->format('Y-m-d'),
@@ -93,13 +97,17 @@ class SupplierController extends Controller
 
         if (request('format') === 'pdf') {
             $fileName = 'supplier-'.$supplier->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.pdf';
-            $rows = collect([
-                ['Shop', 'Inaya Creation', 'Logo', 'inaya_creation_logo.jpeg', '', '', '', ''],
-                ['Supplier', $supplier->name, 'Address', $supplier->address ?? '-', '', '', '', ''],
-                ['Totals', '', '', (float) $supplier->total_purchase, '', (float) $supplier->total_paid, (float) $supplier->due, ''],
-            ])->merge($rows);
+            $summary = [
+                ['label' => 'Total Paid', 'value' => number_format((float) $supplier->total_paid, 2)],
+                ['label' => 'Total Due', 'value' => number_format((float) $supplier->due, 2)],
+                ['label' => 'Total Qty', 'value' => number_format($totalQty, 2)],
+                ['label' => 'Total Purchase', 'value' => number_format((float) $supplier->total_purchase, 2)],
+            ];
 
-            return Response::make(SimplePdf::table('Inaya Creation - Supplier Transactions - '.$supplier->name, $headers, $rows), 200, [
+            return Response::make(SimplePdf::table('Inaya Creation - Supplier Transactions - '.$supplier->name, $headers, $rows, null, [
+                'summary' => $summary,
+                'logo_path' => public_path('inaya_creation_logo.jpeg'),
+            ]), 200, [
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
             ]);

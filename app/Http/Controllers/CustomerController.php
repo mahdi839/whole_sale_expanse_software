@@ -114,15 +114,11 @@ class CustomerController extends Controller
 
     public function exportTransactions(Customer $customer)
     {
-        [$logs] = $this->customerLogs($customer);
+        [$logs, $totalQty] = $this->customerLogs($customer);
         $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Products / Note'];
 
         if (request('format') === 'pdf') {
-            $rows = collect([
-                ['Shop', 'Inaya Creation', 'Logo', 'inaya_creation_logo.jpeg', '', '', '', ''],
-                ['Customer', $customer->full_name, 'Address', $customer->address ?? '-', '', '', '', ''],
-                ['Totals', '', '', '', '', (float) $customer->total_paid, (float) $customer->due, 'Total sale: '.number_format((float) $customer->total_sale, 2)],
-            ])->merge($logs->map(fn ($log) => [
+            $rows = $logs->map(fn ($log) => [
                 optional($log['date'])->format('Y-m-d'),
                 $log['type'],
                 $log['reference'],
@@ -131,9 +127,22 @@ class CustomerController extends Controller
                 $log['paid'],
                 $log['due'],
                 $log['note'],
-            ]));
+            ]);
 
-            return $this->streamPdf('customer-'.$customer->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.pdf', 'Inaya Creation - Customer Transactions - '.$customer->full_name, $headers, $rows);
+            $summary = [
+                ['label' => 'Total Paid', 'value' => number_format((float) $customer->total_paid, 2)],
+                ['label' => 'Total Due', 'value' => number_format((float) $customer->due, 2)],
+                ['label' => 'Total Qty', 'value' => number_format((float) $totalQty, 2)],
+                ['label' => 'Total Sale', 'value' => number_format((float) $customer->total_sale, 2)],
+            ];
+
+            return $this->streamPdf(
+                'customer-'.$customer->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.pdf',
+                'Inaya Creation - Customer Transactions - '.$customer->full_name,
+                $headers,
+                $rows,
+                $summary
+            );
         }
 
         $fileName = 'customer-'.$customer->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.csv';
@@ -289,9 +298,12 @@ class CustomerController extends Controller
         ]);
     }
 
-    private function streamPdf(string $fileName, string $title, array $headers, $rows)
+    private function streamPdf(string $fileName, string $title, array $headers, $rows, array $summary = [])
     {
-        return Response::make(SimplePdf::table($title, $headers, $rows), 200, [
+        return Response::make(SimplePdf::table($title, $headers, $rows, null, [
+            'summary' => $summary,
+            'logo_path' => public_path('inaya_creation_logo.jpeg'),
+        ]), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
