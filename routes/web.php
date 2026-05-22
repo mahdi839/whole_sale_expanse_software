@@ -70,13 +70,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cloth-sewings/tailors/{tailor}/logs', [ClothSewingController::class, 'logs'])->name('cloth-sewings.tailors.logs')->middleware('permission:manage cloth sewings|view cloth sewings');
     Route::get('/cloth-sewings/tailors/{tailor}/logs/export', [ClothSewingController::class, 'exportLogs'])->name('cloth-sewings.tailors.logs.export')->middleware('permission:manage cloth sewings|view cloth sewings');
     $crudResource('/cloth-sewings', ClothSewingController::class, 'cloth sewings', ['parameters' => ['cloth-sewings' => 'clothSewing'], 'except' => ['show']]);
-    Route::resource('/tailors', TailorController::class)->only(['index', 'show'])
-        ->middleware('permission:manage cloth sewings|view cloth sewings');
     Route::resource('/tailors', TailorController::class)->only(['create', 'store'])
         ->middleware('permission:manage cloth sewings|create cloth sewings');
+    Route::resource('/tailors', TailorController::class)->only(['index', 'show'])
+        ->whereNumber('tailor')
+        ->middleware('permission:manage cloth sewings|view cloth sewings');
     Route::resource('/tailors', TailorController::class)->only(['edit', 'update'])
+        ->whereNumber('tailor')
         ->middleware('permission:manage cloth sewings|edit cloth sewings');
     Route::resource('/tailors', TailorController::class)->only(['destroy'])
+        ->whereNumber('tailor')
         ->middleware('permission:manage cloth sewings|delete cloth sewings');
     $crudResource('/received-cloths', ReceivedClothController::class, 'received cloths', ['parameters' => ['received-cloths' => 'receivedCloth'], 'except' => ['show']]);
     $crudResource('/sales-men', SalesManController::class, 'sales men', ['parameters' => ['sales-men' => 'salesMan']]);
