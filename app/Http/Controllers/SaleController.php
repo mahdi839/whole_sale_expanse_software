@@ -407,7 +407,7 @@ class SaleController extends Controller
     {
         $fileName = 'sales-' . now()->format('Y-m-d-H-i-s') . (request('format') === 'pdf' ? '.pdf' : '.csv');
 
-        $sales = Sale::with(['customer', 'items.product'])
+        $sales = Sale::with(['customer', 'items.product', 'shop'])
             ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('shop_id', auth()->user()->shop_id))
             ->when(auth()->user()->canManageAllShops() && $request->shop_id, fn($q) => $q->where('shop_id', $request->shop_id))
             ->when($request->payment_status, fn($q) => $q->where('payment_status', $request->payment_status))
@@ -459,29 +459,34 @@ class SaleController extends Controller
         });
 
         if (request('format') === 'pdf') {
-            $pdfRows = $sales->flatMap(function ($sale) {
-                return $sale->items->map(function ($item) use ($sale) {
-                    return [
-                        $sale->reference,
-                        $sale->customer?->full_name,
-                        $item->product?->product_name . ' x' . $item->qty . ' @' . $item->price_on_sale,
-                        (float) $item->qty,
-                        $sale->grand_total,
-                        $sale->discount,
-                        $sale->add_money,
-                        $sale->paid,
-                        $sale->due,
-                        $sale->cash_memo,
-                        $sale->bell_no,
-                        $sale->payment_method,
-                        $sale->payment_status,
-                        $sale->note,
-                        $sale->created_at->format('Y-m-d'),
-                    ];
-                });
+            $pdfRows = $sales->map(function ($sale) {
+                $products = $sale->items->map(function ($item) {
+                    $unitPrice = (float) $item->price_on_sale;
+                    $qty = (float) $item->qty;
+
+                    return ($item->product?->product_name ?? 'Product #'.$item->product_id)
+                        . ' | Qty: ' . rtrim(rtrim(number_format($qty, 2), '0'), '.')
+                        . ' | Unit: ' . number_format($unitPrice, 2)
+                        . ' | Line: ' . number_format($qty * $unitPrice, 2);
+                })->implode("\n");
+
+                return [
+                    $sale->reference,
+                    $sale->shop?->name ?? '-',
+                    $sale->customer?->full_name,
+                    $products,
+                    number_format((float) $sale->return_amount, 2),
+                    'Status: ' . ucfirst((string) $sale->payment_status)
+                        . "\nPaid: " . number_format((float) $sale->paid, 2)
+                        . "\nDue: " . number_format((float) $sale->due, 2)
+                        . "\nGrand: " . number_format((float) $sale->grand_total, 2),
+                ];
             })->values();
 
-            return Response::make(SimplePdf::table('Inaya Creation - All Sales', $headers, $pdfRows), 200, [
+            $pdfHeaders = ['Reference', 'Shop', 'Customer', 'Products', 'Return', 'Payment Details'];
+            $pdfWidths = [72, 78, 102, 330, 54, 124];
+
+            return Response::make(SimplePdf::table('Inaya Creation - All Sales', $pdfHeaders, $pdfRows, $pdfWidths), 200, [
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
             ]);

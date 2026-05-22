@@ -276,11 +276,21 @@ class SimplePdf
 
     private function drawRow(array $row, int $idx): void
     {
-        $this->ensureSpace(self::ROW_H);
+        $lineMaps = [];
+        $maxLines = 1;
+
+        foreach ($this->headers as $i => $hdr) {
+            $value = (string)($row[$i] ?? '');
+            $lines = $this->wrapText($value, self::FS_TD, ($this->colWidths[$i] ?? 0) - 6);
+            $lineMaps[$i] = $lines;
+            $maxLines = max($maxLines, count($lines));
+        }
+
+        $h = max(self::ROW_H, 7 + ($maxLines * 8.5));
+        $this->ensureSpace($h);
 
         $x  = self::ML;
         $y  = $this->curY;
-        $h  = self::ROW_H;
         $py = self::PH - $y - $h;
 
         // Alternating background
@@ -305,7 +315,7 @@ class SimplePdf
                 }
             }
 
-            $this->drawCell($cx, $y, $cw, $h, $value, self::FS_TD, false, $align, $color, 5);
+            $this->drawCell($cx, $y, $cw, $h, $value, self::FS_TD, false, $align, $color, 3);
             $cx += $cw;
         }
 
@@ -347,23 +357,31 @@ class SimplePdf
         $maxW = $w - $pad * 2;
         if ($maxW <= 0) return;
 
-        if ($this->textW($text, $fs) > $maxW) {
-            $text = $this->truncate($text, $fs, $maxW);
-        }
-
-        $tW = $this->textW($text, $fs);
-
-        $tx = match ($align) {
-            'R'     => $x + $w - $pad - $tW,
-            'C'     => $x + ($w - $tW) / 2,
-            default => $x + $pad,
-        };
-
-        // Baseline: vertically centred (PDF Y is bottom-up)
-        $baseline = self::PH - $topY - $h + $h * 0.32;
         $font     = $bold ? 'F2' : 'F1';
+        $lines = $this->wrapText($text, $fs, $maxW);
+        $lineHeight = $fs + 1.2;
+        $multiLine = count($lines) > 1;
+        $startBaseline = $multiLine
+            ? self::PH - $topY - 10
+            : self::PH - $topY - $h + $h * 0.32;
 
-        $this->em("BT /{$font} {$fs} Tf {$color} rg {$tx} {$baseline} Td (" . $this->esc($text) . ") Tj ET\n");
+        foreach ($lines as $idx => $line) {
+            if ($this->textW($line, $fs) > $maxW) {
+                $line = $this->truncate($line, $fs, $maxW);
+            }
+
+            $tW = $this->textW($line, $fs);
+
+            $tx = match ($align) {
+                'R'     => $x + $w - $pad - $tW,
+                'C'     => $x + ($w - $tW) / 2,
+                default => $x + $pad,
+            };
+
+            $baseline = $startBaseline - ($idx * $lineHeight);
+
+            $this->em("BT /{$font} {$fs} Tf {$color} rg {$tx} {$baseline} Td (" . $this->esc($line) . ") Tj ET\n");
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -559,6 +577,60 @@ class SimplePdf
             $out .= $text[$i];
         }
         return $out . '...';
+    }
+
+    private function wrapText(string $text, float $fs, float $maxW): array
+    {
+        $text = trim(str_replace(["\r\n", "\r"], "\n", $text));
+        if ($text === '') {
+            return [''];
+        }
+
+        $lines = [];
+        foreach (explode("\n", $text) as $part) {
+            $words = preg_split('/\s+/', trim($part), -1, PREG_SPLIT_NO_EMPTY);
+            if (! $words) {
+                $lines[] = '';
+                continue;
+            }
+
+            $line = '';
+            foreach ($words as $word) {
+                $candidate = $line === '' ? $word : $line . ' ' . $word;
+                if ($this->textW($candidate, $fs) <= $maxW) {
+                    $line = $candidate;
+                    continue;
+                }
+
+                if ($line !== '') {
+                    $lines[] = $line;
+                    $line = '';
+                }
+
+                if ($this->textW($word, $fs) <= $maxW) {
+                    $line = $word;
+                    continue;
+                }
+
+                $chunk = '';
+                for ($i = 0, $len = strlen($word); $i < $len; $i++) {
+                    $candidate = $chunk . $word[$i];
+                    if ($chunk !== '' && $this->textW($candidate, $fs) > $maxW) {
+                        $lines[] = $chunk;
+                        $chunk = $word[$i];
+                        continue;
+                    }
+                    $chunk = $candidate;
+                }
+                $line = $chunk;
+            }
+
+            if ($line !== '') {
+                $lines[] = $line;
+            }
+        }
+
+        return $lines ?: [''];
     }
 
     /**

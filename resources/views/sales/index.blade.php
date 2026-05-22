@@ -233,7 +233,27 @@
                                 </div>
                             @endforeach
                             @if ($sale->items->count() > 2)
-                                <div class="text-xs text-gray-400">+{{ $sale->items->count() - 2 }} more</div>
+                                <details class="group">
+                                    <summary class="list-none cursor-pointer inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700">
+                                        <span class="group-open:hidden">See more</span>
+                                        <span class="hidden group-open:inline">See less</span>
+                                        <span class="text-gray-400">({{ $sale->items->count() - 2 }})</span>
+                                    </summary>
+                                    <div class="mt-1.5 space-y-1.5">
+                                        @foreach ($sale->items->skip(2) as $item)
+                                            <div class="flex items-center justify-between gap-2 text-xs">
+                                                <span class="text-gray-700 break-words min-w-0">
+                                                    {{ $item->product->product_name }}
+                                                    <span class="text-gray-400">{{ $item->qty }}</span>
+                                                </span>
+                                                <span class="shrink-0 text-right text-gray-500 font-mono">
+                                                    <span class="block">P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}</span>
+                                                    <span class="block">S: {{ number_format($item->price_on_sale, 2) }}/pc</span>
+                                                </span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </details>
                             @endif
                         </div>
                     </div>
@@ -342,10 +362,33 @@
 
                                 <td class="px-4 py-3 text-xs text-gray-600">
                                     @foreach ($sale->items->take(2) as $item)
-                                        <div>{{ $item->product->product_name }} <span class="text-gray-400">({{ $item->qty }})</span></div>
+                                        <div>
+                                            {{ $item->product->product_name }} <span class="text-gray-400">({{ $item->qty }})</span>
+                                            <span class="block text-[11px] text-gray-400">
+                                                P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}
+                                                | S: {{ number_format($item->price_on_sale, 2) }}
+                                            </span>
+                                        </div>
                                     @endforeach
                                     @if ($sale->items->count() > 2)
-                                        <div class="text-gray-400">+{{ $sale->items->count() - 2 }} more</div>
+                                        <details class="group mt-1">
+                                            <summary class="list-none cursor-pointer inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700">
+                                                <span class="group-open:hidden">See more</span>
+                                                <span class="hidden group-open:inline">See less</span>
+                                                <span class="text-gray-400">({{ $sale->items->count() - 2 }})</span>
+                                            </summary>
+                                            <div class="mt-1 space-y-1">
+                                                @foreach ($sale->items->skip(2) as $item)
+                                                    <div>
+                                                        {{ $item->product->product_name }} <span class="text-gray-400">({{ $item->qty }})</span>
+                                                        <span class="block text-[11px] text-gray-400">
+                                                            P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}
+                                                            | S: {{ number_format($item->price_on_sale, 2) }}
+                                                        </span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </details>
                                     @endif
                                 </td>
 
@@ -355,7 +398,7 @@
                                             {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}</div>
                                     @endforeach
                                     @if ($sale->items->count() > 2)
-                                        <div class="text-gray-300">...</div>
+                                        <div class="text-gray-300">See products</div>
                                     @endif
                                 </td>
 
@@ -365,7 +408,7 @@
                                             {{ number_format($item->price_on_sale, 2) }}</div>
                                     @endforeach
                                     @if ($sale->items->count() > 2)
-                                        <div class="text-gray-300">...</div>
+                                        <div class="text-gray-300">See products</div>
                                     @endif
                                 </td>
 
