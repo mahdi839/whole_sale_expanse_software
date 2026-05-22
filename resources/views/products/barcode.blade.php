@@ -173,7 +173,7 @@
         .barcode-svg {
             display: block;
             width: 140px;
-            height: auto;
+            height: 30px;
             max-width: 100%;
             margin: 0 auto;
             overflow: visible;
@@ -210,7 +210,7 @@
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
             }
-            .brand-title { font-size: 13px; }
+            .brand-title { font-size: 11px; }
             .brand-logo { width: 28px; height: 28px; }
             .sticker-head { grid-template-columns: 30px 1fr; gap: 5px; }
             .info-table { grid-template-columns: 62px 1fr; }
