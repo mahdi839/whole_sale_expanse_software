@@ -72,6 +72,7 @@
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Qty</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Due</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Products</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Note</th>
                         </tr>
                     </thead>
@@ -87,10 +88,11 @@
                                 <td class="px-5 py-3 text-right text-gray-700">{{ is_null($log['qty']) ? '-' : number_format($log['qty'], 2) }}</td>
                                 <td class="px-5 py-3 text-right text-green-600">৳{{ number_format($log['paid'], 2) }}</td>
                                 <td class="px-5 py-3 text-right text-red-600">৳{{ number_format($log['due'], 2) }}</td>
-                                <td class="px-5 py-3 text-gray-500 max-w-xs truncate">{{ $log['note'] ?: '-' }}</td>
+                                <td class="px-5 py-3 text-gray-500 max-w-sm whitespace-normal">{{ $log['products'] ?: '-' }}</td>
+                                <td class="px-5 py-3 text-gray-500 max-w-sm whitespace-normal">{{ $log['note'] ?: '-' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="px-5 py-12 text-center text-gray-400">No transactions found.</td></tr>
+                            <tr><td colspan="9" class="px-5 py-12 text-center text-gray-400">No transactions found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

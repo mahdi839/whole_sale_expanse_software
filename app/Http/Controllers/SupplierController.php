@@ -83,7 +83,7 @@ class SupplierController extends Controller
             ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
             ->where('purchases.supplier_id', $supplier->id)
             ->sum('purchase_items.qty');
-        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Products / Note'];
+        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Products', 'Note'];
         $rows = $logs->map(fn ($log) => [
             optional($log['date'])->format('Y-m-d'),
             $log['type'],
@@ -92,6 +92,7 @@ class SupplierController extends Controller
             $log['qty'],
             $log['paid'],
             $log['due'],
+            $log['products'],
             $log['note'],
         ]);
 
@@ -181,21 +182,26 @@ class SupplierController extends Controller
                 'qty' => $purchase->items->sum(fn ($item) => (float) $item->qty),
                 'paid' => (float) $purchase->paid_amount,
                 'due' => (float) $purchase->due_amount,
-                'note' => $purchase->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->implode(', '),
+                'products' => $purchase->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', '),
+                'note' => $purchase->note,
                 'url' => route('purchases.show', $purchase),
             ]))
-            ->merge($supplier->purchaseReturns()->with('items.product')->latest('date')->latest()->get()->map(fn ($return) => [
-                'date' => $return->date,
-                'type' => 'Purchase Return',
-                'reference' => $return->reference,
-                'amount' => -1 * (float) $return->return_amount,
-                'qty' => -1 * $return->items->sum(fn ($item) => (float) $item->qty),
-                'paid' => $return->return_type === 'refund' ? -1 * (float) $return->return_amount : 0,
-                'due' => 0,
-                'note' => $return->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', ')
-                    ?: ucfirst($return->return_type).' / '.ucfirst($return->return_status).($return->note ? ' - '.$return->note : ''),
-                'url' => route('purchase-returns.show', $return),
-            ]))
+            ->merge($supplier->purchaseReturns()->with('items.product')->latest('date')->latest()->get()->map(function ($return) {
+                $products = $return->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', ');
+
+                return [
+                    'date' => $return->date,
+                    'type' => 'Purchase Return',
+                    'reference' => $return->reference,
+                    'amount' => -1 * (float) $return->return_amount,
+                    'qty' => -1 * $return->items->sum(fn ($item) => (float) $item->qty),
+                    'paid' => $return->return_type === 'refund' ? -1 * (float) $return->return_amount : 0,
+                    'due' => 0,
+                    'products' => $products,
+                    'note' => ucfirst($return->return_type).' / '.ucfirst($return->return_status).($return->note ? ' - '.$return->note : ''),
+                    'url' => route('purchase-returns.show', $return),
+                ];
+            }))
             ->merge($supplier->cashTransactions()->whereNull('source_type')->latest('date')->latest()->get()->map(fn ($cash) => [
                 'date' => $cash->date,
                 'type' => 'Payment',
@@ -204,6 +210,7 @@ class SupplierController extends Controller
                 'qty' => null,
                 'paid' => (float) $cash->amount,
                 'due' => 0,
+                'products' => '',
                 'note' => $cash->note,
                 'url' => route('cash-transactions.index', ['search' => $cash->reference]),
             ]))
@@ -215,6 +222,7 @@ class SupplierController extends Controller
                 'qty' => null,
                 'paid' => 0,
                 'due' => (float) $due->amount,
+                'products' => '',
                 'note' => $due->note,
                 'url' => route('dues.manual'),
             ]))

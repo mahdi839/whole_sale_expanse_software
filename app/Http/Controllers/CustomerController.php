@@ -115,7 +115,7 @@ class CustomerController extends Controller
     public function exportTransactions(Customer $customer)
     {
         [$logs, $totalQty] = $this->customerLogs($customer);
-        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Products / Note'];
+        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Products', 'Note'];
 
         if (request('format') === 'pdf') {
             $rows = $logs->map(fn ($log) => [
@@ -126,6 +126,7 @@ class CustomerController extends Controller
                 $log['qty'],
                 $log['paid'],
                 $log['due'],
+                $log['products'],
                 $log['note'],
             ]);
 
@@ -222,28 +223,44 @@ class CustomerController extends Controller
         $totalQty = $sales->sum(fn ($sale) => $sale->items->sum(fn ($item) => (float) $item->qty));
 
         $logs = collect()
-            ->merge($sales->map(fn ($sale) => [
-                'date' => $sale->created_at,
-                'type' => 'Sale',
-                'reference' => $sale->reference,
-                'amount' => (float) $sale->grand_total,
-                'qty' => $sale->items->sum(fn ($item) => (float) $item->qty),
-                'paid' => (float) $sale->paid,
-                'due' => (float) $sale->due,
-                'note' => $sale->note,
-                'url' => route('sales.show', $sale),
-            ]))
-            ->merge($customer->saleReturns()->with('items.product')->latest()->get()->map(fn ($return) => [
-                'date' => $return->created_at,
-                'type' => 'Sale Return',
-                'reference' => $return->reference,
-                'amount' => -1 * (float) $return->return_amount,
-                'qty' => $return->items->sum(fn ($item) => (float) $item->qty),
-                'paid' => $return->return_type === 'credit' ? 0 : -1 * (float) $return->return_amount,
-                'due' => 0,
-                'note' => $return->note,
-                'url' => route('sale-returns.show', $return),
-            ]))
+            ->merge($sales->map(function ($sale) {
+                $products = $sale->items
+                    ->map(fn ($item) => trim(($item->product?->product_name ?? 'Product #'.$item->product_id).' x'.$item->qty))
+                    ->filter()
+                    ->implode(', ');
+
+                return [
+                    'date' => $sale->created_at,
+                    'type' => 'Sale',
+                    'reference' => $sale->reference,
+                    'amount' => (float) $sale->grand_total,
+                    'qty' => $sale->items->sum(fn ($item) => (float) $item->qty),
+                    'paid' => (float) $sale->paid,
+                    'due' => (float) $sale->due,
+                    'products' => $products,
+                    'note' => $sale->note,
+                    'url' => route('sales.show', $sale),
+                ];
+            }))
+            ->merge($customer->saleReturns()->with('items.product')->latest()->get()->map(function ($return) {
+                $products = $return->items
+                    ->map(fn ($item) => trim(($item->product?->product_name ?? 'Product #'.$item->product_id).' x'.$item->qty))
+                    ->filter()
+                    ->implode(', ');
+
+                return [
+                    'date' => $return->created_at,
+                    'type' => 'Sale Return',
+                    'reference' => $return->reference,
+                    'amount' => -1 * (float) $return->return_amount,
+                    'qty' => $return->items->sum(fn ($item) => (float) $item->qty),
+                    'paid' => $return->return_type === 'credit' ? 0 : -1 * (float) $return->return_amount,
+                    'due' => 0,
+                    'products' => $products,
+                    'note' => $return->note,
+                    'url' => route('sale-returns.show', $return),
+                ];
+            }))
             ->merge($customer->cashTransactions()->whereNull('source_type')->latest('date')->latest()->get()->map(fn ($cash) => [
                 'date' => $cash->date,
                 'type' => 'Payment',
@@ -252,6 +269,7 @@ class CustomerController extends Controller
                 'qty' => null,
                 'paid' => (float) $cash->amount,
                 'due' => 0,
+                'products' => '',
                 'note' => $cash->note,
                 'url' => route('cash-transactions.index', ['search' => $cash->reference]),
             ]))
@@ -263,6 +281,7 @@ class CustomerController extends Controller
                 'qty' => null,
                 'paid' => 0,
                 'due' => (float) $due->amount,
+                'products' => '',
                 'note' => $due->note,
                 'url' => route('dues.manual'),
             ]))
@@ -287,6 +306,7 @@ class CustomerController extends Controller
                     $log['qty'],
                     $log['paid'],
                     $log['due'],
+                    $log['products'],
                     $log['note'],
                 ]);
             }

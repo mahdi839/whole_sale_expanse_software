@@ -1,21 +1,17 @@
 <x-app-layout>
     <x-slot name="header">Customer Profile</x-slot>
 
-    <div class="max-w-5xl space-y-4">
+    <div class="max-w-5xl mx-auto space-y-4 text-center">
 
-        {{-- Breadcrumb --}}
-        <nav class="flex items-center gap-2 text-xs text-gray-400">
+        <nav class="flex items-center justify-center gap-2 text-xs text-gray-400">
             <a href="{{ route('customers.index') }}" class="hover:text-gray-600 transition">Customers</a>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
             <span class="text-gray-600">{{ $customer->full_name }}</span>
         </nav>
 
-        {{-- Profile card --}}
         <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-
-            <div class="flex items-start justify-between gap-4 mb-6">
-                <div class="flex items-center gap-4">
-                    {{-- Avatar initials --}}
+            <div class="flex flex-col items-center justify-center gap-4 mb-6">
+                <div class="flex flex-col items-center justify-center gap-3">
                     @if($customer->image)
                         <img src="{{ asset('storage/'.$customer->image) }}" alt="{{ $customer->full_name }}" class="w-14 h-14 rounded-full object-cover border border-gray-200 shrink-0">
                     @else
@@ -30,7 +26,8 @@
                         </span>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
+
+                <div class="flex flex-wrap items-center justify-center gap-2 shrink-0">
                     <a href="{{ route('customers.transactions.export', $customer) }}"
                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
@@ -49,21 +46,20 @@
                 </div>
             </div>
 
-            {{-- Info rows --}}
             <dl class="divide-y divide-gray-100 text-sm">
-                <div class="flex justify-between py-3">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-10 py-3">
                     <dt class="text-gray-500">Phone</dt>
                     <dd class="font-medium text-gray-800">{{ $customer->phone ?? '-' }}</dd>
                 </div>
-                <div class="flex justify-between py-3">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-10 py-3">
                     <dt class="text-gray-500">Alternative Phone</dt>
                     <dd class="font-medium text-gray-800">{{ $customer->alternative_phone ?? '-' }}</dd>
                 </div>
-                <div class="flex justify-between gap-4 py-3">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-10 py-3">
                     <dt class="text-gray-500">Address</dt>
-                    <dd class="font-medium text-gray-800 text-right">{{ $customer->address ?? '-' }}</dd>
+                    <dd class="font-medium text-gray-800">{{ $customer->address ?? '-' }}</dd>
                 </div>
-                <div class="flex justify-between py-3">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-10 py-3">
                     <dt class="text-gray-500">Member Since</dt>
                     <dd class="font-medium text-gray-800">{{ $customer->created_at->format('d M Y') }}</dd>
                 </div>
@@ -78,39 +74,40 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="bg-gray-50 border-b">
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Date</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Type</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Reference</th>
+                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Date</th>
+                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Type</th>
+                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Reference</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Amount</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Qty</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Due</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Note</th>
+                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Products</th>
+                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Note</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @forelse($logs as $log)
                             <tr>
-                                <td class="px-5 py-3 whitespace-nowrap">{{ optional($log['date'])->format('d M Y') }}</td>
-                                <td class="px-5 py-3">{{ $log['type'] }}</td>
-                                <td class="px-5 py-3">
+                                <td class="px-5 py-3 align-middle whitespace-nowrap">{{ optional($log['date'])->format('d M Y') }}</td>
+                                <td class="px-5 py-3 align-middle">{{ $log['type'] }}</td>
+                                <td class="px-5 py-3 align-middle">
                                     <a href="{{ $log['url'] }}" class="font-mono text-xs text-blue-700 hover:underline">{{ $log['reference'] }}</a>
                                 </td>
-                                <td class="px-5 py-3 text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">৳{{ number_format($log['amount'], 2) }}</td>
-                                <td class="px-5 py-3 text-right text-gray-700">{{ is_null($log['qty']) ? '-' : number_format($log['qty'], 2) }}</td>
-                                <td class="px-5 py-3 text-right text-green-600">৳{{ number_format($log['paid'], 2) }}</td>
-                                <td class="px-5 py-3 text-right text-red-600">৳{{ number_format($log['due'], 2) }}</td>
-                                <td class="px-5 py-3 text-gray-500 max-w-xs truncate">{{ $log['note'] ?: '-' }}</td>
+                                <td class="px-5 py-3 align-middle text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">BDT {{ number_format($log['amount'], 2) }}</td>
+                                <td class="px-5 py-3 align-middle text-right text-gray-700">{{ is_null($log['qty']) ? '-' : number_format($log['qty'], 2) }}</td>
+                                <td class="px-5 py-3 align-middle text-right text-green-600">BDT {{ number_format($log['paid'], 2) }}</td>
+                                <td class="px-5 py-3 align-middle text-right text-red-600">BDT {{ number_format($log['due'], 2) }}</td>
+                                <td class="px-5 py-3 align-middle text-gray-500 max-w-sm whitespace-normal">{{ $log['products'] ?: '-' }}</td>
+                                <td class="px-5 py-3 align-middle text-gray-500 max-w-sm whitespace-normal">{{ $log['note'] ?: '-' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="px-5 py-12 text-center text-gray-400">No transactions found.</td></tr>
+                            <tr><td colspan="9" class="px-5 py-12 text-center text-gray-400">No transactions found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
 
-        {{-- Financial summary --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Total Qty</p>
@@ -118,16 +115,16 @@
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Total Sale</p>
-                <p class="text-xl font-semibold text-gray-800">৳{{ number_format($customer->total_sale, 2) }}</p>
+                <p class="text-xl font-semibold text-gray-800">BDT {{ number_format($customer->total_sale, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Total Paid</p>
-                <p class="text-xl font-semibold text-green-600">৳{{ number_format($customer->total_paid, 2) }}</p>
+                <p class="text-xl font-semibold text-green-600">BDT {{ number_format($customer->total_paid, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Due</p>
                 <p class="text-xl font-semibold {{ $customer->due > 0 ? 'text-red-600' : 'text-gray-400' }}">
-                    ৳{{ number_format($customer->due, 2) }}
+                    BDT {{ number_format($customer->due, 2) }}
                 </p>
                 @if($customer->due <= 0)
                     <span class="text-xs text-green-600 font-medium">Cleared</span>
@@ -135,8 +132,7 @@
             </div>
         </div>
 
-        {{-- Back link --}}
-        <div>
+        <div class="flex justify-center">
             <a href="{{ route('customers.index') }}"
                class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
