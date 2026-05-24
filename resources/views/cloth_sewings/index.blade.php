@@ -191,6 +191,11 @@
             return (Number(value) || 0).toFixed(2);
         }
 
+        function formatInputQty(value) {
+            const number = Number(value) || 0;
+            return Number.isInteger(number) ? String(number) : String(Number(number.toFixed(2)));
+        }
+
         function showModal(modal) {
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -223,7 +228,7 @@
                     <td class="px-3 py-2">
                         <div class="flex justify-end items-center gap-1">
                             <button type="button" class="qty-minus w-8 h-8 rounded bg-gray-100 text-gray-700">-</button>
-                            <input type="number" min="0" max="${item.sewing_qty}" step="0.01" value="${formatQty(item.received_qty)}" class="receive-input w-24 h-8 px-2 text-right border border-gray-200 rounded-lg text-sm">
+                            <input type="number" min="0" max="${item.sewing_qty}" step="1" value="${formatInputQty(item.received_qty)}" class="receive-input w-24 h-8 px-2 text-right border border-gray-200 rounded-lg text-sm">
                             <button type="button" class="qty-plus w-8 h-8 rounded bg-gray-100 text-gray-700">+</button>
                         </div>
                     </td>
@@ -238,7 +243,7 @@
             const sewing = Number(row.dataset.sewing) || 0;
             const input = row.querySelector('.receive-input');
             let value = Math.max(0, Math.min(sewing, Number(input.value) || 0));
-            input.value = formatQty(value);
+            input.value = formatInputQty(value);
             row.querySelector('.balance-cell').textContent = formatQty(sewing - value);
         }
 
@@ -292,9 +297,9 @@
             if (!row) return;
 
             const input = row.querySelector('.receive-input');
-            if (event.target.classList.contains('qty-minus')) input.value = formatQty((Number(input.value) || 0) - 1);
-            if (event.target.classList.contains('qty-plus')) input.value = formatQty((Number(input.value) || 0) + 1);
-            if (event.target.classList.contains('clear-received')) input.value = '0.00';
+            if (event.target.classList.contains('qty-minus')) input.value = formatInputQty((Number(input.value) || 0) - 1);
+            if (event.target.classList.contains('qty-plus')) input.value = formatInputQty((Number(input.value) || 0) + 1);
+            if (event.target.classList.contains('clear-received')) input.value = '0';
             updateReceiveBalance(row);
         });
 
