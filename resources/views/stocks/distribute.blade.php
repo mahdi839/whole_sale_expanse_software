@@ -17,10 +17,10 @@
         <div class="px-4 py-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl">
             {{ session('success') }}</div>
     @endif
-    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-4">
+    <div class="min-h-[calc(100vh-7rem)] flex flex-col justify-center gap-4">
 
         <form method="POST" action="{{ route('stocks.distribute.store') }}"
-            class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+            class="w-full max-w-4xl mx-auto bg-white border border-gray-200 rounded-xl p-5 space-y-4">
             @csrf
             @if ($errors->any())
                 <div class="px-4 py-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl">
@@ -96,7 +96,7 @@
             </div>
         </form>
 
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="w-full max-w-4xl mx-auto bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div class="px-5 py-3 border-b font-semibold text-sm text-gray-700">Recent Distributions</div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -107,6 +107,7 @@
                             <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Receiver</th>
                             <th class="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">Qty</th>
                             <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Status</th>
+                            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Note</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -119,14 +120,15 @@
                                     {{ number_format($distribution->items->sum('qty'), 2) }}</td>
                                 <td class="px-4 py-3">
                                     <span
-                                        class="px-2 py-1 rounded-full text-xs font-medium {{ $distribution->status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700' }}">
+                                        class="px-2 py-1 rounded-full text-xs font-medium {{ $distribution->status === 'pending' ? 'bg-amber-50 text-amber-700' : ($distribution->status === 'cancelled' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700') }}">
                                         {{ ucfirst($distribution->status) }}
                                     </span>
                                 </td>
+                                <td class="px-4 py-3 text-gray-500">{{ $distribution->action_note ?: '—' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-4 py-10 text-center text-gray-400">No distributions yet.
+                                <td colspan="6" class="px-4 py-10 text-center text-gray-400">No distributions yet.
                                 </td>
                             </tr>
                         @endforelse

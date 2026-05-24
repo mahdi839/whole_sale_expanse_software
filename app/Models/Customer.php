@@ -79,6 +79,11 @@ class Customer extends Model
         return $this->hasMany(CashTransaction::class);
     }
 
+    public function cheques()
+    {
+        return $this->hasMany(Cheque::class);
+    }
+
     public function manualDues()
     {
         return $this->hasMany(ManualDue::class);

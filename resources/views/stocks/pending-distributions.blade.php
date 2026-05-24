@@ -44,10 +44,18 @@
                                 <td class="px-5 py-3.5 text-right font-medium">{{ number_format($distribution->items->sum('qty'), 2) }}</td>
                                 <td class="px-5 py-3.5 text-right">
                                     @can('receive stock distributions')
-                                        <form method="POST" action="{{ route('stocks.distributions.receive', $distribution) }}" onsubmit="return confirm('Receive this stock into the shop?')">
+                                        <div class="flex justify-end gap-2">
+                                        <form method="POST" action="{{ route('stocks.distributions.receive', $distribution) }}" onsubmit="return submitDistributionAction(this, 'Receive this stock into the shop?')">
                                             @csrf
+                                            <input type="hidden" name="action_note">
                                             <button class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium">Receive</button>
                                         </form>
+                                        <form method="POST" action="{{ route('stocks.distributions.cancel', $distribution) }}" onsubmit="return submitDistributionAction(this, 'Cancel this stock distribution?')">
+                                            @csrf
+                                            <input type="hidden" name="action_note">
+                                            <button class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium">Cancel</button>
+                                        </form>
+                                        </div>
                                     @else
                                         <span class="text-xs text-gray-400">Pending</span>
                                     @endcan
@@ -61,4 +69,17 @@
             </div>
         </div>
     </div>
+    @push('scripts')
+        <script>
+            function submitDistributionAction(form, message) {
+                if (!confirm(message)) return false;
+
+                const note = prompt('Note (optional)');
+                if (note === null) return false;
+
+                form.querySelector('input[name="action_note"]').value = note;
+                return true;
+            }
+        </script>
+    @endpush
 </x-app-layout>
