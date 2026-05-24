@@ -109,7 +109,7 @@ class StockController extends Controller
             }
         });
 
-        return redirect()->route('stocks.distributions.pending')->with('success', 'Stock distribution is pending approval.');
+        return back()->with('success', 'Stock distribution is pending approval.');
     }
 
     public function pendingDistributions()
