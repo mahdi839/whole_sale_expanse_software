@@ -1,16 +1,16 @@
 <x-app-layout>
     <x-slot name="header">Supplier Profile</x-slot>
 
-    <div class="max-w-5xl space-y-4">
-        <nav class="flex items-center gap-2 text-xs text-gray-400">
+    <div class="max-w-5xl mx-auto space-y-4 text-center">
+        <nav class="flex items-center justify-center gap-2 text-xs text-gray-400">
             <a href="{{ route('suppliers.index') }}" class="hover:text-gray-600 transition">Suppliers</a>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
             <span class="text-gray-600">{{ $supplier->name }}</span>
         </nav>
 
         <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <div class="flex items-start justify-between gap-4 mb-6">
-                <div class="flex items-center gap-4">
+            <div class="flex flex-col items-center justify-center gap-4 mb-6">
+                <div class="flex flex-col items-center justify-center gap-3">
                     <div class="flex items-center justify-center w-14 h-14 rounded-xl bg-violet-100 text-violet-700 text-lg font-semibold shrink-0">
                         {{ strtoupper(substr($supplier->name, 0, 2)) }}
                     </div>
@@ -22,7 +22,7 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2 shrink-0">
+                <div class="flex flex-wrap items-center justify-center gap-2 shrink-0">
                     <a href="{{ route('suppliers.transactions.export', $supplier) }}"
                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
@@ -42,15 +42,15 @@
             </div>
 
             <dl class="divide-y divide-gray-100 text-sm">
-                <div class="flex justify-between py-3">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-10 py-3">
                     <dt class="text-gray-500">Phone</dt>
                     <dd class="font-medium text-gray-800">{{ $supplier->phone ?? '-' }}</dd>
                 </div>
-                <div class="flex justify-between gap-4 py-3">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-10 py-3">
                     <dt class="text-gray-500">Address</dt>
-                    <dd class="font-medium text-gray-800 text-right">{{ $supplier->address ?? '-' }}</dd>
+                    <dd class="font-medium text-gray-800">{{ $supplier->address ?? '-' }}</dd>
                 </div>
-                <div class="flex justify-between py-3">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-10 py-3">
                     <dt class="text-gray-500">Added on</dt>
                     <dd class="font-medium text-gray-800">{{ $supplier->created_at->format('d M Y') }}</dd>
                 </div>
@@ -65,15 +65,15 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="bg-gray-50 border-b">
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Date</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Type</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Reference</th>
+                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Date</th>
+                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Type</th>
+                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Reference</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Amount</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Qty</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Due</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Products</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Note</th>
+                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Products</th>
+                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Note</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -123,7 +123,7 @@
             </div>
         </div>
 
-        <div>
+        <div class="flex justify-center">
             <a href="{{ route('suppliers.index') }}"
                class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
@@ -132,4 +132,3 @@
         </div>
     </div>
 </x-app-layout>
-
