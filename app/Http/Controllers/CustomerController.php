@@ -115,7 +115,7 @@ class CustomerController extends Controller
     public function exportTransactions(Customer $customer)
     {
         [$logs, $totalQty] = $this->customerLogs($customer);
-        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Products', 'Note'];
+        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due','Note'];
 
         if (request('format') === 'pdf') {
             $rows = $logs->map(fn ($log) => [
@@ -126,7 +126,6 @@ class CustomerController extends Controller
                 $log['qty'],
                 $log['paid'],
                 $log['due'],
-                $log['products'],
                 $log['note'],
             ]);
 
