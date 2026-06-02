@@ -175,7 +175,7 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-gray-100 bg-gray-50">
-                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Date</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Date & Time</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Shop</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Distributor</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Receiver</th>
@@ -188,7 +188,10 @@
                     <tbody class="divide-y divide-gray-100">
                         @forelse($distributions as $distribution)
                             <tr>
-                                <td class="px-5 py-3.5">{{ $distribution->distribution_date?->format('d M Y') }}</td>
+                                <td class="px-5 py-3.5">
+                                    {{ $distribution->distribution_date?->format('d M Y') }}
+                                    <span class="block text-xs text-gray-400">{{ $distribution->created_at?->format('h:i A') }}</span>
+                                </td>
                                 <td class="px-5 py-3.5">{{ $distribution->shop?->name }}</td>
                                 <td class="px-5 py-3.5">{{ $distribution->distributor }}</td>
                                 <td class="px-5 py-3.5">{{ $distribution->receiver }}</td>

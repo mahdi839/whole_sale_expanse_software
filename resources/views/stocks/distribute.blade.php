@@ -113,7 +113,11 @@
                     <tbody class="divide-y divide-gray-100">
                         @forelse($distributions as $distribution)
                             <tr>
-                                <td class="px-4 py-3">{{ $distribution->distribution_date?->format('d M Y') }}</td>
+                                <td class="px-4 py-3">
+                                    {{ $distribution->distribution_date?->format('d M Y') }}
+                                    <span
+                                        class="block text-xs text-gray-400">{{ $distribution->created_at?->format('h:i A') }}</span>
+                                </td>
                                 <td class="px-4 py-3">{{ $distribution->shop?->name }}</td>
                                 <td class="px-4 py-3">{{ $distribution->receiver }}</td>
                                 <td class="px-4 py-3 text-right font-medium">
