@@ -88,7 +88,6 @@
                         <tr class="border-b bg-gray-50">
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Reference</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Category</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Sales Man</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Amount</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Date</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Document</th>
@@ -112,10 +111,6 @@
 
                                 <td class="px-5 py-3">
                                     {{ $expense->category }}
-                                </td>
-
-                                <td class="px-5 py-3">
-                                    {{ $expense->salesMan?->name ?? '—' }}
                                 </td>
 
                                 <td class="px-5 py-3 text-right font-medium text-red-600">
@@ -165,7 +160,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-5 py-20 text-center text-gray-400">
+                                <td colspan="6" class="px-5 py-20 text-center text-gray-400">
                                     No expenses found.
                                     <a href="{{ route('expenses.create') }}" class="text-blue-600 hover:underline">
                                         Create first expense

@@ -7,6 +7,7 @@ use App\Http\Controllers\ClothSewingController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DueManagementController;
+use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -17,7 +18,8 @@ use App\Http\Controllers\ReceivedClothController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleReturnController;
-use App\Http\Controllers\SalesManController;
+use App\Http\Controllers\SalaryAdvanceController;
+use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
@@ -83,8 +85,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereNumber('tailor')
         ->middleware('permission:manage cloth sewings|delete cloth sewings');
     $crudResource('/received-cloths', ReceivedClothController::class, 'received cloths', ['parameters' => ['received-cloths' => 'receivedCloth'], 'except' => ['show']]);
-    $crudResource('/sales-men', SalesManController::class, 'sales men', ['parameters' => ['sales-men' => 'salesMan']]);
-
     $crudResource('/users', UserController::class, 'users', ['except' => ['show']]);
     $crudResource('/roles', RoleController::class, 'roles', ['except' => ['show']]);
     $crudResource('/permissions', PermissionController::class, 'permissions', ['except' => ['show']]);
@@ -117,6 +117,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('expenses-export', [ExpenseController::class, 'exportCsv'])->name('expenses.export')->middleware('permission:manage expenses|view expenses');
     $crudResource('expenses', ExpenseController::class, 'expenses');
+
+    Route::resource('employees', EmployeeController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:manage employees|create employees');
+    Route::resource('employees', EmployeeController::class)
+        ->only(['edit', 'update'])
+        ->whereNumber('employee')
+        ->middleware('permission:manage employees|edit employees');
+    Route::resource('employees', EmployeeController::class)
+        ->only(['index', 'show'])
+        ->whereNumber('employee')
+        ->middleware('permission:manage employees|view employees');
+    Route::get('salaries', [SalaryController::class, 'index'])
+        ->name('salaries.index')
+        ->middleware('permission:manage salaries|view salaries|create salaries');
+    Route::post('salaries', [SalaryController::class, 'store'])
+        ->name('salaries.store')
+        ->middleware('permission:manage salaries|create salaries');
+    Route::resource('salary-advances', SalaryAdvanceController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:manage salary advances|create salary advances');
+    Route::resource('salary-advances', SalaryAdvanceController::class)
+        ->only(['edit', 'update'])
+        ->whereNumber('salary_advance')
+        ->middleware('permission:manage salary advances|edit salary advances');
+    Route::resource('salary-advances', SalaryAdvanceController::class)
+        ->only(['index', 'destroy'])
+        ->whereNumber('salary_advance')
+        ->middleware('permission:manage salary advances|view salary advances|delete salary advances');
 
     $crudResource('cash-transactions', CashTransactionController::class, 'cash', ['parameters' => ['cash-transactions' => 'cashTransaction'], 'except' => ['show']]);
     $crudResource('cheques', ChequeController::class, 'cheques');

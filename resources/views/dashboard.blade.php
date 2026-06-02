@@ -94,7 +94,7 @@
                         </p>
 
                         <p class="text-xs text-gray-400 mt-0.5">
-                            Net sales - COGS - expenses
+                            Net sales - COGS - expenses - salaries - advances
                         </p>
                     </div>
                 </div>
@@ -161,6 +161,16 @@
                     <p class="text-xs text-gray-400 mt-0.5">
                         {{ $filters['dateFrom'] || $filters['dateTo'] ? 'Filtered period' : 'All time' }}
                     </p>
+                    @if(($stats['total_salaries'] ?? 0) > 0)
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            Salaries: ৳{{ number_format($stats['total_salaries'], 2) }}
+                        </p>
+                    @endif
+                    @if(($stats['total_salary_advances'] ?? 0) > 0)
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            Advances: ৳{{ number_format($stats['total_salary_advances'], 2) }}
+                        </p>
+                    @endif
                 </div>
             </div>
 

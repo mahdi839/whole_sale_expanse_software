@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
-use App\Models\SalesMan;
 use App\Services\CashLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +21,6 @@ class ExpenseController extends Controller
         ];
 
         $expenses = Expense::query()
-            ->with('salesMan')
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
 
@@ -56,18 +54,16 @@ class ExpenseController extends Controller
             ->first();
 
         $categories = $this->categories();
-        $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('expenses.index', compact('expenses', 'filters', 'totals', 'categories', 'salesMen'));
+        return view('expenses.index', compact('expenses', 'filters', 'totals', 'categories'));
     }
 
     public function create()
     {
         $nextReference = Expense::generateReference();
         $categories = $this->categories();
-        $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('expenses.create', compact('nextReference', 'categories', 'salesMen'));
+        return view('expenses.create', compact('nextReference', 'categories'));
     }
 
     public function store(Request $request)
@@ -97,9 +93,8 @@ class ExpenseController extends Controller
     public function edit(Expense $expense)
     {
         $categories = $this->categories();
-        $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('expenses.edit', compact('expense', 'categories', 'salesMen'));
+        return view('expenses.edit', compact('expense', 'categories'));
     }
 
     public function update(Request $request, Expense $expense)
@@ -184,7 +179,6 @@ class ExpenseController extends Controller
         return $request->validate([
             'reference' => 'nullable|string|max:50|unique:expenses,reference,' . $expenseId,
             'category' => 'required|string|max:100',
-            'sales_man_id' => 'nullable|exists:sales_men,id',
             'amount' => 'required|numeric|min:0.01',
             'date' => 'required|date',
             'note' => 'nullable|string|max:2000',

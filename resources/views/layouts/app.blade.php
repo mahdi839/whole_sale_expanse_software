@@ -335,13 +335,6 @@
                 </x-sidebar-dropdown>
                 @endcanany
 
-                @canany(['manage sales men', 'view sales men'])
-                <x-sidebar-link :href="route('sales-men.index')" :active="request()->routeIs('sales-men.*')">
-                    <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="7" r="4"/><path d="M5 21a7 7 0 0114 0"/><path d="M18 8h4"/><path d="M20 6v4"/></svg></x-slot>
-                    Sales Men
-                </x-sidebar-link>
-                @endcanany
-
                 @canany(['manage shops', 'view shops', 'manage stock', 'view stock', 'distribute stock', 'view stock distributions', 'receive stock distributions'])
                     <x-sidebar-dropdown label="Stock Management" :active="request()->routeIs('shops.*') || request()->routeIs('stocks.*')">
                         <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg></x-slot>
@@ -367,6 +360,15 @@
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg></x-slot>
                     @canany(['manage sales', 'view sales'])<x-sidebar-sub-link :href="route('sales.index')">Sales Orders</x-sidebar-sub-link>@endcanany
                     @canany(['manage sale returns', 'view sale returns'])<x-sidebar-sub-link :href="route('sale-returns.index')">Return Sales</x-sidebar-sub-link>@endcanany
+                </x-sidebar-dropdown>
+                @endcanany
+
+                @canany(['manage employees', 'view employees', 'manage salaries', 'view salaries', 'create salaries', 'manage salary advances', 'view salary advances', 'create salary advances'])
+                <x-sidebar-dropdown label="Salary Management" :active="request()->routeIs('employees.*') || request()->routeIs('salaries.*') || request()->routeIs('salary-advances.*')">
+                    <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M17 8h6"/><path d="M20 5v6"/><path d="M15 19h6"/></svg></x-slot>
+                    @canany(['manage employees', 'view employees'])<x-sidebar-sub-link :href="route('employees.index')">Employees</x-sidebar-sub-link>@endcanany
+                    @canany(['manage salaries', 'view salaries', 'create salaries'])<x-sidebar-sub-link :href="route('salaries.index')">Salaries</x-sidebar-sub-link>@endcanany
+                    @canany(['manage salary advances', 'view salary advances', 'create salary advances'])<x-sidebar-sub-link :href="route('salary-advances.index')">Advance Salary</x-sidebar-sub-link>@endcanany
                 </x-sidebar-dropdown>
                 @endcanany
 

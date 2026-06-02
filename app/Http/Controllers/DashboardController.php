@@ -9,6 +9,8 @@ use App\Models\Purchase;
 use App\Models\PurchaseReturn;
 use App\Models\Sale;
 use App\Models\SaleReturn;
+use App\Models\Salary;
+use App\Models\SalaryAdvance;
 use App\Models\Stock;
 use App\Models\StockDistributionItem;
 use Carbon\Carbon;
@@ -42,6 +44,11 @@ class DashboardController extends Controller
         $expenseScope = function ($q) use ($dateFrom, $dateTo) {
             $q->when($dateFrom, fn ($q) => $q->whereDate('date', '>=', $dateFrom))
                 ->when($dateTo, fn ($q) => $q->whereDate('date', '<=', $dateTo));
+        };
+
+        $salaryScope = function ($q) use ($dateFrom, $dateTo) {
+            $q->when($dateFrom, fn ($q) => $q->whereDate('created_at', '>=', $dateFrom))
+                ->when($dateTo, fn ($q) => $q->whereDate('created_at', '<=', $dateTo));
         };
 
         $saleReturnScope = function ($q) use ($dateFrom, $dateTo, $shopId) {
@@ -97,6 +104,8 @@ class DashboardController extends Controller
             'total_purchase_returns' => PurchaseReturn::where($purchaseReturnScope)->sum('return_amount'),
             'total_purchase_due' => Purchase::where($purchaseScope)->sum('due_amount'),
             'total_expenses' => Expense::where($expenseScope)->sum('amount'),
+            'total_salaries' => Salary::where($salaryScope)->sum('amount'),
+            'total_salary_advances' => SalaryAdvance::where($salaryScope)->sum('amount'),
             'total_item_profit' => 0,
             'net_profit' => 0,
         ];
@@ -123,7 +132,9 @@ class DashboardController extends Controller
 
             $stats['net_profit'] =
                 (float) $stats['total_item_profit']
-                - (float) $stats['total_expenses'];
+                - (float) $stats['total_expenses']
+                - (float) $stats['total_salaries']
+                - (float) $stats['total_salary_advances'];
         }
         // ── Sales last 7 days OR within date range chart ─────────────
         $chartDays = 6;
