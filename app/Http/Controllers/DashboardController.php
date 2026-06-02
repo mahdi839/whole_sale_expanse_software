@@ -10,6 +10,7 @@ use App\Models\PurchaseReturn;
 use App\Models\Sale;
 use App\Models\SaleReturn;
 use App\Models\Stock;
+use App\Models\StockDistributionItem;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -59,7 +60,7 @@ class DashboardController extends Controller
         // ── Summary cards ────────────────────────────────────────────
         $stockValue = Stock::query()
             ->join('products', 'products.id', '=', 'stocks.product_id')
-            ->when($shopId, fn ($q) => $q->where('stocks.shop_id', $shopId), fn ($q) => $q->whereNull('stocks.shop_id'))
+            ->when($shopId, fn ($q) => $q->where('stocks.shop_id', $shopId))
             ->selectRaw('
                 COALESCE(SUM(stocks.stock_qty), 0) as total_stock_qty,
                 COALESCE(SUM(stocks.stock_qty * COALESCE(products.purchase_price, 0)), 0) as cost_value,
@@ -67,12 +68,28 @@ class DashboardController extends Controller
             ')
             ->first();
 
+        $pendingStockValue = StockDistributionItem::query()
+            ->join('stock_distributions', 'stock_distributions.id', '=', 'stock_distribution_items.stock_distribution_id')
+            ->join('products', 'products.id', '=', 'stock_distribution_items.product_id')
+            ->where('stock_distributions.status', 'pending')
+            ->when($shopId, fn ($q) => $q->where('stock_distributions.shop_id', $shopId))
+            ->selectRaw('
+                COALESCE(SUM(stock_distribution_items.qty), 0) as total_stock_qty,
+                COALESCE(SUM(stock_distribution_items.qty * COALESCE(products.purchase_price, 0)), 0) as cost_value,
+                COALESCE(SUM(stock_distribution_items.qty * COALESCE(products.selling_price, 0)), 0) as retail_value
+            ')
+            ->first();
+
         $stats = [
             'total_products' => Product::count(),
             'total_customers' => Customer::count(),
-            'total_stock_qty' => (float) ($stockValue->total_stock_qty ?? 0),
-            'total_stock_cost_value' => (float) ($stockValue->cost_value ?? 0),
-            'total_stock_retail_value' => (float) ($stockValue->retail_value ?? 0),
+            'total_stock_qty' => (float) ($stockValue->total_stock_qty ?? 0) + (float) ($pendingStockValue->total_stock_qty ?? 0),
+            'total_stock_cost_value' => (float) ($stockValue->cost_value ?? 0) + (float) ($pendingStockValue->cost_value ?? 0),
+            'total_stock_retail_value' => (float) ($stockValue->retail_value ?? 0) + (float) ($pendingStockValue->retail_value ?? 0),
+            'pending_stock_qty' => (float) ($pendingStockValue->total_stock_qty ?? 0),
+            'pending_stock_cost_value' => (float) ($pendingStockValue->cost_value ?? 0),
+            'pending_stock_retail_value' => (float) ($pendingStockValue->retail_value ?? 0),
+            'stock_scope_label' => $shopId ? 'Assigned shop + pending' : 'Central + shops + pending',
             'total_sales' => Sale::where($saleScope)->sum('grand_total'),
             'total_sales_due' => Sale::where($saleScope)->sum('due'),
             'total_sale_returns' => SaleReturn::where($saleReturnScope)->sum('return_amount'),

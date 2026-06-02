@@ -132,11 +132,16 @@
                     <p class="text-xl font-medium mt-0.5 text-indigo-600">
                         {{ number_format($stats['total_stock_cost_value'], 2) }}</p>
                     <p class="text-xs text-gray-400 mt-0.5">
-                        At purchase price · {{ number_format($stats['total_stock_qty']) }} pcs
+                        At purchase price · {{ number_format($stats['total_stock_qty']) }} pcs · {{ $stats['stock_scope_label'] }}
                     </p>
                     <p class="text-xs text-gray-400 mt-0.5">
                         Retail: {{ number_format($stats['total_stock_retail_value'], 2) }}
                     </p>
+                    @if ($stats['pending_stock_qty'] > 0)
+                        <p class="text-xs text-amber-600 mt-0.5">
+                            Pending: {{ number_format($stats['pending_stock_cost_value'], 2) }} · {{ number_format($stats['pending_stock_qty']) }} pcs
+                        </p>
+                    @endif
                 </div>
             </div>
 
