@@ -370,11 +370,12 @@
                 </x-sidebar-dropdown>
                 @endcanany
 
-                @canany(['manage expenses', 'view expenses', 'manage cash', 'view cash'])
-                <x-sidebar-dropdown label="Accounts" :active="request()->routeIs('expenses.*') || request()->routeIs('cash-transactions.*')">
+                @canany(['manage expenses', 'view expenses', 'manage cash', 'view cash', 'manage cheques', 'view cheques'])
+                <x-sidebar-dropdown label="Accounts" :active="request()->routeIs('expenses.*') || request()->routeIs('cash-transactions.*') || request()->routeIs('cheques.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></x-slot>
                     @canany(['manage expenses', 'view expenses'])<x-sidebar-sub-link :href="route('expenses.index')">Expenses</x-sidebar-sub-link>@endcanany
                     @canany(['manage cash', 'view cash'])<x-sidebar-sub-link :href="route('cash-transactions.index')">Cash Management</x-sidebar-sub-link>@endcanany
+                    @canany(['manage cheques', 'view cheques'])<x-sidebar-sub-link :href="route('cheques.index')">Cheque Management</x-sidebar-sub-link>@endcanany
                 </x-sidebar-dropdown>
                 @endcanany
 

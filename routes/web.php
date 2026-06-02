@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CashTransactionController;
+use App\Http\Controllers\ChequeController;
 use App\Http\Controllers\ClothSewingController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -103,6 +104,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('stocks/distribute', [StockController::class, 'storeDistribution'])->name('stocks.distribute.store')->middleware('permission:distribute stock');
     Route::get('stocks/distributions/pending', [StockController::class, 'pendingDistributions'])->name('stocks.distributions.pending')->middleware('permission:view stock distributions|receive stock distributions');
     Route::post('stocks/distributions/{distribution}/receive', [StockController::class, 'receiveDistribution'])->name('stocks.distributions.receive')->middleware('permission:receive stock distributions');
+    Route::post('stocks/distributions/{distribution}/cancel', [StockController::class, 'cancelDistribution'])->name('stocks.distributions.cancel')->middleware('permission:receive stock distributions');
     $crudResource('stocks', StockController::class, 'stock');
 
     Route::get('sales-export', [SaleController::class, 'exportCsv'])->name('sales.export')->middleware('permission:manage sales|view sales');
@@ -117,6 +119,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     $crudResource('expenses', ExpenseController::class, 'expenses');
 
     $crudResource('cash-transactions', CashTransactionController::class, 'cash', ['parameters' => ['cash-transactions' => 'cashTransaction'], 'except' => ['show']]);
+    $crudResource('cheques', ChequeController::class, 'cheques');
     Route::get('dues', [DueManagementController::class, 'index'])->name('dues.index')->middleware('permission:manage dues|view dues');
     Route::get('dues/customer-wise', [DueManagementController::class, 'customer'])->name('dues.customer')->middleware('permission:manage dues|view dues');
     Route::get('dues/customer-wise/export', [DueManagementController::class, 'exportCustomer'])->name('dues.customer.export')->middleware('permission:manage dues|view dues');

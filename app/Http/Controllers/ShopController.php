@@ -11,7 +11,7 @@ class ShopController extends Controller
     public function index()
     {
         $shops = Shop::withCount(['users', 'sales'])
-            ->with('stocks.product')
+            ->with(['stocks.product', 'users:id,name,shop_id'])
             ->latest()
             ->paginate(15);
 

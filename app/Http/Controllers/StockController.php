@@ -109,7 +109,7 @@ class StockController extends Controller
             }
         });
 
-        return redirect()->route('stocks.distributions.pending')->with('success', 'Stock distribution is pending approval.');
+        return back()->with('success', 'Stock distribution is pending approval.');
     }
 
     public function pendingDistributions()
@@ -122,13 +122,17 @@ class StockController extends Controller
         return view('stocks.pending-distributions', compact('distributions'));
     }
 
-    public function receiveDistribution(StockDistribution $distribution)
+    public function receiveDistribution(Request $request, StockDistribution $distribution)
     {
         if ($distribution->status !== 'pending') {
-            return redirect()->route('stocks.distributions.pending')->with('success', 'This stock distribution is already received.');
+            return redirect()->route('stocks.distributions.pending')->with('success', 'This stock distribution is already processed.');
         }
 
-        DB::transaction(function () use ($distribution) {
+        $validated = $request->validate([
+            'action_note' => 'nullable|string|max:2000',
+        ]);
+
+        DB::transaction(function () use ($distribution, $validated) {
             $distribution->load('items');
 
             foreach ($distribution->items as $item) {
@@ -141,12 +145,45 @@ class StockController extends Controller
 
             $distribution->update([
                 'status' => 'received',
+                'action_note' => $validated['action_note'] ?? null,
                 'received_at' => now(),
                 'received_by' => auth()->id(),
             ]);
         });
 
         return redirect()->route('stocks.distributions.pending')->with('success', 'Stock received and added to shop inventory.');
+    }
+
+    public function cancelDistribution(Request $request, StockDistribution $distribution)
+    {
+        if ($distribution->status !== 'pending') {
+            return redirect()->route('stocks.distributions.pending')->with('success', 'This stock distribution is already processed.');
+        }
+
+        $validated = $request->validate([
+            'action_note' => 'nullable|string|max:2000',
+        ]);
+
+        DB::transaction(function () use ($distribution, $validated) {
+            $distribution->load('items');
+
+            foreach ($distribution->items as $item) {
+                $central = Stock::firstOrCreate(
+                    ['product_id' => $item->product_id, 'shop_id' => null],
+                    ['stock_qty' => 0]
+                );
+                $central->increment('stock_qty', (float) $item->qty);
+            }
+
+            $distribution->update([
+                'status' => 'cancelled',
+                'action_note' => $validated['action_note'] ?? null,
+                'received_at' => now(),
+                'received_by' => auth()->id(),
+            ]);
+        });
+
+        return redirect()->route('stocks.distributions.pending')->with('success', 'Stock distribution cancelled and returned to central inventory.');
     }
 
     /**

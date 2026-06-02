@@ -10,7 +10,14 @@
                     @foreach($shops as $shop)
                         <tr>
                             <td class="px-4 py-3"><a class="text-blue-600" href="{{ route('shops.show', $shop) }}">{{ $shop->name }}</a><br><span class="text-xs text-gray-400">{{ $shop->code }}</span></td>
-                            <td class="px-4 py-3">{{ $shop->users_count }}</td>
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-gray-800">{{ $shop->users_count }}</div>
+                                @if($shop->users->isNotEmpty())
+                                    <div class="text-xs text-gray-500 mt-1">{{ $shop->users->pluck('name')->join(', ') }}</div>
+                                @else
+                                    <div class="text-xs text-gray-400 mt-1">No executive</div>
+                                @endif
+                            </td>
                             <td class="px-4 py-3">{{ $shop->sales_count }}</td>
                             <td class="px-4 py-3 text-right">{{ number_format($shop->stocks->sum('stock_qty'), 2) }}</td>
                             <td class="px-4 py-3 text-right">BDT {{ number_format($shop->stocks->sum(fn($stock) => (float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0)), 2) }}</td>

@@ -635,6 +635,10 @@
                 <span class="label">Subtotal</span>
                 <span class="val" id="subtotal-display">0.00</span>
             </div>
+            <div class="totals-row">
+                <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 inset-ring inset-ring-blue-700/10">Total Qty</span>
+                <span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 inset-ring inset-ring-purple-700/10" id="total-qty-display">0</span>
+            </div>
             <div class="field-group">
                 <div class="field-label">Discount ()</div>
                 <input type="number" name="discount" id="discount"
@@ -770,6 +774,7 @@ const cartEmpty     = document.getElementById('cart-empty');
 const discountInput = document.getElementById('discount');
 const addMoneyInput = document.getElementById('add_money');
 const subtotalSpan  = document.getElementById('subtotal-display');
+const totalQtySpan  = document.getElementById('total-qty-display');
 const grandSpan     = document.getElementById('grand-total-display');
 const returnCreditRow = document.getElementById('return-credit-row');
 const returnCreditSpan = document.getElementById('return-credit-display');
@@ -1048,6 +1053,7 @@ function renderReturns() {
 // ============================================================
 function recalc() {
     const sub   = cartItems.reduce((s, i) => s + i.line_total, 0);
+    const totalQty = cartItems.reduce((s, i) => s + toNumber(i.qty), 0);
     const disc  = parseFloat(discountInput.value) || 0;
     const addMoney = parseFloat(addMoneyInput.value) || 0;
     const grand = Math.max(0, sub - disc + addMoney);
@@ -1055,6 +1061,7 @@ function recalc() {
     const payable = Math.max(0, grand - returnCredit);
 
     subtotalSpan.textContent = '' + sub.toFixed(2);
+    totalQtySpan.textContent = formatQty(totalQty);
     returnCreditSpan.textContent = '- ' + returnCredit.toFixed(2);
     returnCreditRow.style.display = returnCredit > 0 ? 'flex' : 'none';
     grandSpan.textContent    = '' + payable.toFixed(2);

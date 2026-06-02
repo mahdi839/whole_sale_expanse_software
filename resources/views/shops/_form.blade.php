@@ -1,5 +1,5 @@
 @csrf
-<div class="bg-white border border-gray-200 rounded-xl p-5 space-y-4 max-w-2xl">
+<div class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>

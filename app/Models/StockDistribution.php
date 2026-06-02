@@ -12,6 +12,7 @@ class StockDistribution extends Model
         'receiver',
         'distribution_date',
         'status',
+        'action_note',
         'received_at',
         'received_by',
     ];
