@@ -1,15 +1,54 @@
 <x-app-layout>
     <x-slot name="header">Salaries</x-slot>
 
+    <style>
+        .salary-entry-form .ts-wrapper {
+            width: 100%;
+        }
+
+        .salary-entry-form .ts-control {
+            min-height: 2.5rem;
+            padding: 0.375rem 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: #f9fafb;
+            box-shadow: none;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            color: #374151;
+        }
+
+        .salary-entry-form .ts-wrapper.single .ts-control {
+            display: flex;
+            align-items: center;
+        }
+
+        .salary-entry-form .ts-wrapper.focus .ts-control {
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        }
+
+        .salary-entry-form .ts-control input {
+            font-size: 0.875rem;
+        }
+
+        .salary-entry-form .ts-dropdown {
+            border-color: #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            overflow: hidden;
+        }
+    </style>
+
     <div class="space-y-4">
         @if(session('success'))
             <div class="px-4 py-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl">{{ session('success') }}</div>
         @endif
 
         <div class="bg-white border border-gray-200 rounded-xl p-5">
-            <form method="POST" action="{{ route('salaries.store') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <form method="POST" action="{{ route('salaries.store') }}" class="salary-entry-form grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
                 @csrf
-                <div>
+                <div class="lg:col-span-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Employee</label>
                     <select name="employee_id" class="tom-select w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                         <option value="">Select employee</option>
@@ -22,7 +61,7 @@
                     @error('employee_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                 </div>
 
-                <div>
+                <div class="lg:col-span-3">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Month</label>
                     <select name="salary_month" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                         @foreach($months as $month)
@@ -34,16 +73,18 @@
                     @error('salary_month')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                 </div>
 
-                <div>
+                <div class="lg:col-span-3">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Salary Amount</label>
                     <input type="number" name="amount" id="salary-amount" step="0.01" min="0.01" value="{{ old('amount') }}" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                     <p class="text-xs text-amber-600 mt-1" id="salary-advance-text">Advance: ৳0.00</p>
                     @error('amount')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                 </div>
 
-                <button class="h-10 px-4 bg-blue-600 text-white rounded-lg text-sm">Submit</button>
+                <div class="lg:col-span-2 lg:pt-6">
+                    <button class="w-full h-10 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium">Submit</button>
+                </div>
 
-                <div class="md:col-span-4">
+                <div class="lg:col-span-12">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Note</label>
                     <textarea name="note" rows="2" class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg">{{ old('note') }}</textarea>
                     @error('note')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
