@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,7 +28,7 @@
             margin: 0 auto;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 24px rgba(0,0,0,.08);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, .08);
         }
 
         /* ---- Header ---- */
@@ -108,7 +109,9 @@
             border-right: 1px solid #e2e8f0;
         }
 
-        .inv-info-cell:last-child { border-right: none; }
+        .inv-info-cell:last-child {
+            border-right: none;
+        }
 
         .inv-info-cell .cell-label {
             font-size: 10px;
@@ -133,7 +136,9 @@
         }
 
         /* ---- Items table ---- */
-        .inv-body { padding: 24px 32px; }
+        .inv-body {
+            padding: 24px 32px;
+        }
 
         table.items {
             width: 100%;
@@ -156,7 +161,9 @@
             font-weight: 600;
         }
 
-        table.items th.r { text-align: right; }
+        table.items th.r {
+            text-align: right;
+        }
 
         table.items td {
             padding: 11px 12px;
@@ -165,11 +172,17 @@
             color: #334155;
         }
 
-        table.items td.r { text-align: right; }
+        table.items td.r {
+            text-align: right;
+        }
 
-        table.items tbody tr:last-child td { border-bottom: none; }
+        table.items tbody tr:last-child td {
+            border-bottom: none;
+        }
 
-        table.items tbody tr:hover { background: #f8fafc; }
+        table.items tbody tr:hover {
+            background: #f8fafc;
+        }
 
         /* ---- Totals ---- */
         .inv-totals {
@@ -192,8 +205,15 @@
             font-size: 13px;
         }
 
-        .tot-row .tl { color: #64748b; }
-        .tot-row .tv { font-weight: 600; color: #1e293b; font-family: monospace; }
+        .tot-row .tl {
+            color: #64748b;
+        }
+
+        .tot-row .tv {
+            font-weight: 600;
+            color: #1e293b;
+            font-family: monospace;
+        }
 
         .tot-row.grand {
             border-top: 1.5px solid #e2e8f0;
@@ -202,10 +222,18 @@
             font-size: 15px;
         }
 
-        .tot-row.grand .tv { color: #16a34a; font-size: 17px; }
+        .tot-row.grand .tv {
+            color: #16a34a;
+            font-size: 17px;
+        }
 
-        .tot-row.paid-row .tv { color: #2563eb; }
-        .tot-row.due-row  .tv { color: #dc2626; }
+        .tot-row.paid-row .tv {
+            color: #2563eb;
+        }
+
+        .tot-row.due-row .tv {
+            color: #dc2626;
+        }
 
         /* ---- Payment badge ---- */
         .pay-badge {
@@ -217,9 +245,21 @@
             text-transform: uppercase;
             letter-spacing: .05em;
         }
-        .pay-badge.paid    { background: #dcfce7; color: #15803d; }
-        .pay-badge.due     { background: #fee2e2; color: #dc2626; }
-        .pay-badge.partial { background: #fef3c7; color: #d97706; }
+
+        .pay-badge.paid {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .pay-badge.due {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .pay-badge.partial {
+            background: #fef3c7;
+            color: #d97706;
+        }
 
         /* ---- Note / footer ---- */
         .inv-footer {
@@ -288,19 +328,30 @@
             gap: 6px;
         }
 
-        .btn-print { background: #1e293b; color: #fff; }
-        .btn-close { background: #f1f5f9; color: #475569; }
+        .btn-print {
+            background: #1e293b;
+            color: #fff;
+        }
+
+        .btn-close {
+            background: #f1f5f9;
+            color: #475569;
+        }
 
         /* ---- Print styles ---- */
         @media print {
-            @page { margin: 10mm; }
+            @page {
+                margin: 10mm;
+            }
 
             html,
             body {
                 background: #fff !important;
             }
 
-            body { padding: 0; }
+            body {
+                padding: 0;
+            }
 
             .invoice-wrap {
                 box-shadow: none;
@@ -317,224 +368,259 @@
                 background: #f8fafc !important;
             }
 
-            .pay-badge.paid { background: #dcfce7 !important; color: #15803d !important; }
-            .pay-badge.due { background: #fee2e2 !important; color: #dc2626 !important; }
-            .pay-badge.partial { background: #fef3c7 !important; color: #d97706 !important; }
+            .pay-badge.paid {
+                background: #dcfce7 !important;
+                color: #15803d !important;
+            }
 
-            .inv-logo { box-shadow: none; }
-            .screen-only { display: none !important; }
+            .pay-badge.due {
+                background: #fee2e2 !important;
+                color: #dc2626 !important;
+            }
+
+            .pay-badge.partial {
+                background: #fef3c7 !important;
+                color: #d97706 !important;
+            }
+
+            .inv-logo {
+                box-shadow: none;
+            }
+
+            .screen-only {
+                display: none !important;
+            }
         }
     </style>
 </head>
+
 <body>
-@php
-    $money = fn ($value) => rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
-    $qty = fn ($value) => rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
-@endphp
+    @php
+        $money = fn($value) => rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
+        $qty = fn($value) => rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
+    @endphp
 
-<div class="invoice-wrap">
+    <div class="invoice-wrap">
 
-    {{-- Header --}}
-    <div class="inv-header">
-        <div class="company">
-            <img class="inv-logo" src="{{ asset('inaya_creation_logo.jpeg') }}" alt="Inaya Creation Logo">
-            <div>
-                <h1>Inaya Creation</h1>
-                <p> Chistia Market,Near Gawsia Market, Dhaka-1205</p>
-                <p>Phone: +880 01300665793</p>
+        {{-- Header --}}
+        <div class="inv-header">
+            <div class="company">
+                <img class="inv-logo" src="{{ asset('inaya_creation_logo.jpeg') }}" alt="Inaya Creation Logo">
+                <div>
+                    <h1>Inaya Creation</h1>
+                    <p> Chistia Market,Near Gawsia Market, Dhaka-1205</p>
+                    <p>Phone: +880 01300665793</p>
+                </div>
+            </div>
+            <div class="inv-meta">
+                <div class="label">Invoice</div>
+                <div class="ref">{{ $sale->reference }}</div>
+                <div class="date">{{ $sale->created_at->format('d M Y, h:i A') }}</div>
+                <div style="margin-top:8px">
+                    <span class="pay-badge {{ $sale->payment_status }}">{{ ucfirst($sale->payment_status) }}</span>
+                </div>
             </div>
         </div>
-        <div class="inv-meta">
-            <div class="label">Invoice</div>
-            <div class="ref">{{ $sale->reference }}</div>
-            <div class="date">{{ $sale->created_at->format('d M Y, h:i A') }}</div>
-            <div style="margin-top:8px">
-                <span class="pay-badge {{ $sale->payment_status }}">{{ ucfirst($sale->payment_status) }}</span>
-            </div>
-        </div>
-    </div>
 
-    {{-- Info strip --}}
-    <div class="inv-info">
-        {{-- Customer --}}
-        <div class="inv-info-cell">
-            <div class="cell-label">Bill To</div>
-            <div class="cell-val">{{ $sale->customer?->full_name ?? 'Walk-in Customer' }}</div>
-            @if($sale->customer?->phone)
-                <div class="cell-sub">{{ $sale->customer->phone }}</div>
-            @endif
-            @if($sale->customer?->address)
-                <div class="cell-sub">{{ $sale->customer->address }}</div>
-            @endif
-        </div>
-
-        {{-- Payment method --}}
-        <div class="inv-info-cell">
-            <div class="cell-label">Payment Method</div>
-            <div class="cell-val">{{ $sale->payment_method ?? 'N/A' }}</div>
-        </div>
-
-        @if($sale->return_amount > 0)
+        {{-- Info strip --}}
+        <div class="inv-info">
+            {{-- Customer --}}
             <div class="inv-info-cell">
-                <div class="cell-label">Return Credit</div>
-                <div class="cell-val">৳{{ $money($sale->return_amount) }}</div>
+                <div class="cell-label">Bill To</div>
+                <div class="cell-val">{{ $sale->customer?->full_name ?? 'Walk-in Customer' }}</div>
+                @if ($sale->customer?->phone)
+                    <div class="cell-sub">{{ $sale->customer->phone }}</div>
+                @endif
+                @if ($sale->customer?->address)
+                    <div class="cell-sub">{{ $sale->customer->address }}</div>
+                @endif
             </div>
-        @endif
 
-        @if($sale->bell_no)
+            {{-- Payment method --}}
             <div class="inv-info-cell">
-                <div class="cell-label">Bell No</div>
-                <div class="cell-val">{{ $sale->bell_no }}</div>
+                <div class="cell-label">Payment Method</div>
+                <div class="cell-val">{{ $sale->payment_method ?? 'N/A' }}</div>
             </div>
-        @endif
-    </div>
 
-    {{-- Items --}}
-    <div class="inv-body">
-        <table class="items">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Product</th>
-                    <th>Design Code</th>
-                    <th class="r">Qty</th>
-                    <th class="r">Unit Price</th>
-                    <th class="r">Line Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($sale->items as $i => $item)
-                    <tr>
-                        <td style="color:#94a3b8;width:32px">{{ $i + 1 }}</td>
-                        <td style="font-weight:600">{{ $item->product->product_name }}</td>
-                        <td style="font-family:monospace;font-size:12px;color:#94a3b8">{{ $item->product->sku ?? 'N/A' }}</td>
-                        <td class="r">{{ $qty($item->qty) }}</td>
-                        <td class="r" style="font-family:monospace">{{ $money($item->price_on_sale) }}</td>
-                        <td class="r" style="font-family:monospace;font-weight:600">{{ $money($item->line_total) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+            @if ($sale->return_amount > 0)
+                <div class="inv-info-cell">
+                    <div class="cell-label">Return Credit</div>
+                    <div class="cell-val">৳{{ $money($sale->return_amount) }}</div>
+                </div>
+            @endif
 
-        @if($sale->appliedReturns->count())
-            <table class="items" style="margin-top:18px">
+            @if ($sale->bell_no)
+                <div class="inv-info-cell">
+                    <div class="cell-label">Bell No</div>
+                    <div class="cell-val">{{ $sale->bell_no }}</div>
+                </div>
+            @endif
+        </div>
+
+        {{-- Items --}}
+        <div class="inv-body">
+            <table class="items">
                 <thead>
                     <tr>
-                        <th colspan="2">Returned Products</th>
-                        <th>Sale Code</th>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th>Design Code</th>
                         <th class="r">Qty</th>
                         <th class="r">Unit Price</th>
-                        <th class="r">Credit</th>
+                        <th class="r">Line Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($sale->appliedReturns as $return)
-                        @foreach($return->items as $item)
-                            <tr>
-                                <td style="color:#94a3b8;width:32px">{{ $loop->parent->iteration }}.{{ $loop->iteration }}</td>
-                                <td style="font-weight:600">{{ $item->product?->product_name ?? 'Unknown' }}</td>
-                                <td style="font-family:monospace;font-size:12px;color:#94a3b8">{{ $return->sale?->reference ?? 'N/A' }}</td>
-                                <td class="r">{{ $qty($item->qty) }}</td>
-                                <td class="r" style="font-family:monospace">{{ $money($item->price_on_sale) }}</td>
-                                <td class="r" style="font-family:monospace;font-weight:600;color:#0f766e">- {{ $money($item->line_total) }}</td>
-                            </tr>
-                        @endforeach
+                    @foreach ($sale->items as $i => $item)
+                        <tr>
+                            <td style="color:#94a3b8;width:32px">{{ $i + 1 }}</td>
+                            <td style="font-weight:600">{{ $item->product->product_name }}</td>
+                            <td style="font-family:monospace;font-size:12px;color:#94a3b8">
+                                {{ $item->product->sku ?? 'N/A' }}</td>
+                            <td class="r">{{ $qty($item->qty) }}</td>
+                            <td class="r" style="font-family:monospace">{{ $money($item->price_on_sale) }}</td>
+                            <td class="r" style="font-family:monospace;font-weight:600">
+                                {{ $money($item->line_total) }}</td>
+                        </tr>
                     @endforeach
                 </tbody>
             </table>
-        @endif
-    </div>
 
-    {{-- Totals --}}
-    <div class="inv-totals">
-        <div class="totals-grid">
-            <div class="tot-row">
-                <span class="tl">Total Qty</span>
-                <span class="tv">{{ $totalQtyDisplay }}</span>
-            </div>
-            <div class="tot-row">
-                <span class="tl">Subtotal</span>
-                <span class="tv">{{ $money($sale->items->sum('line_total')) }}</span>
-            </div>
-            @if($sale->discount > 0)
-                <div class="tot-row">
-                    <span class="tl">Discount</span>
-                    <span class="tv" style="color:#dc2626">âˆ’ {{ $money($sale->discount) }}</span>
-                </div>
-            @endif
-            @if($sale->add_money > 0)
-                <div class="tot-row">
-                    <span class="tl">Add Money</span>
-                    <span class="tv" style="color:#4f46e5">+ {{ $money($sale->add_money) }}</span>
-                </div>
-            @endif
-            @if($sale->return_amount > 0)
-                <div class="tot-row">
-                    <span class="tl">Return Credit</span>
-                    <span class="tv" style="color:#0f766e">- {{ $money($sale->return_amount) }}</span>
-                </div>
-            @endif
-            <div class="tot-row grand">
-                <span class="tl">Payable</span>
-                <span class="tv">{{ $money(max(0, (float) $sale->grand_total - (float) $sale->return_amount)) }}</span>
-            </div>
-            <div class="tot-row paid-row">
-                <span class="tl">Paid</span>
-                <span class="tv">{{ $money($sale->paid) }}</span>
-            </div>
-            @if($sale->due > 0)
-                <div class="tot-row due-row">
-                    <span class="tl">Due</span>
-                    <span class="tv">{{ $money($sale->due) }}</span>
-                </div>
-            @endif
-            @if(! is_null($customerTotalDue))
-                <div class="tot-row due-row">
-                    <span class="tl">Customer Total Due</span>
-                    <span class="tv">{{ $money($customerTotalDue) }}</span>
-                </div>
+            @if ($sale->appliedReturns->count())
+                <table class="items" style="margin-top:18px">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Returned Products</th>
+                            <th>Sale Code</th>
+                            <th class="r">Qty</th>
+                            <th class="r">Unit Price</th>
+                            <th class="r">Credit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($sale->appliedReturns as $return)
+                            @foreach ($return->items as $item)
+                                <tr>
+                                    <td style="color:#94a3b8;width:32px">
+                                        {{ $loop->parent->iteration }}.{{ $loop->iteration }}</td>
+                                    <td style="font-weight:600">{{ $item->product?->product_name ?? 'Unknown' }}</td>
+                                    <td style="font-family:monospace;font-size:12px;color:#94a3b8">
+                                        {{ $return->sale?->reference ?? 'N/A' }}</td>
+                                    <td class="r">{{ $qty($item->qty) }}</td>
+                                    <td class="r" style="font-family:monospace">{{ $money($item->price_on_sale) }}
+                                    </td>
+                                    <td class="r" style="font-family:monospace;font-weight:600;color:#0f766e">-
+                                        {{ $money($item->line_total) }}</td>
+                                </tr>
+                            @endforeach
+                        @endforeach
+                    </tbody>
+                </table>
             @endif
         </div>
+
+        {{-- Totals --}}
+        <div class="inv-totals">
+            <div class="totals-grid">
+                <div class="tot-row">
+                    <span class="tl">Total Qty</span>
+                    <span class="tv">{{ $totalQtyDisplay }}</span>
+                </div>
+                <div class="tot-row">
+                    <span class="tl">Subtotal</span>
+                    <span class="tv">{{ $money($sale->items->sum('line_total')) }}</span>
+                </div>
+                @if ($sale->discount > 0)
+                    <div class="tot-row">
+                        <span class="tl">Discount</span>
+                        <span class="tv" style="color:#dc2626">{{ $money($sale->discount) }}</span>
+                    </div>
+                @endif
+                @if ($sale->add_money > 0)
+                    <div class="tot-row">
+                        <span class="tl">Add Money</span>
+                        <span class="tv" style="color:#4f46e5">+ {{ $money($sale->add_money) }}</span>
+                    </div>
+                @endif
+                @if ($sale->return_amount > 0)
+                    <div class="tot-row">
+                        <span class="tl">Return Credit</span>
+                        <span class="tv" style="color:#0f766e">- {{ $money($sale->return_amount) }}</span>
+                    </div>
+                @endif
+
+                <div class="tot-row grand">
+                    <span class="tl">Payable</span>
+                    <span
+                        class="tv">{{ $money(max(0, (float) $sale->grand_total - (float) $sale->return_amount)) }}</span>
+                </div>
+                <div class="tot-row paid-row">
+                    <span class="tl">Paid</span>
+                    <span class="tv">{{ $money($sale->paid) }}</span>
+                </div>
+                @if ($sale->due > 0)
+                    <div class="tot-row due-row">
+                        <span class="tl">Due</span>
+                        <span class="tv">{{ $money($sale->due) }}</span>
+                    </div>
+                @endif
+                @if (!is_null($customerPreviousDue))
+                    <div class="tot-row due-row">
+                        <span class="tl">Previous Due</span>
+                        <span class="tv">{{ $money($customerPreviousDue) }}</span>
+                    </div>
+                @endif
+                @if (!is_null($customerTotalDue))
+                    <div class="tot-row due-row">
+                        <span class="tl">Customer Total Due</span>
+                        <span class="tv">{{ $money($customerTotalDue) }}</span>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- Footer / Note --}}
+        <div class="inv-footer">
+            <div class="note-block">
+                @if ($sale->note)
+                    <div class="note-label">Note</div>
+                    <p>{{ $sale->note }}</p>
+                @else
+                    <p style="font-size:12px;color:#cbd5e1;font-style:italic">Thank you for your business!</p>
+                @endif
+            </div>
+            <div class="sig-block">
+                <div class="sig-line"></div>
+                <p>Authorised Signature</p>
+            </div>
+        </div>
+
     </div>
 
-    {{-- Footer / Note --}}
-    <div class="inv-footer">
-        <div class="note-block">
-            @if($sale->note)
-                <div class="note-label">Note</div>
-                <p>{{ $sale->note }}</p>
-            @else
-                <p style="font-size:12px;color:#cbd5e1;font-style:italic">Thank you for your business!</p>
-            @endif
-        </div>
-        <div class="sig-block">
-            <div class="sig-line"></div>
-            <p>Authorised Signature</p>
-        </div>
+    {{-- Screen-only action buttons --}}
+    <div class="screen-only">
+        <button class="btn btn-print" onclick="window.print()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                viewBox="0 0 24 24">
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" />
+            </svg>
+            Print
+        </button>
+        <button class="btn btn-close" onclick="window.close()">Close</button>
     </div>
 
-</div>
-
-{{-- Screen-only action buttons --}}
-<div class="screen-only">
-    <button class="btn btn-print" onclick="window.print()">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <polyline points="6 9 6 2 18 2 18 9"/>
-            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-            <rect x="6" y="14" width="12" height="8"/>
-        </svg>
-        Print
-    </button>
-    <button class="btn btn-close" onclick="window.close()">Close</button>
-</div>
-
-@if(request('print') == '1')
-<script>
-    window.addEventListener('load', function () {
-        setTimeout(function () { window.print(); }, 400);
-    });
-</script>
-@endif
+    @if (request('print') == '1')
+        <script>
+            window.addEventListener('load', function() {
+                setTimeout(function() {
+                    window.print();
+                }, 400);
+            });
+        </script>
+    @endif
 
 </body>
+
 </html>

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\CashTransaction;
 use App\Models\Expense;
+use App\Models\ManualDue;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -399,8 +401,9 @@ class SaleController extends Controller
             ? number_format($totalQty, 0)
             : number_format($totalQty, 2);
         $customerTotalDue = $sale->customer ? (float) $sale->customer->due : null;
+        $customerPreviousDue = $sale->customer ? $this->customerDueBeforeSale($sale) : null;
 
-        return view('sales.invoice', compact('sale', 'totalQtyDisplay', 'customerTotalDue'));
+        return view('sales.invoice', compact('sale', 'totalQtyDisplay', 'customerTotalDue', 'customerPreviousDue'));
     }
 
     public function exportCsv(Request $request)
@@ -518,6 +521,46 @@ class SaleController extends Controller
             'partial' => [min($paidInput, $grandTotal), max(0, $grandTotal - $paidInput)],
             default   => [0, $grandTotal],
         };
+    }
+
+    private function customerDueBeforeSale(Sale $sale): float
+    {
+        if (! $sale->customer_id) {
+            return 0;
+        }
+
+        $beforeSale = fn ($query) => $query
+            ->where('created_at', '<', $sale->created_at)
+            ->orWhere(fn ($sub) => $sub
+                ->where('created_at', $sale->created_at)
+                ->where('id', '<', $sale->id));
+
+        $saleTotals = Sale::query()
+            ->where('customer_id', $sale->customer_id)
+            ->where($beforeSale)
+            ->selectRaw('COALESCE(SUM(grand_total), 0) as total_sale, COALESCE(SUM(paid), 0) as total_paid')
+            ->first();
+
+        $returnTotal = (float) SaleReturn::query()
+            ->where('customer_id', $sale->customer_id)
+            ->where('return_status', 'approved')
+            ->where('created_at', '<', $sale->created_at)
+            ->sum('return_amount');
+
+        $cashPaid = (float) CashTransaction::query()
+            ->where('customer_id', $sale->customer_id)
+            ->whereNull('source_type')
+            ->where('created_at', '<', $sale->created_at)
+            ->selectRaw('COALESCE(SUM(CASE WHEN direction = "in" THEN amount ELSE -amount END), 0) as paid')
+            ->value('paid');
+
+        $manualDue = (float) ManualDue::query()
+            ->where('party_type', 'customer')
+            ->where('customer_id', $sale->customer_id)
+            ->whereDate('date', '<', $sale->created_at->toDateString())
+            ->sum('amount');
+
+        return max(0, (float) ($saleTotals->total_sale ?? 0) + $manualDue - $returnTotal - (float) ($saleTotals->total_paid ?? 0) - $cashPaid);
     }
 
     private function resolvePurchaseItem(int $productId, ?int $purchaseItemId): ?\App\Models\PurchaseItem
