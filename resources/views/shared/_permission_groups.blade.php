@@ -6,7 +6,9 @@
         'People' => [
             'Customers' => ['manage customers', 'view customers', 'create customers', 'edit customers', 'delete customers'],
             'Suppliers' => ['manage suppliers', 'view suppliers', 'create suppliers', 'edit suppliers', 'delete suppliers'],
-            'Salary Management' => ['manage employees', 'view employees', 'create employees', 'edit employees', 'manage salaries', 'view salaries', 'create salaries', 'manage salary advances', 'view salary advances', 'create salary advances', 'edit salary advances', 'delete salary advances'],
+            'Employees' => ['manage employees', 'view employees', 'create employees', 'edit employees'],
+            'Salaries' => ['manage salaries', 'view salaries', 'create salaries'],
+            'Advance Salaries' => ['manage salary advances', 'view salary advances', 'create salary advances', 'edit salary advances', 'delete salary advances'],
         ],
         'Cloth' => [
             'Cloth Sewing' => ['manage cloth sewings', 'view cloth sewings', 'create cloth sewings', 'edit cloth sewings', 'delete cloth sewings'],
