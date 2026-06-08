@@ -4,6 +4,11 @@
     <style>
         .salary-entry-form .ts-wrapper {
             width: 100%;
+            height: auto;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
         }
 
         .salary-entry-form .ts-control {
@@ -50,7 +55,7 @@
                 @csrf
                 <div class="lg:col-span-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Employee</label>
-                    <select name="employee_id" class="tom-select w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                    <select name="employee_id" class="tom-select">
                         <option value="">Select employee</option>
                         @foreach($employees as $employee)
                             <option value="{{ $employee->id }}" data-amount="{{ $employee->salary_amount }}" @selected(old('employee_id') == $employee->id)>
