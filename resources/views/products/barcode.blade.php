@@ -111,10 +111,12 @@
         .brand-logo {
             width: 34px;
             height: 34px;
-            object-fit: cover;
+            object-fit: contain;
             border-radius: 999px;
-            border: 1.5px solid #b98725;
-            background: #050505;
+            border: 1px solid #b98725;
+            background: #ffffff;
+            padding: 1px;
+            display: block;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
         }
@@ -206,13 +208,19 @@
             .sticker {
                 width: auto;
                 min-height: 32mm;
+                box-sizing: border-box;
                 box-shadow: none;
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
             }
             .brand-title { font-size: 11px; }
-            .brand-logo { width: 28px; height: 28px; }
-            .sticker-head { grid-template-columns: 30px 1fr; gap: 5px; }
+            .brand-logo {
+                width: 34px;
+                height: 34px;
+                border-width: 1px;
+                padding: 1px;
+            }
+            .sticker-head { grid-template-columns: 36px 1fr; gap: 5px; }
             .info-table { grid-template-columns: 62px 1fr; }
             .info-label {
                 font-size: 5.5px;
