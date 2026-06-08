@@ -48,11 +48,6 @@
                     <input name="distributor" value="{{ old('distributor', auth()->user()->name) }}"
                         class="w-full border-gray-300 rounded-lg" placeholder="Distributor name">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Receiver</label>
-                    <input name="receiver" value="{{ old('receiver') }}" class="w-full border-gray-300 rounded-lg"
-                        placeholder="Receiver name">
-                </div>
             </div>
 
             <div class="space-y-3" id="items">
@@ -119,7 +114,7 @@
                                         class="block text-xs text-gray-400">{{ $distribution->created_at?->format('h:i A') }}</span>
                                 </td>
                                 <td class="px-4 py-3">{{ $distribution->shop?->name }}</td>
-                                <td class="px-4 py-3">{{ $distribution->receiver }}</td>
+                                <td class="px-4 py-3">{{ $distribution->receiver ?: 'Pending receive' }}</td>
                                 <td class="px-4 py-3 text-right font-medium">
                                     {{ number_format($distribution->items->sum('qty'), 2) }}</td>
                                 <td class="px-4 py-3">

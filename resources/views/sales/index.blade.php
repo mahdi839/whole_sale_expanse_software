@@ -120,7 +120,7 @@
                     ৳{{ number_format($totals->total_return_amount ?? 0, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4">
-                <p class="text-xs text-gray-400 uppercase">Total Sale Qty</p>
+                <p class="text-xs text-gray-400 uppercase"> Sold Product Qty</p>
                 <p class="text-xl font-semibold text-indigo-600 break-words">
                     {{ number_format($totals->total_sell_qty ?? 0, 2) }}</p>
             </div>

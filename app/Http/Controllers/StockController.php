@@ -70,7 +70,6 @@ class StockController extends Controller
         $validated = $request->validate([
             'shop_id' => 'required|exists:shops,id',
             'distributor' => 'required|string|max:255',
-            'receiver' => 'required|string|max:255',
             'distribution_date' => 'required|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
@@ -81,7 +80,6 @@ class StockController extends Controller
             $distribution = StockDistribution::create([
                 'shop_id' => $validated['shop_id'],
                 'distributor' => $validated['distributor'],
-                'receiver' => $validated['receiver'],
                 'distribution_date' => $validated['distribution_date'],
                 'status' => 'pending',
             ]);
@@ -145,6 +143,7 @@ class StockController extends Controller
 
             $distribution->update([
                 'status' => 'received',
+                'receiver' => auth()->user()?->name,
                 'action_note' => $validated['action_note'] ?? null,
                 'received_at' => now(),
                 'received_by' => auth()->id(),

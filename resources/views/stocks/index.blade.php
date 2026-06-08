@@ -194,7 +194,7 @@
                                 </td>
                                 <td class="px-5 py-3.5">{{ $distribution->shop?->name }}</td>
                                 <td class="px-5 py-3.5">{{ $distribution->distributor }}</td>
-                                <td class="px-5 py-3.5">{{ $distribution->receiver }}</td>
+                                <td class="px-5 py-3.5">{{ $distribution->receiver ?: 'Pending receive' }}</td>
                                 <td class="px-5 py-3.5">
                                     {{ $distribution->items->map(fn($item) => ($item->product?->product_name ?? 'Product #'.$item->product_id).' x '.number_format($item->qty, 2))->implode(' | ') }}
                                 </td>
