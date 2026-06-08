@@ -71,7 +71,7 @@ class CashTransactionController extends Controller
     }
 
     public function store(Request $request)
-    {
+    { 
         DB::transaction(function () use ($request) {
             $transaction = CashTransaction::create($this->validated($request));
             $this->applyPartyPayment($transaction, 1);
