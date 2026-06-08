@@ -178,6 +178,7 @@
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Date & Time</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Shop</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Distributor</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Carry Man</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Receiver</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Products</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase">Qty</th>
@@ -194,6 +195,7 @@
                                 </td>
                                 <td class="px-5 py-3.5">{{ $distribution->shop?->name }}</td>
                                 <td class="px-5 py-3.5">{{ $distribution->distributor }}</td>
+                                <td class="px-5 py-3.5">{{ $distribution->carry_man ?: '-' }}</td>
                                 <td class="px-5 py-3.5">{{ $distribution->receiver ?: 'Pending receive' }}</td>
                                 <td class="px-5 py-3.5">
                                     {{ $distribution->items->map(fn($item) => ($item->product?->product_name ?? 'Product #'.$item->product_id).' x '.number_format($item->qty, 2))->implode(' | ') }}
@@ -207,7 +209,7 @@
                                 <td class="px-5 py-3.5 text-gray-500">{{ $distribution->action_note ?: '—' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="px-5 py-12 text-center text-gray-400">No stock distributions yet.</td></tr>
+                            <tr><td colspan="9" class="px-5 py-12 text-center text-gray-400">No stock distributions yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

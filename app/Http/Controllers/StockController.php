@@ -70,6 +70,7 @@ class StockController extends Controller
         $validated = $request->validate([
             'shop_id' => 'required|exists:shops,id',
             'distributor' => 'required|string|max:255',
+            'carry_man' => 'required|string|max:255',
             'distribution_date' => 'required|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
@@ -84,6 +85,7 @@ class StockController extends Controller
             'items.*.qty.min' => 'Product quantity must be at least 0.01.',
         ], [
             'shop_id' => 'shop',
+            'carry_man' => 'carry man',
             'distribution_date' => 'date',
             'items.*.product_id' => 'product',
             'items.*.qty' => 'quantity',
@@ -93,6 +95,7 @@ class StockController extends Controller
             $distribution = StockDistribution::create([
                 'shop_id' => $validated['shop_id'],
                 'distributor' => $validated['distributor'],
+                'carry_man' => $validated['carry_man'],
                 'distribution_date' => $validated['distribution_date'],
                 'status' => 'pending',
             ]);

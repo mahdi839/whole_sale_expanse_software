@@ -9,6 +9,7 @@ class StockDistribution extends Model
     protected $fillable = [
         'shop_id',
         'distributor',
+        'carry_man',
         'receiver',
         'distribution_date',
         'status',

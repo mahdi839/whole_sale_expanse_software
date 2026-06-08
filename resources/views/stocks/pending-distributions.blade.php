@@ -21,6 +21,7 @@
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Date</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Shop</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Distributor</th>
+                            <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Carry Man</th>
                             <th class="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase">Products</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase">Qty</th>
                             <th class="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase">Action</th>
@@ -32,6 +33,7 @@
                                 <td class="px-5 py-3.5">{{ $distribution->distribution_date?->format('d M Y') }}</td>
                                 <td class="px-5 py-3.5">{{ $distribution->shop?->name }}</td>
                                 <td class="px-5 py-3.5">{{ $distribution->distributor }}</td>
+                                <td class="px-5 py-3.5">{{ $distribution->carry_man ?: '-' }}</td>
                                 <td class="px-5 py-3.5">
                                     <div class="space-y-1">
                                         @foreach($distribution->items as $item)
@@ -60,7 +62,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-5 py-14 text-center text-gray-400">No pending stock distributions.</td></tr>
+                            <tr><td colspan="7" class="px-5 py-14 text-center text-gray-400">No pending stock distributions.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

@@ -51,6 +51,11 @@
                     <input name="distributor" value="{{ old('distributor', auth()->user()->name) }}"
                         class="w-full border-gray-300 rounded-lg" placeholder="Distributor name">
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Carry Man</label>
+                    <input name="carry_man" value="{{ old('carry_man') }}"
+                        class="w-full border-gray-300 rounded-lg" placeholder="Carry man name">
+                </div>
             </div>
 
             <div class="space-y-3" id="items">
@@ -108,7 +113,9 @@
                         <tr class="border-b border-gray-100 bg-gray-50">
                             <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Date</th>
                             <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Shop</th>
+                            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Carry Man</th>
                             <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Receiver</th>
+                            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Products</th>
                             <th class="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">Qty</th>
                             <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Status</th>
                             <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Note</th>
@@ -123,7 +130,15 @@
                                         class="block text-xs text-gray-400">{{ $distribution->created_at?->format('h:i A') }}</span>
                                 </td>
                                 <td class="px-4 py-3">{{ $distribution->shop?->name }}</td>
+                                <td class="px-4 py-3">{{ $distribution->carry_man ?: '-' }}</td>
                                 <td class="px-4 py-3">{{ $distribution->receiver ?: 'Pending receive' }}</td>
+                                <td class="px-4 py-3">
+                                    <div class="space-y-1">
+                                        @foreach($distribution->items as $item)
+                                            <div>{{ $item->product?->product_name ?? 'Product #'.$item->product_id }} <span class="text-gray-400">({{ $item->product?->sku ?? '-' }})</span> x {{ number_format($item->qty, 2) }}</div>
+                                        @endforeach
+                                    </div>
+                                </td>
                                 <td class="px-4 py-3 text-right font-medium">
                                     {{ number_format($distribution->items->sum('qty'), 2) }}</td>
                                 <td class="px-4 py-3">
@@ -136,7 +151,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-4 py-10 text-center text-gray-400">No distributions yet.
+                                <td colspan="8" class="px-4 py-10 text-center text-gray-400">No distributions yet.
                                 </td>
                             </tr>
                         @endforelse
