@@ -74,6 +74,19 @@ class StockController extends Controller
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.qty' => 'required|numeric|min:0.01',
+        ], [
+            'items.required' => 'Please add at least one product to distribute.',
+            'items.min' => 'Please add at least one product to distribute.',
+            'items.*.product_id.required' => 'Please select a product for every row.',
+            'items.*.product_id.exists' => 'One of the selected products is invalid. Please select it again.',
+            'items.*.qty.required' => 'Please enter quantity for every selected product.',
+            'items.*.qty.numeric' => 'Product quantity must be a valid number.',
+            'items.*.qty.min' => 'Product quantity must be at least 0.01.',
+        ], [
+            'shop_id' => 'shop',
+            'distribution_date' => 'date',
+            'items.*.product_id' => 'product',
+            'items.*.qty' => 'quantity',
         ]);
 
         DB::transaction(function () use ($validated) {

@@ -12,6 +12,9 @@
                 ];
             })
             ->values();
+        $oldItems = collect(old('items', [['product_id' => '', 'qty' => '']]))
+            ->whenEmpty(fn ($items) => $items->push(['product_id' => '', 'qty' => '']))
+            ->values();
     @endphp
     @if (session('success'))
         <div class="px-4 py-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl">
@@ -51,35 +54,41 @@
             </div>
 
             <div class="space-y-3" id="items">
-                <div class="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-3 stock-row">
-                    <div x-data="stockProductSelect(0)" class="relative" @click.outside="open = false">
-                        <input type="hidden" name="items[0][product_id]" x-model="selectedId">
-                        <button type="button" @click="open = !open; $nextTick(() => $refs.search.focus())"
-                            class="w-full min-h-10 px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg">
-                            <span x-text="selectedLabel || 'Select product'"></span>
-                        </button>
-                        <div x-show="open"
-                            class="absolute z-40 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                            <input x-ref="search" type="text" x-model="query"
-                                placeholder="Search product or design code..."
-                                class="w-full h-10 px-3 text-sm border-0 border-b border-gray-100 focus:ring-0">
-                            <div class="max-h-56 overflow-y-auto">
-                                <template x-for="product in filteredProducts()" :key="product.id">
-                                    <button type="button" @click="select(product)"
-                                        class="w-full px-3 py-2 text-left text-sm hover:bg-blue-50">
-                                        <span class="font-medium text-gray-800" x-text="product.name"></span>
-                                        <span class="block text-xs text-gray-400"
-                                            x-text="'Design: ' + (product.sku || '-') + ' | Central: ' + product.stock"></span>
-                                    </button>
-                                </template>
-                                <div x-show="filteredProducts().length === 0" class="px-3 py-3 text-sm text-gray-400">No
-                                    products found.</div>
+                @foreach($oldItems as $index => $item)
+                    <div class="grid grid-cols-1 {{ $index > 0 ? 'sm:grid-cols-[1fr_140px_44px]' : 'sm:grid-cols-[1fr_140px]' }} gap-3 stock-row">
+                        <div x-data="stockProductSelect(@js((string) data_get($item, 'product_id', '')))" class="relative" @click.outside="open = false">
+                            <input type="hidden" name="items[{{ $index }}][product_id]" x-model="selectedId">
+                            <button type="button" @click="open = !open; $nextTick(() => $refs.search.focus())"
+                                class="w-full min-h-10 px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg">
+                                <span x-text="selectedLabel || 'Select product'"></span>
+                            </button>
+                            <div x-show="open"
+                                class="absolute z-40 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                                <input x-ref="search" type="text" x-model="query"
+                                    placeholder="Search product or design code..."
+                                    class="w-full h-10 px-3 text-sm border-0 border-b border-gray-100 focus:ring-0">
+                                <div class="max-h-56 overflow-y-auto">
+                                    <template x-for="product in filteredProducts()" :key="product.id">
+                                        <button type="button" @click="select(product)"
+                                            class="w-full px-3 py-2 text-left text-sm hover:bg-blue-50">
+                                            <span class="font-medium text-gray-800" x-text="product.name"></span>
+                                            <span class="block text-xs text-gray-400"
+                                                x-text="'Design: ' + (product.sku || '-') + ' | Central: ' + product.stock"></span>
+                                        </button>
+                                    </template>
+                                    <div x-show="filteredProducts().length === 0" class="px-3 py-3 text-sm text-gray-400">No
+                                        products found.</div>
+                                </div>
                             </div>
                         </div>
+                        <input type="number" step="0.01" min="0.01" name="items[{{ $index }}][qty]"
+                            value="{{ data_get($item, 'qty') }}"
+                            class="border-gray-300 rounded-lg" placeholder="Qty">
+                        @if($index > 0)
+                            <button type="button" class="bg-red-50 text-red-700 rounded-lg" onclick="this.parentElement.remove()">X</button>
+                        @endif
                     </div>
-                    <input type="number" step="0.01" min="0.01" name="items[0][qty]"
-                        class="border-gray-300 rounded-lg" placeholder="Qty">
-                </div>
+                @endforeach
             </div>
 
             <div class="flex gap-2">
@@ -139,15 +148,26 @@
 
     @push('scripts')
         <script>
-            let itemIndex = 1;
+            let itemIndex = {{ $oldItems->count() }};
             window.stockProducts = @json($stockProductPayload);
 
-            function stockProductSelect(initialIndex) {
+            function stockProductLabel(product) {
+                return `${product.name} - design: ${product.sku || '-'} - central: ${product.stock}`;
+            }
+
+            function stockProductSelect(initialSelectedId = '') {
                 return {
                     open: false,
                     query: '',
-                    selectedId: '',
+                    selectedId: String(initialSelectedId || ''),
                     selectedLabel: '',
+                    init() {
+                        const selected = window.stockProducts.find(product => String(product.id) === this.selectedId);
+
+                        if (selected) {
+                            this.selectedLabel = stockProductLabel(selected);
+                        }
+                    },
                     filteredProducts() {
                         const q = this.query.trim().toLowerCase();
                         return window.stockProducts.filter(product =>
@@ -157,7 +177,7 @@
                     },
                     select(product) {
                         this.selectedId = product.id;
-                        this.selectedLabel = `${product.name} - design: ${product.sku || '-'} - central: ${product.stock}`;
+                        this.selectedLabel = stockProductLabel(product);
                         this.open = false;
                         this.query = '';
                     },
@@ -170,7 +190,7 @@
                 row.className = 'grid grid-cols-1 sm:grid-cols-[1fr_140px_44px] gap-3 stock-row';
                 row.innerHTML =
                     `
-                <div x-data="stockProductSelect(${itemIndex})" class="relative" @click.outside="open = false">
+                <div x-data="stockProductSelect()" class="relative" @click.outside="open = false">
                     <input type="hidden" name="items[${itemIndex}][product_id]" x-model="selectedId">
                     <button type="button" @click="open = !open; $nextTick(() => $refs.search.focus())" class="w-full min-h-10 px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg">
                         <span x-text="selectedLabel || 'Select product'"></span>
