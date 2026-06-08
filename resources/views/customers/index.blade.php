@@ -223,7 +223,7 @@
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Full Name</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden md:table-cell">Phone</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden xl:table-cell">Address</th>
-                            <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">total sold Product Qty</th>
+                            <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">sold Product Qty</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Total Sale</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Total Paid</th>
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Due</th>
