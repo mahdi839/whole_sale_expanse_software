@@ -81,7 +81,6 @@
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Qty</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Due</th>
-                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Products</th>
                             <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Note</th>
                         </tr>
                     </thead>
@@ -93,11 +92,10 @@
                                 <td class="px-5 py-3 align-middle">
                                     <a href="{{ $log['url'] }}" class="font-mono text-xs text-blue-700 hover:underline">{{ $log['reference'] }}</a>
                                 </td>
-                                <td class="px-5 py-3 align-middle text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">BDT {{ number_format($log['amount'], 2) }}</td>
-                                <td class="px-5 py-3 align-middle text-right text-gray-700">{{ is_null($log['qty']) ? '-' : number_format($log['qty'], 2) }}</td>
-                                <td class="px-5 py-3 align-middle text-right text-green-600">BDT {{ number_format($log['paid'], 2) }}</td>
-                                <td class="px-5 py-3 align-middle text-right text-red-600">BDT {{ number_format($log['due'], 2) }}</td>
-                                <td class="px-5 py-3 align-middle text-gray-500 max-w-sm whitespace-normal">{{ $log['products'] ?: '-' }}</td>
+                                <td class="px-5 py-3 align-middle text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">BDT {{ $log['amount'] }}</td>
+                                <td class="px-5 py-3 align-middle text-right text-gray-700">{{ is_null($log['qty']) ? '-' : $log['qty'] }}</td>
+                                <td class="px-5 py-3 align-middle text-right text-green-600">BDT {{ $log['paid'] }}</td>
+                                <td class="px-5 py-3 align-middle text-right text-red-600">BDT {{ $log['due'] }}</td>
                                 <td class="px-5 py-3 align-middle text-gray-500 max-w-sm whitespace-normal">{{ $log['note'] ?: '-' }}</td>
                             </tr>
                         @empty
@@ -111,20 +109,20 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Total Qty</p>
-                <p class="text-xl font-semibold text-gray-800">{{ number_format($totalQty, 2) }}</p>
+                <p class="text-xl font-semibold text-gray-800">{{ $totalQty }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Total Sale</p>
-                <p class="text-xl font-semibold text-gray-800">BDT {{ number_format($customer->total_sale, 2) }}</p>
+                <p class="text-xl font-semibold text-gray-800">BDT {{ $customer->total_sale }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Total Paid</p>
-                <p class="text-xl font-semibold text-green-600">BDT {{ number_format($customer->total_paid, 2) }}</p>
+                <p class="text-xl font-semibold text-green-600">BDT {{ $customer->total_paid }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Due</p>
                 <p class="text-xl font-semibold {{ $customer->due > 0 ? 'text-red-600' : 'text-gray-400' }}">
-                    BDT {{ number_format($customer->due, 2) }}
+                    BDT {{ $customer->due }}
                 </p>
                 @if($customer->due <= 0)
                     <span class="text-xs text-green-600 font-medium">Cleared</span>

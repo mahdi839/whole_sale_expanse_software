@@ -107,7 +107,7 @@ class SimplePdf
 
         $usable = self::PW - self::ML - self::MR;
         $this->colWidths = $widths ?? $this->autoWidths($headers, $rowArr, $usable);
-        $this->tableW    = (float) array_sum($this->colWidths);
+        $this->tableW    = array_sum($this->colWidths);
 
         $this->newPage();
         $this->drawPageHeader();
@@ -310,7 +310,7 @@ class SimplePdf
 
             if ($align === 'R' && $value !== '') {
                 $clean = str_replace([',', ' ', 'BDT', '৳'], '', $value);
-                if (is_numeric($clean) && (float) $clean < 0) {
+                if (is_numeric($clean) &&  $clean < 0) {
                     $color = self::RED_FG;
                 }
             }

@@ -108,7 +108,6 @@ class CustomerController extends Controller
     public function show(Customer $customer)
     {
         [$logs, $totalQty] = $this->customerLogs($customer);
-
         return view('customers.show', compact('customer', 'logs', 'totalQty'));
     }
 
@@ -130,10 +129,10 @@ class CustomerController extends Controller
             ]);
 
             $summary = [
-                ['label' => 'Total Paid', 'value' => number_format((float) $customer->total_paid, 2)],
-                ['label' => 'Total Due', 'value' => number_format((float) $customer->due, 2)],
-                ['label' => 'Total Qty', 'value' => number_format((float) $totalQty, 2)],
-                ['label' => 'Total Sale', 'value' => number_format((float) $customer->total_sale, 2)],
+                ['label' => 'Total Paid', 'value' => $customer->total_paid],
+                ['label' => 'Total Due', 'value' => $customer->due],
+                ['label' => 'Total Qty', 'value' => $totalQty],
+                ['label' => 'Total Sale', 'value' =>  $customer->total_sale],
             ];
 
             return $this->streamPdf(
@@ -232,10 +231,10 @@ class CustomerController extends Controller
                     'date' => $sale->created_at,
                     'type' => 'Sale',
                     'reference' => $sale->reference,
-                    'amount' => (float) $sale->grand_total,
-                    'qty' => $sale->items->sum(fn ($item) => (float) $item->qty),
-                    'paid' => (float) $sale->paid,
-                    'due' => (float) $sale->due,
+                    'amount' => $sale->grand_total,
+                    'qty' => $sale->items->sum(fn ($item) =>  $item->qty),
+                    'paid' => $sale->paid,
+                    'due' => $sale->due,
                     'products' => $products,
                     'note' => $sale->note,
                     'url' => route('sales.show', $sale),
@@ -251,9 +250,9 @@ class CustomerController extends Controller
                     'date' => $return->created_at,
                     'type' => 'Sale Return',
                     'reference' => $return->reference,
-                    'amount' => -1 * (float) $return->return_amount,
-                    'qty' => $return->items->sum(fn ($item) => (float) $item->qty),
-                    'paid' => $return->return_type === 'credit' ? 0 : -1 * (float) $return->return_amount,
+                    'amount' => -1 *  $return->return_amount,
+                    'qty' => $return->items->sum(fn ($item) =>  $item->qty),
+                    'paid' => $return->return_type === 'credit' ? 0 : -1 *  $return->return_amount,
                     'due' => 0,
                     'products' => $products,
                     'note' => $return->note,
@@ -264,10 +263,10 @@ class CustomerController extends Controller
                 'date' => $cash->date,
                 'type' => 'Payment',
                 'reference' => $cash->reference,
-                'amount' => $cash->direction === 'in' ? (float) $cash->amount : -1 * (float) $cash->amount,
+                'amount' => $cash->direction === 'in' ? $cash->amount : -1 * $cash->amount,
                 'qty' => null,
-                'paid' => (float) $cash->amount,
-                'due' => 0,
+                'paid' => $cash->amount,
+                'due' => Customer::sum('due'),
                 'products' => '',
                 'note' => $cash->note,
                 'url' => route('cash-transactions.index', ['search' => $cash->reference]),
@@ -276,10 +275,10 @@ class CustomerController extends Controller
                 'date' => $due->date,
                 'type' => 'Manual Due',
                 'reference' => $due->reference ?? 'Manual',
-                'amount' => (float) $due->amount,
+                'amount' => $due->amount,
                 'qty' => null,
                 'paid' => 0,
-                'due' => (float) $due->amount,
+                'due' => $due->amount,
                 'products' => '',
                 'note' => $due->note,
                 'url' => route('dues.manual'),
