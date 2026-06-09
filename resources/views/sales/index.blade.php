@@ -329,9 +329,8 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Reference</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Shop</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Customer</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Products</th>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Purchase Price</th>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Unit Price</th>
+                            {{-- <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Purchase Price</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Unit Price</th> --}}
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Grand Total</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Add Money</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
@@ -373,7 +372,7 @@
                                     <span class="text-xs text-gray-400">{{ $sale->created_at->format('d M Y') }}</span>
                                 </td>
 
-                                <td class="px-4 py-3 text-xs text-gray-600">
+                                {{-- <td class="px-4 py-3 text-xs text-gray-600">
                                     @foreach ($sale->items->take(2) as $item)
                                         <div>
                                             {{ $item->product->product_name }} <span class="text-gray-400">({{ $item->qty }})</span>
@@ -423,7 +422,7 @@
                                     @if ($sale->items->count() > 2)
                                         <div class="text-gray-300">See products</div>
                                     @endif
-                                </td>
+                                </td> --}}
 
                                 <td class="px-4 py-3 text-right font-medium text-blue-600">
                                     {{ number_format($sale->grand_total, 2) }}
