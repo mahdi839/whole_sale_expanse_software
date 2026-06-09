@@ -152,7 +152,7 @@
         }
 
         table.items th {
-            padding: 10px 12px;
+            padding: 8px 10px;
             text-align: left;
             font-size: 10px;
             text-transform: uppercase;
@@ -166,7 +166,7 @@
         }
 
         table.items td {
-            padding: 11px 12px;
+            padding: 8px 10px;
             border-bottom: 1px solid #f1f5f9;
             font-size: 13px;
             color: #334155;
@@ -341,7 +341,7 @@
         /* ---- Print styles ---- */
         @media print {
             @page {
-                margin: 10mm;
+                margin: 0;
             }
 
             html,
@@ -350,7 +350,7 @@
             }
 
             body {
-                padding: 0;
+                padding: 7mm;
             }
 
             .invoice-wrap {
@@ -375,6 +375,28 @@
             .inv-header .company h1,
             .inv-header .inv-meta .ref {
                 color: #fff !important;
+            }
+
+            .inv-body {
+                padding: 14px 22px;
+            }
+
+            table.items th {
+                padding: 5px 7px;
+                font-size: 9px;
+                color: #334155 !important;
+                font-weight: 800;
+            }
+
+            table.items td {
+                padding: 5px 7px;
+                font-size: 12px;
+                color: #111827 !important;
+                font-weight: 700;
+            }
+
+            table.items td.r {
+                font-weight: 700;
             }
 
             table.items thead tr {
@@ -488,12 +510,12 @@
                     @foreach ($sale->items as $i => $item)
                         <tr>
                             <td style="color:#94a3b8;width:32px">{{ $i + 1 }}</td>
-                            <td style="font-weight:600">{{ $item->product->product_name }}</td>
-                            <td style="font-family:monospace;font-size:12px;color:#94a3b8">
+                            <td style="font-weight:800;color:#111827">{{ $item->product->product_name }}</td>
+                            <td style="font-family:monospace;font-size:12px;color:#111827;font-weight:800">
                                 {{ $item->product->sku ?? 'N/A' }}</td>
                             <td class="r">{{ $qty($item->qty) }}</td>
-                            <td class="r" style="font-family:monospace">{{ $money($item->price_on_sale) }}</td>
-                            <td class="r" style="font-family:monospace;font-weight:600">
+                            <td class="r" style="font-family:monospace;font-weight:700;color:#111827">{{ $money($item->price_on_sale) }}</td>
+                            <td class="r" style="font-family:monospace;font-weight:800;color:#111827">
                                 {{ $money($item->line_total) }}</td>
                         </tr>
                     @endforeach
@@ -517,13 +539,13 @@
                                 <tr>
                                     <td style="color:#94a3b8;width:32px">
                                         {{ $loop->parent->iteration }}.{{ $loop->iteration }}</td>
-                                    <td style="font-weight:600">{{ $item->product?->product_name ?? 'Unknown' }}</td>
-                                    <td style="font-family:monospace;font-size:12px;color:#94a3b8">
+                                    <td style="font-weight:800;color:#111827">{{ $item->product?->product_name ?? 'Unknown' }}</td>
+                                    <td style="font-family:monospace;font-size:12px;color:#111827;font-weight:800">
                                         {{ $return->sale?->reference ?? 'N/A' }}</td>
                                     <td class="r">{{ $qty($item->qty) }}</td>
-                                    <td class="r" style="font-family:monospace">{{ $money($item->price_on_sale) }}
+                                    <td class="r" style="font-family:monospace;font-weight:700;color:#111827">{{ $money($item->price_on_sale) }}
                                     </td>
-                                    <td class="r" style="font-family:monospace;font-weight:600;color:#0f766e">-
+                                    <td class="r" style="font-family:monospace;font-weight:800;color:#0f766e">-
                                         {{ $money($item->line_total) }}</td>
                                 </tr>
                             @endforeach

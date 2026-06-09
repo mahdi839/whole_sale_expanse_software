@@ -186,8 +186,11 @@
             letter-spacing: 2px;
         }
         @media print {
-            @page { size: A4; margin: 8mm; }
-            body { background: #fff !important; }
+            @page { size: A4; margin: 0; }
+            body {
+                background: #fff !important;
+                padding: 7mm;
+            }
             body * { visibility: hidden; }
             #printArea, #printArea * { visibility: visible; }
             #printArea {
