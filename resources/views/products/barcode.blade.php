@@ -189,7 +189,7 @@
             @page { size: A4; margin: 0; }
             body {
                 background: #fff !important;
-                padding: 7mm;
+                padding: 4mm;
             }
             body * { visibility: hidden; }
             #printArea, #printArea * { visibility: visible; }
@@ -206,10 +206,10 @@
             .label-sheet {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 4mm;
+                gap: 2mm;
             }
             .sticker {
-                width: auto;
+                width: calc((100% - 6mm) / 4);
                 min-height: 32mm;
                 box-sizing: border-box;
                 box-shadow: none;
