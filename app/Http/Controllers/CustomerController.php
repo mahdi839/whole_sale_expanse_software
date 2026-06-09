@@ -283,7 +283,7 @@ class CustomerController extends Controller
                 'note' => $due->note,
                 'url' => route('dues.manual'),
             ]))
-            
+            ->sortBy('date')
             ->values();
 
         return [$logs, $totalQty];
