@@ -340,10 +340,6 @@ class SaleReturnController extends Controller
                     $customer->decrement('total_sale', (float) $ret->return_amount);
                 }
 
-                if ($ret->return_type === 'refund') {
-                    $customer->decrement('total_paid', (float) $ret->return_amount);
-                }
-
                 $customer->recalculateDue();
             }
         }
@@ -379,10 +375,6 @@ class SaleReturnController extends Controller
             if ($customer) {
                 if ($ret->return_type !== 'exchange') {
                     $customer->increment('total_sale', (float) $ret->return_amount);
-                }
-
-                if ($ret->return_type === 'refund') {
-                    $customer->increment('total_paid', (float) $ret->return_amount);
                 }
 
                 $customer->recalculateDue();

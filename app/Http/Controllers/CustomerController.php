@@ -254,7 +254,7 @@ class CustomerController extends Controller
                     'reference' => $return->reference,
                     'amount' => $affectsCustomerBalance ? -1 * $return->return_amount : 0,
                     'qty' => $return->items->sum(fn ($item) =>  $item->qty),
-                    'paid' => $return->return_type === 'refund' ? -1 * $return->return_amount : 0,
+                    'paid' => 0,
                     'due' => 0,
                     'products' => $products,
                     'note' => $return->note,
