@@ -544,6 +544,7 @@ class SaleController extends Controller
         $returnTotal = (float) SaleReturn::query()
             ->where('customer_id', $sale->customer_id)
             ->where('return_status', 'approved')
+            ->where('return_type', '!=', 'exchange')
             ->where('created_at', '<', $sale->created_at)
             ->sum('return_amount');
 

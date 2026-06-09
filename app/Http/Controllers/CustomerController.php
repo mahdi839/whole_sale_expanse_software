@@ -246,13 +246,15 @@ class CustomerController extends Controller
                     ->filter()
                     ->implode(', ');
 
+                $affectsCustomerBalance = $return->return_type !== 'exchange';
+
                 return [
                     'date' => $return->created_at,
-                    'type' => 'Sale Return',
+                    'type' => 'Sale Return'.($return->return_type ? ' - '.ucfirst($return->return_type) : ''),
                     'reference' => $return->reference,
-                    'amount' => -1 *  $return->return_amount,
+                    'amount' => $affectsCustomerBalance ? -1 * $return->return_amount : 0,
                     'qty' => $return->items->sum(fn ($item) =>  $item->qty),
-                    'paid' => $return->return_type === 'credit' ? 0 : -1 *  $return->return_amount,
+                    'paid' => $return->return_type === 'refund' ? -1 * $return->return_amount : 0,
                     'due' => 0,
                     'products' => $products,
                     'note' => $return->note,

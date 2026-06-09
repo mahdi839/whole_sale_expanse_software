@@ -336,9 +336,11 @@ class SaleReturnController extends Controller
             $customer = Customer::find($ret->customer_id);
 
             if ($customer) {
-                $customer->decrement('total_sale', (float) $ret->return_amount);
+                if ($ret->return_type !== 'exchange') {
+                    $customer->decrement('total_sale', (float) $ret->return_amount);
+                }
 
-                if (in_array($ret->return_type, ['refund', 'exchange'])) {
+                if ($ret->return_type === 'refund') {
                     $customer->decrement('total_paid', (float) $ret->return_amount);
                 }
 
@@ -375,9 +377,11 @@ class SaleReturnController extends Controller
             $customer = Customer::find($ret->customer_id);
 
             if ($customer) {
-                $customer->increment('total_sale', (float) $ret->return_amount);
+                if ($ret->return_type !== 'exchange') {
+                    $customer->increment('total_sale', (float) $ret->return_amount);
+                }
 
-                if (in_array($ret->return_type, ['refund', 'exchange'])) {
+                if ($ret->return_type === 'refund') {
                     $customer->increment('total_paid', (float) $ret->return_amount);
                 }
 
