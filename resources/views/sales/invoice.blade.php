@@ -360,7 +360,20 @@
             }
 
             .inv-header {
-                background: #1e3a5f !important;
+                background: #0f2f4f !important;
+                color: #fff !important;
+                border-bottom: 3px solid #0b2239;
+            }
+
+            .inv-header .company p,
+            .inv-header .inv-meta .label,
+            .inv-header .inv-meta .date {
+                color: #eaf2fb !important;
+                opacity: 1 !important;
+            }
+
+            .inv-header .company h1,
+            .inv-header .inv-meta .ref {
                 color: #fff !important;
             }
 
@@ -385,6 +398,7 @@
 
             .inv-logo {
                 box-shadow: none;
+                border: 1px solid #e2e8f0;
             }
 
             .screen-only {
