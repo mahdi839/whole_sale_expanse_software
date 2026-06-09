@@ -23,6 +23,8 @@ class Sale extends Model
         'cash_memo',
         'bell_no',
         'payment_method',
+        'bank',
+        'bank_details',
         'payment_status',
         'status',
         'note',

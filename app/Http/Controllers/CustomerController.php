@@ -217,7 +217,7 @@ class CustomerController extends Controller
 
     private function customerLogs(Customer $customer): array
     {
-        $sales = $customer->sales()->with('items.product')->latest()->get();
+        $sales = $customer->sales()->with('items.product')->get();
         $totalQty = $sales->sum(fn ($sale) => $sale->items->sum(fn ($item) => (float) $item->qty));
 
         $logs = collect()
@@ -240,7 +240,7 @@ class CustomerController extends Controller
                     'url' => route('sales.show', $sale),
                 ];
             }))
-            ->merge($customer->saleReturns()->with('items.product')->latest()->get()->map(function ($return) {
+            ->merge($customer->saleReturns()->with('items.product')->get()->map(function ($return) {
                 $products = $return->items
                     ->map(fn ($item) => trim(($item->product?->product_name ?? 'Product #'.$item->product_id).' x'.$item->qty))
                     ->filter()
@@ -261,7 +261,7 @@ class CustomerController extends Controller
                     'url' => route('sale-returns.show', $return),
                 ];
             }))
-            ->merge($customer->cashTransactions()->whereNull('source_type')->latest('date')->latest()->get()->map(fn ($cash) => [
+            ->merge($customer->cashTransactions()->whereNull('source_type')->get()->map(fn ($cash) => [
                 'date' => $cash->date,
                 'type' => 'Payment',
                 'reference' => $cash->reference,
@@ -273,7 +273,7 @@ class CustomerController extends Controller
                 'note' => $cash->note,
                 'url' => route('cash-transactions.index', ['search' => $cash->reference]),
             ]))
-            ->merge($customer->manualDues()->latest('date')->latest()->get()->map(fn ($due) => [
+            ->merge($customer->manualDues()->latest('date')->get()->map(fn ($due) => [
                 'date' => $due->date,
                 'type' => 'Manual Due',
                 'reference' => $due->reference ?? 'Manual',
@@ -285,7 +285,7 @@ class CustomerController extends Controller
                 'note' => $due->note,
                 'url' => route('dues.manual'),
             ]))
-            ->sortBy('date')
+            ->sortByDesc('date')
             ->values();
 
         return [$logs, $totalQty];

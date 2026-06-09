@@ -13,6 +13,7 @@ use App\Models\SaleReturn;
 use App\Models\SaleReturnItem;
 use App\Models\Shop;
 use App\Models\Stock;
+use App\Services\CashLedger;
 use App\Support\SimplePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +45,8 @@ class SaleController extends Controller
                 $q->where(function ($sub) use ($s) {
                     $sub->where('reference', 'like', "%{$s}%")
                         ->orWhere('cash_memo', 'like', "%{$s}%")
+                        ->orWhere('bank', 'like', "%{$s}%")
+                        ->orWhere('bank_details', 'like', "%{$s}%")
                         ->orWhere('bell_no', 'like', "%{$s}%")
                         ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
                         ->orWhereHas('items.product', fn($p) => $p->where('product_name', 'like', "%{$s}%"));
@@ -65,6 +68,8 @@ class SaleController extends Controller
                 $q->where(function ($sub) use ($s) {
                     $sub->where('reference', 'like', "%{$s}%")
                         ->orWhere('cash_memo', 'like', "%{$s}%")
+                        ->orWhere('bank', 'like', "%{$s}%")
+                        ->orWhere('bank_details', 'like', "%{$s}%")
                         ->orWhere('bell_no', 'like', "%{$s}%")
                         ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
                         ->orWhereHas('items.product', fn($p) => $p->where('product_name', 'like', "%{$s}%"));
@@ -162,6 +167,8 @@ class SaleController extends Controller
                 'cash_memo'      => $validated['cash_memo'] ?? null,
                 'bell_no'        => $validated['bell_no'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
+                'bank'           => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank'] ?? null) : null,
+                'bank_details'   => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank_details'] ?? null) : null,
                 'payment_status' => $validated['payment_status'],
                 'status'         => 'success',
                 'note'           => $validated['note'] ?? null,
@@ -213,6 +220,7 @@ class SaleController extends Controller
             }
 
             $this->createAppliedSaleReturns($sale, $request->input('returns', []));
+            $this->syncCashPayment($sale->fresh());
         });
 
         return redirect()->route('sales.index')
@@ -301,6 +309,8 @@ class SaleController extends Controller
                 'cash_memo'      => $validated['cash_memo'] ?? null,
                 'bell_no'        => $validated['bell_no'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
+                'bank'           => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank'] ?? null) : null,
+                'bank_details'   => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank_details'] ?? null) : null,
                 'payment_status' => $validated['payment_status'],
                 'note'           => $validated['note'] ?? null,
             ]);
@@ -349,6 +359,7 @@ class SaleController extends Controller
             }
 
             $this->createAppliedSaleReturns($sale, $request->input('returns', []));
+            $this->syncCashPayment($sale->fresh());
         });
 
         return redirect()->route('sales.index')
@@ -380,6 +391,7 @@ class SaleController extends Controller
             }
 
             $this->deleteAppliedSaleReturns($sale);
+            app(CashLedger::class)->deleteSource('sale', $sale->id);
 
             $sale->items()->delete();
             $sale->delete();
@@ -521,6 +533,21 @@ class SaleController extends Controller
             'partial' => [min($paidInput, $grandTotal), max(0, $grandTotal - $paidInput)],
             default   => [0, $grandTotal],
         };
+    }
+
+    private function syncCashPayment(Sale $sale): void
+    {
+        if (strtolower((string) $sale->payment_method) !== 'cash' || (float) $sale->paid <= 0) {
+            app(CashLedger::class)->deleteSource('sale', $sale->id);
+            return;
+        }
+
+        app(CashLedger::class)->syncSource('sale', $sale->id, 'in', 'sale', (float) $sale->paid, [
+            'date' => $sale->created_at?->toDateString() ?? now()->toDateString(),
+            'payment_method' => $sale->payment_method,
+            'customer_id' => $sale->customer_id,
+            'note' => 'Sale payment: '.$sale->reference,
+        ]);
     }
 
     private function customerDueBeforeSale(Sale $sale): float
@@ -812,6 +839,8 @@ class SaleController extends Controller
             'cash_memo'              => 'nullable|string|max:100',
             'bell_no'                => 'nullable|string|max:100',
             'payment_method'         => 'nullable|string|max:100',
+            'bank'                   => 'nullable|string|max:100',
+            'bank_details'           => 'nullable|string|max:255',
             'payment_status'         => 'required|in:due,paid,partial',
             'paid'                   => 'nullable|numeric|min:0',
             'note'                   => 'nullable|string|max:2000',

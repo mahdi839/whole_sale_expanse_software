@@ -689,12 +689,25 @@
 
         <div class="field-group">
             <div class="field-label">Payment Method</div>
-            <select name="payment_method" class="field-input">
+            <select name="payment_method" id="payment_method" class="field-input">
                 <option value=""> Select Payment Method</option>
                 @foreach (['Cash','Bank','Bkash','Nagad','Card'] as $method)
                     <option value="{{ $method }}" @selected(old('payment_method', $sale?->payment_method) == $method)>{{ $method }}</option>
                 @endforeach
             </select>
+        </div>
+
+        <div id="bank-details-field" class="field-group" style="display:none">
+            <div class="field-label">Bank</div>
+            <input type="text" name="bank" id="bank"
+                   value="{{ old('bank', $sale?->bank) }}"
+                   maxlength="100" class="field-input"
+                   placeholder="Bank name">
+            <div class="field-label" style="margin-top:4px">Bank Details</div>
+            <input type="text" name="bank_details" id="bank_details"
+                   value="{{ old('bank_details', $sale?->bank_details) }}"
+                   maxlength="255" class="field-input"
+                   placeholder="Account, transaction no, branch">
         </div>
 
         <hr class="divider">
@@ -783,6 +796,10 @@ const paidField     = document.getElementById('paid-field');
 const dueField      = document.getElementById('due-field');
 const paidInput     = document.getElementById('paid');
 const dueInput      = document.getElementById('due');
+const paymentMethod = document.getElementById('payment_method');
+const bankDetailsField = document.getElementById('bank-details-field');
+const bankInput = document.getElementById('bank');
+const bankDetailsInput = document.getElementById('bank_details');
 const customerSelect = document.getElementById('customer_id');
 const returnSaleSelect = document.getElementById('return-sale-select');
 const returnProductSelect = document.getElementById('return-product-select');
@@ -1097,6 +1114,18 @@ paidInput.addEventListener('input', () => {
     }
 });
 
+function toggleBankDetails() {
+    const isBank = paymentMethod?.value === 'Bank';
+    bankDetailsField.style.display = isBank ? 'flex' : 'none';
+
+    if (!isBank && bankDetailsInput) {
+        if (bankInput) bankInput.value = '';
+        bankDetailsInput.value = '';
+    }
+}
+
+paymentMethod?.addEventListener('change', toggleBankDetails);
+
 document.querySelector('form')?.addEventListener('submit', () => {
     cartList.querySelectorAll('.item-price').forEach(inp => {
         inp.value = formatMoney(toNumber(inp.value));
@@ -1252,6 +1281,7 @@ function formatQty(qty) {
 initReturnSelectors();
 renderCart();
 renderReturns();
+toggleBankDetails();
 recalc();
 setTimeout(recalc, 100);
 </script>

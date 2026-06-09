@@ -16,7 +16,7 @@
             <form method="GET" action="{{ route('sales.index') }}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-3.5">
                     <input type="text" name="search" value="{{ request('search') }}"
-                        placeholder="Reference, customer, cash memo..."
+                        placeholder="Reference, customer, bank details..."
                         class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
 
                     <select name="payment_status"
@@ -204,12 +204,8 @@
                             {{ $sale->customer?->full_name ?? 'N/A' }}</p>
                     </div>
 
-                    @if ($sale->bell_no || $sale->cash_memo)
+                    @if ($sale->bell_no)
                         <div class="flex flex-wrap gap-2 text-xs">
-                            @if ($sale->cash_memo)
-                                <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded font-mono">Memo:
-                                    {{ $sale->cash_memo }}</span>
-                            @endif
                             @if ($sale->bell_no)
                                 <span class="px-2 py-0.5 bg-amber-50 text-amber-700 rounded font-mono">Bell:
                                     {{ $sale->bell_no }}</span>
@@ -289,6 +285,12 @@
                             'bg-red-50 text-red-700' => $sale->payment_status === 'due',
                         ])>{{ ucfirst($sale->payment_status) }}</span>
 
+                        @if ($sale->payment_method)
+                            <span class="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                                {{ $sale->payment_method }}
+                            </span>
+                        @endif
+
                         <span @class([
                             'px-2 py-1 rounded-full text-xs font-medium',
                             'bg-green-50 text-green-700' => $sale->status === 'success',
@@ -296,6 +298,17 @@
                             'bg-gray-100 text-gray-600' => blank($sale->status),
                         ])>{{ $sale->status ? ucfirst($sale->status) : 'N/A' }}</span>
                     </div>
+
+                    @if ($sale->payment_method === 'Bank' && ($sale->bank || $sale->bank_details))
+                        <div class="text-xs text-gray-600 bg-blue-50 rounded-lg p-2">
+                            @if ($sale->bank)
+                                <div><span class="font-medium text-blue-700">Bank:</span> {{ $sale->bank }}</div>
+                            @endif
+                            @if ($sale->bank_details)
+                                <div><span class="font-medium text-blue-700">Details:</span> {{ $sale->bank_details }}</div>
+                            @endif
+                        </div>
+                    @endif
                 </div>
             @empty
                 <div class="bg-white border border-gray-200 rounded-xl px-5 py-16 text-center text-gray-400">
@@ -434,27 +447,32 @@
 
                                 <td class="px-4 py-3">
                                     <div class="flex flex-col gap-0.5 text-xs">
-                                        @if ($sale->cash_memo)
-                                            <span class="text-gray-500 font-mono" title="Cash Memo">Cash Memo:
-                                                {{ $sale->cash_memo }}</span>
-                                        @endif
                                         @if ($sale->bell_no)
                                             <span class="text-amber-600 font-mono" title="Bell No">Bell No:
                                                 {{ $sale->bell_no }}</span>
                                         @endif
-                                        @if (!$sale->cash_memo && !$sale->bell_no)
+                                        @if (!$sale->bell_no)
                                             <span class="text-gray-300">N/A</span>
                                         @endif
                                     </div>
                                 </td>
 
                                 <td class="px-4 py-3">
-                                    <span @class([
-                                        'px-2 py-0.5 rounded-full text-xs font-medium',
-                                        'bg-green-50 text-green-700' => $sale->payment_status === 'paid',
-                                        'bg-amber-50 text-amber-700' => $sale->payment_status === 'partial',
-                                        'bg-red-50 text-red-700' => $sale->payment_status === 'due',
-                                    ])>{{ ucfirst($sale->payment_status) }}</span>
+                                    <div class="flex flex-col gap-1 text-xs">
+                                        <span @class([
+                                            'w-fit px-2 py-0.5 rounded-full font-medium',
+                                            'bg-green-50 text-green-700' => $sale->payment_status === 'paid',
+                                            'bg-amber-50 text-amber-700' => $sale->payment_status === 'partial',
+                                            'bg-red-50 text-red-700' => $sale->payment_status === 'due',
+                                        ])>{{ ucfirst($sale->payment_status) }}</span>
+                                        <span class="text-gray-600">{{ $sale->payment_method ?? 'N/A' }}</span>
+                                        @if ($sale->payment_method === 'Bank' && $sale->bank)
+                                            <span class="text-blue-700">Bank: {{ $sale->bank }}</span>
+                                        @endif
+                                        @if ($sale->payment_method === 'Bank' && $sale->bank_details)
+                                            <span class="text-gray-500 break-words">Details: {{ $sale->bank_details }}</span>
+                                        @endif
+                                    </div>
                                 </td>
 
                                 <td class="px-4 py-3">
