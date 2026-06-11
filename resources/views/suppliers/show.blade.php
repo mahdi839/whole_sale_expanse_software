@@ -72,7 +72,6 @@
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Qty</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Due</th>
-                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Products</th>
                             <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Note</th>
                         </tr>
                     </thead>
@@ -84,11 +83,10 @@
                                 <td class="px-5 py-3">
                                     <a href="{{ $log['url'] }}" class="font-mono text-xs text-blue-700 hover:underline">{{ $log['reference'] }}</a>
                                 </td>
-                                <td class="px-5 py-3 text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">৳{{ number_format($log['amount'], 2) }}</td>
+                                <td class="px-5 py-3 text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">{{ number_format($log['amount'], 2) }}</td>
                                 <td class="px-5 py-3 text-right text-gray-700">{{ is_null($log['qty']) ? '-' : number_format($log['qty'], 2) }}</td>
-                                <td class="px-5 py-3 text-right text-green-600">৳{{ number_format($log['paid'], 2) }}</td>
-                                <td class="px-5 py-3 text-right text-red-600">৳{{ number_format($log['due'], 2) }}</td>
-                                <td class="px-5 py-3 text-gray-500 max-w-sm whitespace-normal">{{ $log['products'] ?: '-' }}</td>
+                                <td class="px-5 py-3 text-right text-green-600">{{ $log['paid'] }}</td>
+                                <td class="px-5 py-3 text-right text-red-600">{{ $log['due']}}</td>
                                 <td class="px-5 py-3 text-gray-500 max-w-sm whitespace-normal">{{ $log['note'] ?: '-' }}</td>
                             </tr>
                         @empty
@@ -106,16 +104,16 @@
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Total Purchase</p>
-                <p class="text-xl font-semibold text-gray-800">৳{{ number_format($supplier->total_purchase, 2) }}</p>
+                <p class="text-xl font-semibold text-gray-800">{{ number_format($supplier->total_purchase, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Total Paid</p>
-                <p class="text-xl font-semibold text-green-600">৳{{ number_format($supplier->total_paid, 2) }}</p>
+                <p class="text-xl font-semibold text-green-600">{{ number_format($supplier->total_paid, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Due</p>
                 <p class="text-xl font-semibold {{ $supplier->due > 0 ? 'text-red-600' : 'text-gray-400' }}">
-                    ৳{{ number_format($supplier->due, 2) }}
+                    {{ number_format($supplier->due, 2) }}
                 </p>
                 @if($supplier->due <= 0)
                     <span class="text-xs text-green-600 font-medium">Cleared</span>

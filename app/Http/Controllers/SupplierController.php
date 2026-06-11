@@ -208,7 +208,7 @@ class SupplierController extends Controller
                 'amount' => $cash->direction === 'out' ? (float) $cash->amount : -1 * (float) $cash->amount,
                 'qty' => null,
                 'paid' => (float) $cash->amount,
-                'due' => 0,
+                'due' => "-",
                 'products' => '',
                 'note' => $cash->note,
                 'url' => route('cash-transactions.index', ['search' => $cash->reference]),
