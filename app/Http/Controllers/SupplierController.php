@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Supplier;
 use App\Support\SimplePdf;
+use DateTimeInterface;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 
@@ -173,8 +175,9 @@ class SupplierController extends Controller
     private function supplierLogs(Supplier $supplier)
     {
         return collect()
-            ->merge($supplier->purchases()->with('items.product')->latest('date')->latest()->get()->map(fn ($purchase) => [
+            ->merge($supplier->purchases()->with('items.product')->get()->map(fn ($purchase) => [
                 'date' => $purchase->date,
+                'sort_at' => $this->logSortAt($purchase->date, $purchase->created_at),
                 'type' => 'Purchase',
                 'reference' => $purchase->reference,
                 'amount' => (float) $purchase->grand_total,
@@ -185,11 +188,12 @@ class SupplierController extends Controller
                 'note' => $purchase->note,
                 'url' => route('purchases.show', $purchase),
             ]))
-            ->merge($supplier->purchaseReturns()->with('items.product')->latest('date')->latest()->get()->map(function ($return) {
+            ->merge($supplier->purchaseReturns()->with('items.product')->get()->map(function ($return) {
                 $products = $return->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', ');
 
                 return [
                     'date' => $return->date,
+                    'sort_at' => $this->logSortAt($return->date, $return->created_at),
                     'type' => 'Purchase Return',
                     'reference' => $return->reference,
                     'amount' => -1 * (float) $return->return_amount,
@@ -201,8 +205,9 @@ class SupplierController extends Controller
                     'url' => route('purchase-returns.show', $return),
                 ];
             }))
-            ->merge($supplier->cashTransactions()->whereNull('source_type')->latest('date')->latest()->get()->map(fn ($cash) => [
+            ->merge($supplier->cashTransactions()->whereNull('source_type')->get()->map(fn ($cash) => [
                 'date' => $cash->date,
+                'sort_at' => $this->logSortAt($cash->date, $cash->created_at),
                 'type' => 'Payment',
                 'reference' => $cash->reference,
                 'amount' => $cash->direction === 'out' ? (float) $cash->amount : -1 * (float) $cash->amount,
@@ -213,8 +218,9 @@ class SupplierController extends Controller
                 'note' => $cash->note,
                 'url' => route('cash-transactions.index', ['search' => $cash->reference]),
             ]))
-            ->merge($supplier->manualDues()->latest('date')->latest()->get()->map(fn ($due) => [
+            ->merge($supplier->manualDues()->get()->map(fn ($due) => [
                 'date' => $due->date,
+                'sort_at' => $this->logSortAt($due->date, $due->created_at),
                 'type' => 'Manual Due',
                 'reference' => $due->reference ?? 'Manual',
                 'amount' => (float) $due->amount,
@@ -225,7 +231,33 @@ class SupplierController extends Controller
                 'note' => $due->note,
                 'url' => route('dues.manual'),
             ]))
-            ->sortByDesc('date')
+            ->sortBy('sort_at')
+            ->map(function ($log) {
+                unset($log['sort_at']);
+
+                return $log;
+            })
             ->values();
+    }
+
+    private function logSortAt($date, $createdAt): ?Carbon
+    {
+        if (! $date) {
+            return $createdAt;
+        }
+
+        $sortAt = $date instanceof Carbon
+            ? $date->copy()
+            : ($date instanceof DateTimeInterface ? Carbon::instance($date) : Carbon::parse($date));
+
+        if ($createdAt instanceof DateTimeInterface) {
+            return $sortAt->setTime(
+                (int) $createdAt->format('H'),
+                (int) $createdAt->format('i'),
+                (int) $createdAt->format('s')
+            );
+        }
+
+        return $sortAt->startOfDay();
     }
 }
