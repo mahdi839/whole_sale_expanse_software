@@ -95,7 +95,7 @@
                                 <td class="px-5 py-3 align-middle text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">BDT {{ $log['amount'] }}</td>
                                 <td class="px-5 py-3 align-middle text-right text-gray-700">{{ is_null($log['qty']) ? '-' : $log['qty'] }}</td>
                                 <td class="px-5 py-3 align-middle text-right text-green-600">BDT {{ $log['paid'] }}</td>
-                                <td class="px-5 py-3 align-middle text-right text-red-600">BDT {{ $log['due'] }}</td>
+                                <td class="px-5 py-3 align-middle text-right text-red-600">{{ $log['due']>0?"BDT":"" }}{{ $log['due'] }}</td>
                                 <td class="px-5 py-3 align-middle text-gray-500 max-w-sm whitespace-normal">{{ $log['note'] ?: '-' }}</td>
                             </tr>
                         @empty
