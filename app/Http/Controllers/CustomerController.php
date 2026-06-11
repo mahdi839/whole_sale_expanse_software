@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Support\SimplePdf;
+use DateTimeInterface;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
@@ -217,7 +219,7 @@ class CustomerController extends Controller
 
     private function customerLogs(Customer $customer): array
     {
-        $sales = $customer->sales()->with('items.product')->get();
+        $sales = $customer->sales()->with('items.product')->oldest('created_at')->get();
         $totalQty = $sales->sum(fn ($sale) => $sale->items->sum(fn ($item) => (float) $item->qty));
 
         $logs = collect()
@@ -229,6 +231,7 @@ class CustomerController extends Controller
 
                 return [
                     'date' => $sale->created_at,
+                    'sort_at' => $sale->created_at,
                     'type' => 'Sale',
                     'reference' => $sale->reference,
                     'amount' => $sale->grand_total,
@@ -250,6 +253,7 @@ class CustomerController extends Controller
 
                 return [
                     'date' => $return->created_at,
+                    'sort_at' => $return->created_at,
                     'type' => 'Sale Return'.($return->return_type ? ' - '.ucfirst($return->return_type) : ''),
                     'reference' => $return->reference,
                     'amount' => $affectsCustomerBalance ? -1 * $return->return_amount : 0,
@@ -263,18 +267,20 @@ class CustomerController extends Controller
             }))
             ->merge($customer->cashTransactions()->whereNull('source_type')->get()->map(fn ($cash) => [
                 'date' => $cash->date,
+                'sort_at' => $this->logSortAt($cash->date, $cash->created_at),
                 'type' => 'Payment',
                 'reference' => $cash->reference,
                 'amount' => $cash->direction === 'in' ? $cash->amount : -1 * $cash->amount,
                 'qty' => null,
                 'paid' => $cash->amount,
-                'due' => Customer::sum('due'),
+                'due' => "-",
                 'products' => '',
                 'note' => $cash->note,
                 'url' => route('cash-transactions.index', ['search' => $cash->reference]),
             ]))
-            ->merge($customer->manualDues()->latest('date')->get()->map(fn ($due) => [
+            ->merge($customer->manualDues()->get()->map(fn ($due) => [
                 'date' => $due->date,
+                'sort_at' => $this->logSortAt($due->date, $due->created_at),
                 'type' => 'Manual Due',
                 'reference' => $due->reference ?? 'Manual',
                 'amount' => $due->amount,
@@ -285,10 +291,36 @@ class CustomerController extends Controller
                 'note' => $due->note,
                 'url' => route('dues.manual'),
             ]))
-            ->sortByDesc('date')
+            ->sortBy('sort_at')
+            ->map(function ($log) {
+                unset($log['sort_at']);
+
+                return $log;
+            })
             ->values();
 
         return [$logs, $totalQty];
+    }
+
+    private function logSortAt($date, $createdAt): ?Carbon
+    {
+        if (! $date) {
+            return $createdAt;
+        }
+
+        $sortAt = $date instanceof Carbon
+            ? $date->copy()
+            : ($date instanceof DateTimeInterface ? Carbon::instance($date) : Carbon::parse($date));
+
+        if ($createdAt instanceof DateTimeInterface) {
+            return $sortAt->setTime(
+                (int) $createdAt->format('H'),
+                (int) $createdAt->format('i'),
+                (int) $createdAt->format('s')
+            );
+        }
+
+        return $sortAt->startOfDay();
     }
 
     private function streamLogsCsv(string $fileName, $logs, array $header)
