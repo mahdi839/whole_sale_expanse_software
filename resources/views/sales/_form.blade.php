@@ -170,20 +170,16 @@
 
     /* Search */
     .product-search-panel {
-        position: sticky;
-        top: 0;
-        z-index: 60;
+        position: relative;
         background: #fff;
-        margin: -24px -24px 0;
-        padding: 16px 24px 12px;
-        border-bottom: 1px solid #eef2f7;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, .06);
+        padding: 14px;
+        border: 1px solid #eef2f7;
+        border-radius: 10px;
     }
 
     @media (max-width: 640px) {
         .product-search-panel {
-            margin: -16px -16px 0;
-            padding: 12px 16px 10px;
+            padding: 12px;
         }
     }
 
@@ -728,7 +724,7 @@
 <div
     id="customerModal"
     class="hidden"
-    style="position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:16px"
+    style="position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:16px"
     onclick="closeCustomerModal(event)"
 >
     <div

@@ -1,15 +1,15 @@
 <x-app-layout>
     <x-slot name="header">Sale Details</x-slot>
 
-    <div class="space-y-4 max-w-3xl">
-        <nav class="flex items-center gap-1.5 text-xs text-gray-400">
+    <div class="space-y-4 max-w-3xl mx-auto min-h-[calc(100vh-10rem)] flex flex-col justify-center">
+        <nav class="flex items-center justify-center gap-1.5 text-xs text-gray-400">
             <a href="{{ route('sales.index') }}" class="hover:text-gray-600">Sales</a>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
             <span class="text-gray-600">{{ $sale->reference }}</span>
         </nav>
 
         <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div class="px-6 py-4 border-b bg-gray-50/60 flex justify-between items-center">
+            <div class="px-6 py-4 border-b bg-gray-50/60 flex flex-col sm:flex-row justify-center sm:justify-between items-center gap-3 text-center sm:text-left">
                 <div><h2 class="text-sm font-semibold">Sale Information</h2><p class="text-xs text-gray-400">{{ $sale->created_at->format('d M Y, h:i A') }}</p></div>
                 @canany(['manage sales', 'edit sales'])
                     <a href="{{ route('sales.edit', $sale) }}" class="px-3 py-1.5 text-xs bg-blue-50 text-blue-700 rounded-lg">Edit Sale</a>

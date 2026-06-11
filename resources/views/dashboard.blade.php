@@ -260,18 +260,20 @@
             </div>
 
             <div class="bg-white border border-gray-200 rounded-xl p-4 flex items-start gap-3">
-                <div class="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8"
+                <div class="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="1.8"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2" />
                     </svg>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-400 uppercase tracking-wide leading-tight">Purchase Returns</p>
-                    <p class="text-xl font-medium mt-0.5 text-amber-600">
-                        ৳{{ number_format($stats['total_purchase_returns'], 2) }}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">Approved only</p>
+                    <p class="text-xs text-gray-400 uppercase tracking-wide leading-tight">Given Salary</p>
+                    <p class="text-xl font-medium mt-0.5 text-emerald-600">
+                        ৳{{ number_format($stats['total_salaries'], 2) }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        {{ $filters['dateFrom'] || $filters['dateTo'] ? 'Filtered period' : 'All time' }}
+                    </p>
                 </div>
             </div>
 

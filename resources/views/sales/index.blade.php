@@ -160,7 +160,16 @@
                             <div class="text-xs text-gray-400 mt-1">{{ $sale->created_at->format('d M Y') }}</div>
                         </div>
 
-                        <details class="relative shrink-0">
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <a href="{{ route('sales.show', $sale) }}"
+                               title="View sale"
+                               class="h-9 w-9 inline-flex items-center justify-center text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </a>
+                            <details class="relative">
                             <summary class="list-none cursor-pointer h-9 px-3 inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100">
                                 Actions
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
@@ -179,6 +188,14 @@
                                     </a>
                                 @endif
 
+                                <a href="{{ route('sales.show', $sale) }}" class="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    View
+                                </a>
+
                                 @canany(['manage sales', 'edit sales'])
                                     <a href="{{ route('sales.edit', $sale) }}" class="flex items-center gap-2 px-3 py-2 text-xs text-blue-700 hover:bg-blue-50">Edit</a>
                                 @endcanany
@@ -195,13 +212,17 @@
                                     </form>
                                 @endcanany
                             </div>
-                        </details>
+                            </details>
+                        </div>
                     </div>
 
                     <div>
                         <p class="text-xs text-gray-400 mb-1">Customer</p>
                         <p class="text-sm font-medium text-gray-800 break-words">
                             {{ $sale->customer?->full_name ?? 'N/A' }}</p>
+                        <p class="text-xs text-gray-500 break-words">
+                            {{ $sale->customer?->address ?: '-' }}
+                        </p>
                     </div>
 
                     @if ($sale->bell_no)
@@ -369,6 +390,7 @@
 
                                 <td class="px-4 py-3">
                                     {{ $sale->customer?->full_name ?? 'N/A' }}<br>
+                                    <span class="text-xs text-gray-500 block max-w-48 whitespace-normal break-words">{{ $sale->customer?->address ?: '-' }}</span>
                                     <span class="text-xs text-gray-400">{{ $sale->created_at->format('d M Y') }}</span>
                                 </td>
 
@@ -484,7 +506,16 @@
                                 </td>
 
                                 <td class="px-4 py-3 text-right">
-                                    <details class="relative inline-block text-left">
+                                    <div class="inline-flex items-center justify-end gap-1.5">
+                                        <a href="{{ route('sales.show', $sale) }}"
+                                           title="View sale"
+                                           class="h-8 w-8 inline-flex items-center justify-center text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                        </a>
+                                        <details class="relative inline-block text-left">
                                         <summary class="list-none cursor-pointer h-8 px-3 inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
                                             Actions
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
@@ -502,6 +533,15 @@
                                                     WhatsApp
                                                 </a>
                                             @endif
+
+                                            <a href="{{ route('sales.show', $sale) }}"
+                                               class="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+                                                    <circle cx="12" cy="12" r="3"/>
+                                                </svg>
+                                                View
+                                            </a>
 
                                             @canany(['manage sales', 'edit sales'])
                                                 <a href="{{ route('sales.edit', $sale) }}"
@@ -531,7 +571,8 @@
                                                 </form>
                                             @endcanany
                                         </div>
-                                    </details>
+                                        </details>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
