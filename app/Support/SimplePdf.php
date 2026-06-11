@@ -44,6 +44,8 @@ class SimplePdf
     // ── Brand palette (PDF rg/RG values, 0-1) ───────────────────────────────
     private const ACCENT     = '0.133 0.376 0.851';   // #2260D9
     private const HDR_BG     = '0.243 0.318 0.431';   // #3E5160
+    private const HDR_GRADIENT_START = [0.118, 0.227, 0.373]; // #1e3a5f
+    private const HDR_GRADIENT_END   = [0.145, 0.388, 0.922]; // #2563eb
     private const HDR_FG     = '1.000 1.000 1.000';   // white
     private const SUB_FG     = '0.749 0.812 0.933';   // light blue-grey
     private const ROW_ODD    = '1.000 1.000 1.000';   // white
@@ -153,8 +155,8 @@ class SimplePdf
         $h  = self::HEADER_H;
         $py = self::PH - self::MT - $h;   // PDF Y (bottom-up)
 
-        // Header background
-        $this->em(self::HDR_BG . " rg {$x} {$py} {$w} {$h} re f\n");
+        // Header background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)
+        $this->fillHeaderGradient($x, $py, $w, $h);
 
         // Accent left bar (5 pt)
         $this->em(self::ACCENT . " rg {$x} {$py} 5 {$h} re f\n");
@@ -256,8 +258,8 @@ class SimplePdf
         $h  = self::THEAD_H;
         $py = self::PH - $y - $h;
 
-        // Background
-        $this->em(self::HDR_BG . " rg {$x} {$py} {$this->tableW} {$h} re f\n");
+        // Background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)
+        $this->fillHeaderGradient($x, $py, $this->tableW, $h, 32);
 
         // Bottom accent line
         $lineY = $py - 1;
@@ -387,6 +389,23 @@ class SimplePdf
     // ════════════════════════════════════════════════════════════════════════
     // PDF BYTE ASSEMBLY
     // ════════════════════════════════════════════════════════════════════════
+
+    private function fillHeaderGradient(float $x, float $y, float $w, float $h, int $steps = 64): void
+    {
+        $steps = max(2, $steps);
+        $sliceW = $w / $steps;
+
+        for ($i = 0; $i < $steps; $i++) {
+            $ratio = $i / ($steps - 1);
+            $r = self::HDR_GRADIENT_START[0] + ((self::HDR_GRADIENT_END[0] - self::HDR_GRADIENT_START[0]) * $ratio);
+            $g = self::HDR_GRADIENT_START[1] + ((self::HDR_GRADIENT_END[1] - self::HDR_GRADIENT_START[1]) * $ratio);
+            $b = self::HDR_GRADIENT_START[2] + ((self::HDR_GRADIENT_END[2] - self::HDR_GRADIENT_START[2]) * $ratio);
+            $sx = $x + ($sliceW * $i);
+            $sw = $i === $steps - 1 ? ($x + $w - $sx) : ($sliceW + 0.2);
+
+            $this->em(sprintf("%.3f %.3f %.3f rg %.2f %.2f %.2f %.2f re f\n", $r, $g, $b, $sx, $y, $sw, $h));
+        }
+    }
 
     private function compile(): string
     {
