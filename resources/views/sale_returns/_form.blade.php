@@ -56,7 +56,7 @@
         ]];
     }
 
-    $returnType = old('return_type', $saleReturn?->return_type ?? 'refund');
+    $returnType = old('return_type', $saleReturn?->return_type ?? 'exchange');
     $returnStatus = old('return_status', $saleReturn?->return_status ?? 'pending');
     $discount = old('discount', $saleReturn?->discount ?? 0);
 
@@ -338,7 +338,7 @@
                     <label for="return_type" class="{{ $labelClass }}">Return Type</label>
                     <select id="return_type" name="return_type"
                             class="{{ $errors->has('return_type') ? $inputErrClass : $inputClass }}">
-                        @foreach(['refund' => 'Refund', 'exchange' => 'Exchange', 'credit' => 'Credit'] as $value => $label)
+                        @foreach(['exchange' => 'Exchange', 'credit' => 'Credit'] as $value => $label)
                             <option value="{{ $value }}" {{ $returnType === $value ? 'selected' : '' }}>
                                 {{ $label }}
                             </option>
