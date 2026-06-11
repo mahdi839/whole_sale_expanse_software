@@ -360,7 +360,7 @@
             }
 
             .inv-header {
-                background: #0f2f4f !important;
+                background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%) !important;
                 color: #fff !important;
                 border-bottom: 3px solid #0b2239;
             }
