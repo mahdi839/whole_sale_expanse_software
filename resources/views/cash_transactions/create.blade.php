@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">New Cash Entry</x-slot>
 
-    <div class="max-w-3xl">
-        <form method="POST" action="{{ route('cash-transactions.store') }}" class="bg-white border border-gray-200 rounded-xl p-5">
+    <div class="min-h-[calc(100vh-180px)] flex items-center justify-center">
+        <form method="POST" action="{{ route('cash-transactions.store') }}" class="w-full max-w-3xl bg-white border border-gray-200 rounded-xl p-5">
             @csrf
             @include('cash_transactions._form')
             <div class="flex gap-2 mt-5">

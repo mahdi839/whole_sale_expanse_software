@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\CashTransaction;
 use App\Models\ManualDue;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
@@ -368,11 +369,17 @@ class PurchaseController extends Controller
         $manualDue = (float) ManualDue::where('party_type', 'supplier')
             ->where('supplier_id', $supplierId)
             ->sum('amount');
+        $cashPaid = (float) CashTransaction::where('supplier_id', $supplierId)
+            ->whereNull('source_type')
+            ->selectRaw('
+                COALESCE(SUM(CASE WHEN direction = "out" THEN amount ELSE -amount END), 0) as total_paid
+            ')
+            ->value('total_paid');
 
         $supplier->update([
             'total_purchase' => $totalPurchase + $manualDue,
-            'total_paid' => $totalPaid,
-            'due' => max(0, ($totalPurchase + $manualDue) - $totalPaid),
+            'total_paid' => $totalPaid + $cashPaid,
+            'due' => max(0, ($totalPurchase + $manualDue) - ($totalPaid + $cashPaid)),
         ]);
     }
 

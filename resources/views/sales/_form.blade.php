@@ -473,6 +473,60 @@
     select.field-input { cursor: pointer; }
     textarea.field-input { height: auto; padding: 8px 12px; resize: vertical; }
 
+    .customer-select-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        min-width: 0;
+        position: relative;
+        z-index: 20;
+    }
+
+    .customer-select-row .field-input,
+    .customer-select-row .ts-wrapper {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .customer-select-row .ts-control {
+        min-height: 38px;
+        padding: 6px 10px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 13px;
+        box-shadow: none;
+    }
+
+    .customer-select-row .ts-wrapper.focus .ts-control {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+    }
+
+    .customer-select-row .ts-dropdown {
+        z-index: 80;
+        border-color: #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .customer-add-btn {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        border-radius: 8px;
+        border: 1.5px solid #bfdbfe;
+        background: #eff6ff;
+        color: #2563eb;
+        cursor: pointer;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .12s;
+    }
+
+    .customer-add-btn:hover { background: #dbeafe; }
+
     .divider { border: none; border-top: 1px solid #e5e7eb; margin: 0; }
 
     /* Totals */
@@ -491,7 +545,10 @@
 
     @media (max-width: 640px) {
         .customer-select-row { flex-direction: column; }
-        .customer-select-row > button { width: 100% !important; height: 40px !important; }
+        .customer-select-row .ts-wrapper,
+        .customer-select-row .field-input,
+        .customer-select-row > button { width: 100% !important; }
+        .customer-select-row > button { height: 40px !important; flex-basis: auto; }
         .customer-modal-actions { flex-direction: column-reverse; }
         .customer-modal-actions button { width: 100%; justify-content: center; }
     }
@@ -605,8 +662,8 @@
         {{-- Customer --}}
         <div class="field-group">
             <div class="field-label">Customer</div>
-            <div class="customer-select-row" style="display:flex;gap:8px">
-                <select name="customer_id" id="customer_id" class="field-input" style="flex:1">
+            <div class="customer-select-row">
+                <select name="customer_id" id="customer_id" class="field-input">
                     <option value="">Walk-in / No customer</option>
                     @foreach ($customers as $customer)
                         <option value="{{ $customer->id }}" @selected(old('customer_id', $sale?->customer_id) == $customer->id)>
@@ -616,9 +673,9 @@
                 </select>
                 <button
                     type="button"
+                    class="customer-add-btn"
                     onclick="openCustomerModal()"
                     title="Add customer"
-                    style="width:38px;height:38px;flex-shrink:0;border-radius:8px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#2563eb;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background .12s"
                 >+</button>
             </div>
         </div>
