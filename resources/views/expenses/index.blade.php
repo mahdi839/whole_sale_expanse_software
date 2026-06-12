@@ -11,32 +11,44 @@
         <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
             <form method="GET" action="{{ route('expenses.index') }}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-3.5">
-                    <input type="text"
-                           name="search"
-                           value="{{ $filters['search'] ?? '' }}"
-                           placeholder="Reference, category, note..."
-                           class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
+                        <input type="text"
+                               name="search"
+                               value="{{ $filters['search'] ?? '' }}"
+                               placeholder="Reference, category, note..."
+                               class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
+                    </div>
 
-                    <select name="category"
-                            class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
-                        <option value="">All categories</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category }}"
-                                @selected(($filters['category'] ?? '') === $category)>
-                                {{ $category }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Category</label>
+                        <select name="category"
+                                class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
+                            <option value="">All categories</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category }}"
+                                    @selected(($filters['category'] ?? '') === $category)>
+                                    {{ $category }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                    <input type="date"
-                           name="date_from"
-                           value="{{ $filters['date_from'] ?? '' }}"
-                           class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">From date</label>
+                        <input type="date"
+                               name="date_from"
+                               value="{{ $filters['date_from'] ?? '' }}"
+                               class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
+                    </div>
 
-                    <input type="date"
-                           name="date_to"
-                           value="{{ $filters['date_to'] ?? '' }}"
-                           class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">To date</label>
+                        <input type="date"
+                               name="date_to"
+                               value="{{ $filters['date_to'] ?? '' }}"
+                               class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
+                    </div>
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2">

@@ -136,9 +136,26 @@ class ExpenseController extends Controller
     public function exportCsv(Request $request)
     {
         $fileName = 'expenses-' . now()->format('Y-m-d-H-i-s') . '.csv';
+        $filters = [
+            'search' => $request->input('search'),
+            'category' => $request->input('category'),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+        ];
 
         $expenses = Expense::query()
-            ->when($request->category, fn ($q) => $q->where('category', $request->category))
+            ->when($filters['search'], function ($q) use ($filters) {
+                $s = $filters['search'];
+
+                $q->where(function ($sub) use ($s) {
+                    $sub->where('reference', 'like', "%{$s}%")
+                        ->orWhere('category', 'like', "%{$s}%")
+                        ->orWhere('note', 'like', "%{$s}%");
+                });
+            })
+            ->when($filters['category'], fn ($q) => $q->where('category', $filters['category']))
+            ->when($filters['date_from'], fn ($q) => $q->whereDate('date', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn ($q) => $q->whereDate('date', '<=', $filters['date_to']))
             ->latest()
             ->get();
 
