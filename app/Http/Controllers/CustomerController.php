@@ -116,11 +116,11 @@ class CustomerController extends Controller
     public function exportTransactions(Customer $customer)
     {
         [$logs, $totalQty] = $this->customerLogs($customer);
-        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due','Note'];
+        $headers = ['Date & Time', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due','Note'];
 
         if (request('format') === 'pdf') {
             $rows = $logs->map(fn ($log) => [
-                optional($log['date'])->format('Y-m-d'),
+                optional($log['display_at'] ?? $log['date'])->format('Y-m-d h:i A'),
                 $log['type'],
                 $log['reference'],
                 $log['amount'],
@@ -293,6 +293,7 @@ class CustomerController extends Controller
             ]))
             ->sortBy('sort_at')
             ->map(function ($log) {
+                $log['display_at'] = $log['sort_at'] ?? $log['date'];
                 unset($log['sort_at']);
 
                 return $log;
@@ -331,7 +332,7 @@ class CustomerController extends Controller
 
             foreach ($logs as $log) {
                 fputcsv($file, [
-                    optional($log['date'])->format('Y-m-d'),
+                    optional($log['display_at'] ?? $log['date'])->format('Y-m-d h:i A'),
                     $log['type'],
                     $log['reference'],
                     $log['amount'],

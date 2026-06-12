@@ -30,6 +30,63 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
+        .ts-wrapper {
+            width: 100%;
+        }
+
+        .ts-wrapper.field-input,
+        .ts-wrapper.tom-select,
+        .ts-wrapper.border,
+        .ts-wrapper.bg-gray-50,
+        .ts-wrapper.h-10,
+        .ts-wrapper.px-3,
+        .ts-wrapper.rounded-lg {
+            height: auto !important;
+            padding: 0 !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        .ts-wrapper .ts-control {
+            min-height: 40px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+            box-shadow: none;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .ts-wrapper.single .ts-control {
+            background-image: none;
+        }
+
+        .ts-wrapper.focus .ts-control {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        }
+
+        .ts-wrapper .ts-dropdown {
+            z-index: 80;
+            border-color: #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        select.border:not([multiple]) {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236b7280' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1rem;
+            padding-right: 2.5rem !important;
+        }
+
         /* ── Sidebar shell ── */
         #app-sidebar {
             background: linear-gradient(175deg, #2a1fa8 0%, #1e1680 40%, #130f55 100%);

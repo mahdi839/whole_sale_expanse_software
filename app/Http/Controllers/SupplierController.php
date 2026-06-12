@@ -85,9 +85,9 @@ class SupplierController extends Controller
             ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
             ->where('purchases.supplier_id', $supplier->id)
             ->sum('purchase_items.qty');
-        $headers = ['Date', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due','Note'];
+        $headers = ['Date & Time', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due','Note'];
         $rows = $logs->map(fn ($log) => [
-            optional($log['date'])->format('Y-m-d'),
+            optional($log['display_at'] ?? $log['date'])->format('Y-m-d h:i A'),
             $log['type'],
             $log['reference'],
             $log['amount'],
@@ -233,6 +233,7 @@ class SupplierController extends Controller
             ]))
             ->sortBy('sort_at')
             ->map(function ($log) {
+                $log['display_at'] = $log['sort_at'] ?? $log['date'];
                 unset($log['sort_at']);
 
                 return $log;

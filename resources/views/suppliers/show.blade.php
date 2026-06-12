@@ -65,7 +65,7 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="bg-gray-50 border-b">
-                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Date</th>
+                            <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Date & Time</th>
                             <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Type</th>
                             <th class="px-5 py-3 text-center text-xs font-medium text-gray-400">Reference</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Amount</th>
@@ -78,7 +78,7 @@
                     <tbody class="divide-y divide-gray-100">
                         @forelse($logs as $log)
                             <tr>
-                                <td class="px-5 py-3 whitespace-nowrap">{{ optional($log['date'])->format('d M Y') }}</td>
+                                <td class="px-5 py-3 whitespace-nowrap">{{ optional($log['display_at'] ?? $log['date'])->format('d M Y h:i A') }}</td>
                                 <td class="px-5 py-3">{{ $log['type'] }}</td>
                                 <td class="px-5 py-3">
                                     <a href="{{ $log['url'] }}" class="font-mono text-xs text-blue-700 hover:underline">{{ $log['reference'] }}</a>
