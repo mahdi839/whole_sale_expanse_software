@@ -55,7 +55,6 @@ class CashTransactionController extends Controller
         $balance = CashTransaction::selectRaw('
             COALESCE(SUM(CASE WHEN direction = "in" THEN amount ELSE -amount END), 0) as balance
         ')->value('balance');
-
         return view('cash_transactions.index', compact('transactions', 'filters', 'totals', 'balance'));
     }
 

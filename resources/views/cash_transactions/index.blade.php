@@ -60,6 +60,8 @@
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Party</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Amount</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Date</th>
+                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Payment Method</th>
+                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Note</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Actions</th>
                         </tr>
                     </thead>
@@ -69,7 +71,7 @@
                                 <td class="px-5 py-3">
                                     <span class="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-md text-xs font-mono">{{ $transaction->reference }}</span>
                                     @if($transaction->source_type)
-                                        <div class="text-xs text-gray-400 mt-1">Auto: {{ str_replace('_', ' ', $transaction->source_type) }}</div>
+                                        <div class="text-xs text-gray-400 mt-1">Auto: {{ str_replace('_', ' ', $transaction->source_type) }}: {{ $transaction->note }}</div>
                                     @endif
                                 </td>
                                 <td class="px-5 py-3">{{ ucwords(str_replace('_', ' ', $transaction->type)) }}</td>
@@ -92,6 +94,8 @@
                                     {{ $transaction->direction === 'in' ? '+' : '-' }}৳{{ number_format($transaction->amount, 2) }}
                                 </td>
                                 <td class="px-5 py-3">{{ optional($transaction->date)->format('d M Y') }}</td>
+                                 <td class="px-5 py-3 text-right">{{ $transaction->payment_method ?? '—' }}</td>
+                                <td class="px-5 py-3 text-right">{{ $transaction->note ?? '—' }}</td>
                                 <td class="px-5 py-3 text-right">
                                     @if(! $transaction->source_type)
                                         @canany(['manage cash', 'edit cash'])
