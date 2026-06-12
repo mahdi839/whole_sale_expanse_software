@@ -146,7 +146,7 @@
         .info-label:nth-last-child(2),
         .info-value:last-child { border-bottom: 0; }
         .info-label {
-            background: #050505;
+            background:rgb(12, 12, 88);
             color: #d5a642;
             padding: 3px 6px;
             font: 700 7px Arial, sans-serif;
@@ -228,7 +228,7 @@
             .info-label {
                 font-size: 5.5px;
                 padding: 2px 4px;
-                background: #050505 !important;
+                background: rgb(18, 18, 75) !important;
                 color: #d5a642 !important;
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
