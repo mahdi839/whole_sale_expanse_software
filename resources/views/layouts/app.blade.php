@@ -642,6 +642,61 @@
                         @endcanany
                     </x-sidebar-dropdown>
                 @endcanany
+
+                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Worker Management</p>
+
+                @canany(['manage carry men', 'view carry men', 'manage carry man work logs', 'view carry man work logs'])
+                    <x-sidebar-dropdown label="Carry Man" :active="request()->routeIs('carry-men.*') || request()->routeIs('carry-man-work-logs.*')">
+                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.75">
+                                <path d="M3 7h13v10H3z" />
+                                <path d="M16 10h3l2 3v4h-5z" />
+                                <circle cx="7" cy="18" r="2" />
+                                <circle cx="18" cy="18" r="2" />
+                            </svg></x-slot>
+                        @canany(['manage carry men', 'view carry men'])
+                            <x-sidebar-sub-link :href="route('carry-men.index')" :active="request()->routeIs('carry-men.*')">Profiles</x-sidebar-sub-link>
+                        @endcanany
+                        @canany(['manage carry man work logs', 'view carry man work logs'])
+                            <x-sidebar-sub-link :href="route('carry-man-work-logs.index')" :active="request()->routeIs('carry-man-work-logs.*')">Work Logs</x-sidebar-sub-link>
+                        @endcanany
+                    </x-sidebar-dropdown>
+                @endcanany
+
+                @canany(['manage computer men', 'view computer men', 'manage computer man work logs', 'view computer man work logs'])
+                    <x-sidebar-dropdown label="Computer Man" :active="request()->routeIs('computer-men.*') || request()->routeIs('computer-man-work-logs.*')">
+                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.75">
+                                <rect x="3" y="4" width="18" height="12" rx="2" />
+                                <path d="M8 20h8" />
+                                <path d="M12 16v4" />
+                            </svg></x-slot>
+                        @canany(['manage computer men', 'view computer men'])
+                            <x-sidebar-sub-link :href="route('computer-men.index')" :active="request()->routeIs('computer-men.*')">Profiles</x-sidebar-sub-link>
+                        @endcanany
+                        @canany(['manage computer man work logs', 'view computer man work logs'])
+                            <x-sidebar-sub-link :href="route('computer-man-work-logs.index')" :active="request()->routeIs('computer-man-work-logs.*')">Work Logs</x-sidebar-sub-link>
+                        @endcanany
+                    </x-sidebar-dropdown>
+                @endcanany
+
+                @canany(['manage garey men', 'view garey men', 'manage garey man work logs', 'view garey man work logs'])
+                    <x-sidebar-dropdown label="Garey Man" :active="request()->routeIs('garey-men.*') || request()->routeIs('garey-man-work-logs.*')">
+                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.75">
+                                <path d="M4 19V7a2 2 0 012-2h12a2 2 0 012 2v12" />
+                                <path d="M4 11h16" />
+                                <path d="M8 15h8" />
+                                <path d="M7 19h10" />
+                            </svg></x-slot>
+                        @canany(['manage garey men', 'view garey men'])
+                            <x-sidebar-sub-link :href="route('garey-men.index')" :active="request()->routeIs('garey-men.*')">Profiles</x-sidebar-sub-link>
+                        @endcanany
+                        @canany(['manage garey man work logs', 'view garey man work logs'])
+                            <x-sidebar-sub-link :href="route('garey-man-work-logs.index')" :active="request()->routeIs('garey-man-work-logs.*')">Work Logs</x-sidebar-sub-link>
+                        @endcanany
+                    </x-sidebar-dropdown>
+                @endcanany
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Accounts</p>
 
                 {{-- accounts --}}
