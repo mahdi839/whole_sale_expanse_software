@@ -13,6 +13,13 @@
                 </select>
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Adjustment</label>
+                <select name="adjustment_type" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                    <option value="add" @selected(old('adjustment_type', $manualDue->adjustment_type ?? 'add') === 'add')>Add Due</option>
+                    <option value="subtract" @selected(old('adjustment_type', $manualDue->adjustment_type ?? 'add') === 'subtract')>Minus Due</option>
+                </select>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Amount</label>
                 <input type="number" step="0.01" min="0.01" name="amount" value="{{ old('amount', $manualDue->amount) }}" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
             </div>
@@ -21,7 +28,7 @@
                 <select name="customer_id" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                     <option value="">Select customer</option>
                     @foreach($customers as $customer)
-                        <option value="{{ $customer->id }}" @selected(old('customer_id', $manualDue->customer_id) == $customer->id)>{{ $customer->full_name }}</option>
+                        <option value="{{ $customer->id }}" @selected(old('customer_id', $manualDue->customer_id) == $customer->id)>{{ $customer->full_name }} - Due: {{ number_format($customer->due ?? 0, 2) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -30,7 +37,7 @@
                 <select name="supplier_id" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                     <option value="">Select supplier</option>
                     @foreach($suppliers as $supplier)
-                        <option value="{{ $supplier->id }}" @selected(old('supplier_id', $manualDue->supplier_id) == $supplier->id)>{{ $supplier->name }}</option>
+                        <option value="{{ $supplier->id }}" @selected(old('supplier_id', $manualDue->supplier_id) == $supplier->id)>{{ $supplier->name }} - Due: {{ number_format($supplier->due ?? 0, 2) }}</option>
                     @endforeach
                 </select>
             </div>

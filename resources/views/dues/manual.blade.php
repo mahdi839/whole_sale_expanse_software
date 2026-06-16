@@ -20,17 +20,27 @@
                     </select>
                 </div>
 
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Adjustment</label>
+                    <select name="adjustment_type" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                        <option value="add" @selected(old('adjustment_type', 'add') === 'add')>Add Due</option>
+                        <option value="subtract" @selected(old('adjustment_type') === 'subtract')>Minus Due</option>
+                    </select>
+                    @error('adjustment_type')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+
                 <div class="lg:col-span-2" x-show="partyType === 'customer'">
                     <label class="block text-xs text-gray-400 mb-1">Customer</label>
                     <div class="flex gap-2">
                         <select name="customer_id" id="customer-select" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                             <option value="">Select customer</option>
                             @foreach($customers as $customer)
-                                <option value="{{ $customer->id }}" @selected(old('customer_id') == $customer->id)>{{ $customer->full_name }}{{ $customer->phone ? ' - '.$customer->phone : '' }}</option>
+                                <option value="{{ $customer->id }}" data-due="{{ $customer->due ?? 0 }}" @selected(old('customer_id') == $customer->id)>{{ $customer->full_name }}{{ $customer->phone ? ' - '.$customer->phone : '' }}</option>
                             @endforeach
                         </select>
                         <button type="button" @click="customerOpen = true" class="h-10 w-10 shrink-0 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">+</button>
                     </div>
+                    <p class="mt-1 text-xs text-gray-500">Present due: <span id="customer-present-due" class="font-semibold text-red-600">0.00</span></p>
                     @error('customer_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                 </div>
 
@@ -40,11 +50,12 @@
                         <select name="supplier_id" id="supplier-select" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                             <option value="">Select supplier</option>
                             @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}" @selected(old('supplier_id') == $supplier->id)>{{ $supplier->name }}{{ $supplier->phone ? ' - '.$supplier->phone : '' }}</option>
+                                <option value="{{ $supplier->id }}" data-due="{{ $supplier->due ?? 0 }}" @selected(old('supplier_id') == $supplier->id)>{{ $supplier->name }}{{ $supplier->phone ? ' - '.$supplier->phone : '' }}</option>
                             @endforeach
                         </select>
                         <button type="button" @click="supplierOpen = true" class="h-10 w-10 shrink-0 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">+</button>
                     </div>
+                    <p class="mt-1 text-xs text-gray-500">Present due: <span id="supplier-present-due" class="font-semibold text-red-600">0.00</span></p>
                     @error('supplier_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                 </div>
 
@@ -66,7 +77,7 @@
                 </div>
 
                 <div class="flex items-end">
-                    <button class="w-full h-10 px-4 bg-blue-600 text-white rounded-lg text-sm">Add Due</button>
+                    <button class="w-full h-10 px-4 bg-blue-600 text-white rounded-lg text-sm">Save</button>
                 </div>
             </form>
         </div>
@@ -114,6 +125,33 @@
     <script>
     const token = document.querySelector('meta[name="csrf-token"]').content;
 
+    function formatMoney(value) {
+        return (Number(value) || 0).toFixed(2);
+    }
+
+    function updatePresentDue(selectId, outputId) {
+        const select = document.getElementById(selectId);
+        const output = document.getElementById(outputId);
+        const selectedOption = select?.selectedOptions?.[0];
+
+        if (output) {
+            output.textContent = formatMoney(selectedOption?.dataset?.due);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updatePresentDue('customer-select', 'customer-present-due');
+        updatePresentDue('supplier-select', 'supplier-present-due');
+    });
+
+    document.getElementById('customer-select')?.addEventListener('change', () => {
+        updatePresentDue('customer-select', 'customer-present-due');
+    });
+
+    document.getElementById('supplier-select')?.addEventListener('change', () => {
+        updatePresentDue('supplier-select', 'supplier-present-due');
+    });
+
     async function postQuick(form, url) {
         const response = await fetch(url, {
             method: 'POST',
@@ -134,7 +172,10 @@
         const customer = await postQuick(this, '{{ route('customers.store') }}');
         if (!customer) return;
         const select = document.getElementById('customer-select');
-        select.add(new Option(customer.full_name + (customer.phone ? ' - ' + customer.phone : ''), customer.id, true, true));
+        const option = new Option(customer.full_name + (customer.phone ? ' - ' + customer.phone : ''), customer.id, true, true);
+        option.dataset.due = '0';
+        select.add(option);
+        updatePresentDue('customer-select', 'customer-present-due');
         window.dispatchEvent(new CustomEvent('customer-created'));
         this.reset();
     });
@@ -144,7 +185,10 @@
         const supplier = await postQuick(this, '{{ route('suppliers.store') }}');
         if (!supplier) return;
         const select = document.getElementById('supplier-select');
-        select.add(new Option(supplier.name + (supplier.phone ? ' - ' + supplier.phone : ''), supplier.id, true, true));
+        const option = new Option(supplier.name + (supplier.phone ? ' - ' + supplier.phone : ''), supplier.id, true, true);
+        option.dataset.due = '0';
+        select.add(option);
+        updatePresentDue('supplier-select', 'supplier-present-due');
         window.dispatchEvent(new CustomEvent('supplier-created'));
         this.reset();
     });

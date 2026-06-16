@@ -12,6 +12,7 @@ class ManualDue extends Model
     protected $fillable = [
         'reference',
         'party_type',
+        'adjustment_type',
         'customer_id',
         'supplier_id',
         'amount',

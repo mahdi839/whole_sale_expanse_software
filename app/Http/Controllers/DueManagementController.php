@@ -198,8 +198,8 @@ class DueManagementController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
-        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone', 'due']);
+        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'due']);
 
         return view('dues.manual', compact(
             'manualDues',
@@ -365,10 +365,11 @@ class DueManagementController extends Controller
             ->latest()
             ->get();
 
-        return $this->export('manual-dues', 'Manual Dues', ['Date', 'Reference', 'Party Type', 'Party', 'Amount', 'Note'], $rows->map(fn ($row) => [
+        return $this->export('manual-dues', 'Manual Dues', ['Date', 'Reference', 'Party Type', 'Adjustment', 'Party', 'Amount', 'Note'], $rows->map(fn ($row) => [
             optional($row->date)->format('Y-m-d'),
             $row->reference,
             $row->party_type,
+            $row->adjustment_type,
             $row->customer?->full_name ?? $row->supplier?->name,
             $row->amount,
             $row->note,
@@ -389,8 +390,8 @@ class DueManagementController extends Controller
 
     public function edit(ManualDue $manualDue)
     {
-        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
-        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone', 'due']);
+        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'due']);
 
         return view('dues.edit', compact('manualDue', 'customers', 'suppliers'));
     }
@@ -422,6 +423,7 @@ class DueManagementController extends Controller
     {
         $data = $request->validate([
             'party_type' => ['required', Rule::in(['customer', 'supplier'])],
+            'adjustment_type' => ['required', Rule::in(['add', 'subtract'])],
             'customer_id' => 'nullable|exists:customers,id',
             'supplier_id' => 'nullable|exists:suppliers,id',
             'amount' => 'required|numeric|min:0.01',
@@ -451,6 +453,7 @@ class DueManagementController extends Controller
     private function applyManualDue(ManualDue $due, int $multiplier): void
     {
         $amount = (float) $due->amount * $multiplier;
+        $amount = $due->adjustment_type === 'subtract' ? -1 * $amount : $amount;
 
         if ($due->party_type === 'customer' && $due->customer_id) {
             $customer = Customer::find($due->customer_id);
