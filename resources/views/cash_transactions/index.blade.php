@@ -76,19 +76,28 @@
                                 </td>
                                 <td class="px-5 py-3">{{ ucwords(str_replace('_', ' ', $transaction->type)) }}</td>
                                 <td class="px-5 py-3">
-                                    {{ $transaction->customer?->full_name ?? $transaction->supplier?->name ?? $transaction->salesMan?->name ?? $transaction->tailor?->name ?? '—' }}
-                                    @if( $transaction->tailor?->name )
-                                        <span class="text-xs  bg-green-200 px-2 py-1 rounded">Tailor</span>
+                                    {{ $transaction->customer?->full_name ?? $transaction->supplier?->name ?? $transaction->salesMan?->name ?? $transaction->tailor?->name ?? $transaction->computerMan?->name ?? $transaction->carryMan?->name ?? $transaction->gareyMan?->name ?? '—' }}
+                                    @if($transaction->tailor?->name)
+                                        <span class="text-xs bg-green-200 px-2 py-1 rounded">Tailor</span>
                                     @endif
-                                     @if( $transaction->customer?->full_name )
-                                        <span class="text-xs  bg-yellow-200 px-2 py-1 rounded">Customer</span>
+                                    @if($transaction->customer?->full_name)
+                                        <span class="text-xs bg-yellow-200 px-2 py-1 rounded">Customer</span>
                                     @endif
-                                     @if( $transaction->supplier?->name )
-                                        <span class="text-xs  bg-blue-200 px-2 py-1 rounded">Supplier</span>
+                                    @if($transaction->supplier?->name)
+                                        <span class="text-xs bg-blue-200 px-2 py-1 rounded">Supplier</span>
                                     @endif
-                                        @if( $transaction->salesMan?->name )
-                                            <span class="text-xs  bg-purple-200 px-2 py-1 rounded">Salesman</span>  
-                                        @endif
+                                    @if($transaction->salesMan?->name)
+                                        <span class="text-xs bg-purple-200 px-2 py-1 rounded">Salesman</span>
+                                    @endif
+                                    @if($transaction->computerMan?->name)
+                                        <span class="text-xs bg-sky-200 px-2 py-1 rounded">Computer Man</span>
+                                    @endif
+                                    @if($transaction->carryMan?->name)
+                                        <span class="text-xs bg-orange-200 px-2 py-1 rounded">Carry Man</span>
+                                    @endif
+                                    @if($transaction->gareyMan?->name)
+                                        <span class="text-xs bg-lime-200 px-2 py-1 rounded">Garey Man</span>
+                                    @endif
                                 </td>
                                 <td class="px-5 py-3 text-right font-semibold {{ $transaction->direction === 'in' ? 'text-emerald-600' : 'text-red-600' }}">
                                     {{ $transaction->direction === 'in' ? '+' : '-' }}৳{{ number_format($transaction->amount, 2) }}
@@ -114,7 +123,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-5 py-16 text-center text-gray-400">No cash transactions found.</td></tr>
+                            <tr><td colspan="8" class="px-5 py-16 text-center text-gray-400">No cash transactions found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

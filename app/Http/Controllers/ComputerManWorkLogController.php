@@ -42,7 +42,8 @@ class ComputerManWorkLogController extends Controller
 
     public function store(Request $request)
     {
-        ComputerManWorkLog::create($this->validated($request));
+        $workLog = ComputerManWorkLog::create($this->validated($request));
+        $workLog->computerMan?->recalculateFinancials();
 
         return redirect()->route('computer-man-work-logs.index')->with('success', 'Computer man work log created successfully.');
     }
@@ -57,14 +58,22 @@ class ComputerManWorkLogController extends Controller
 
     public function update(Request $request, ComputerManWorkLog $computerManWorkLog)
     {
+        $oldComputerManId = $computerManWorkLog->computer_man_id;
         $computerManWorkLog->update($this->validated($request));
+        $computerManWorkLog->fresh('computerMan')->computerMan?->recalculateFinancials();
+
+        if ($oldComputerManId !== $computerManWorkLog->computer_man_id) {
+            ComputerMan::find($oldComputerManId)?->recalculateFinancials();
+        }
 
         return redirect()->route('computer-man-work-logs.index')->with('success', 'Computer man work log updated successfully.');
     }
 
     public function destroy(ComputerManWorkLog $computerManWorkLog)
     {
+        $computerMan = $computerManWorkLog->computerMan;
         $computerManWorkLog->delete();
+        $computerMan?->recalculateFinancials();
 
         return redirect()->route('computer-man-work-logs.index')->with('success', 'Computer man work log deleted successfully.');
     }

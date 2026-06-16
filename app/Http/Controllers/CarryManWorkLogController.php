@@ -38,7 +38,8 @@ class CarryManWorkLogController extends Controller
 
     public function store(Request $request)
     {
-        CarryManWorkLog::create($this->validated($request));
+        $workLog = CarryManWorkLog::create($this->validated($request));
+        $workLog->carryMan?->recalculateFinancials();
 
         return redirect()->route('carry-man-work-logs.index')->with('success', 'Carry man work log created successfully.');
     }
@@ -52,6 +53,7 @@ class CarryManWorkLogController extends Controller
 
     public function update(Request $request, CarryManWorkLog $carryManWorkLog)
     {
+        $oldCarryManId = $carryManWorkLog->carry_man_id;
         $data = $this->validated($request, $carryManWorkLog);
 
         if (isset($data['document_path']) && $carryManWorkLog->document_path) {
@@ -59,17 +61,25 @@ class CarryManWorkLogController extends Controller
         }
 
         $carryManWorkLog->update($data);
+        $carryManWorkLog->fresh('carryMan')->carryMan?->recalculateFinancials();
+
+        if ($oldCarryManId !== $carryManWorkLog->carry_man_id) {
+            CarryMan::find($oldCarryManId)?->recalculateFinancials();
+        }
 
         return redirect()->route('carry-man-work-logs.index')->with('success', 'Carry man work log updated successfully.');
     }
 
     public function destroy(CarryManWorkLog $carryManWorkLog)
     {
+        $carryMan = $carryManWorkLog->carryMan;
+
         if ($carryManWorkLog->document_path) {
             Storage::disk('public')->delete($carryManWorkLog->document_path);
         }
 
         $carryManWorkLog->delete();
+        $carryMan?->recalculateFinancials();
 
         return redirect()->route('carry-man-work-logs.index')->with('success', 'Carry man work log deleted successfully.');
     }

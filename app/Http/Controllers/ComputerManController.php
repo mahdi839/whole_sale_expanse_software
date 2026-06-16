@@ -42,6 +42,25 @@ class ComputerManController extends Controller
         return view('computer_men.edit', compact('computerMan'));
     }
 
+    public function show(ComputerMan $computerMan)
+    {
+        $computerMan->load([
+            'workLogs.product' => fn ($query) => $query->orderBy('product_name'),
+            'cashTransactions' => fn ($query) => $query->latest('date')->latest(),
+        ]);
+        $workLogs = $computerMan->workLogs()->with('product')->latest('date')->latest()->get();
+
+        return view('shared._worker_profile_show', [
+            'worker' => $computerMan,
+            'title' => 'Computer Man Details',
+            'routeBase' => 'computer-men',
+            'workLogType' => 'computer',
+            'workLogs' => $workLogs,
+            'cashTransactions' => $computerMan->cashTransactions,
+            'totalWorkAmount' => $workLogs->sum(fn ($log) => (float) $log->total_rate),
+        ]);
+    }
+
     public function update(Request $request, ComputerMan $computerMan)
     {
         $computerMan->update($this->validated($request));

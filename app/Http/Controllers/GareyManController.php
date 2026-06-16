@@ -43,6 +43,24 @@ class GareyManController extends Controller
         return view('garey_men.edit', compact('gareyMan'));
     }
 
+    public function show(GareyMan $gareyMan)
+    {
+        $gareyMan->load([
+            'workLogs' => fn ($query) => $query->latest('date')->latest(),
+            'cashTransactions' => fn ($query) => $query->latest('date')->latest(),
+        ]);
+
+        return view('shared._worker_profile_show', [
+            'worker' => $gareyMan,
+            'title' => 'Garey Man Details',
+            'routeBase' => 'garey-men',
+            'workLogType' => 'garey',
+            'workLogs' => $gareyMan->workLogs,
+            'cashTransactions' => $gareyMan->cashTransactions,
+            'totalWorkAmount' => $gareyMan->workLogs->sum(fn ($log) => (float) $log->total_rate),
+        ]);
+    }
+
     public function update(Request $request, GareyMan $gareyMan)
     {
         $gareyMan->update($this->validated($request));

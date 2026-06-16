@@ -26,4 +26,18 @@ class GareyMan extends Model
     {
         return $this->hasMany(GareyManWorkLog::class);
     }
+
+    public function cashTransactions()
+    {
+        return $this->hasMany(CashTransaction::class);
+    }
+
+    public function recalculateFinancials(): void
+    {
+        $totalRate = (float) $this->workLogs()->sum('total_rate');
+
+        $this->updateQuietly([
+            'total_due' => max(0, $totalRate - (float) $this->total_paid),
+        ]);
+    }
 }

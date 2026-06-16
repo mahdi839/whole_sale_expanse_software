@@ -43,6 +43,24 @@ class CarryManController extends Controller
         return view('carry_men.edit', compact('carryMan'));
     }
 
+    public function show(CarryMan $carryMan)
+    {
+        $carryMan->load([
+            'workLogs' => fn ($query) => $query->latest('date')->latest(),
+            'cashTransactions' => fn ($query) => $query->latest('date')->latest(),
+        ]);
+
+        return view('shared._worker_profile_show', [
+            'worker' => $carryMan,
+            'title' => 'Carry Man Details',
+            'routeBase' => 'carry-men',
+            'workLogType' => 'carry',
+            'workLogs' => $carryMan->workLogs,
+            'cashTransactions' => $carryMan->cashTransactions,
+            'totalWorkAmount' => $carryMan->workLogs->sum(fn ($log) => (float) $log->total_rate),
+        ]);
+    }
+
     public function update(Request $request, CarryMan $carryMan)
     {
         $carryMan->update($this->validated($request));

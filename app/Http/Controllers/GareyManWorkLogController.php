@@ -36,7 +36,8 @@ class GareyManWorkLogController extends Controller
 
     public function store(Request $request)
     {
-        GareyManWorkLog::create($this->validated($request));
+        $workLog = GareyManWorkLog::create($this->validated($request));
+        $workLog->gareyMan?->recalculateFinancials();
 
         return redirect()->route('garey-man-work-logs.index')->with('success', 'Garey man work log created successfully.');
     }
@@ -50,14 +51,22 @@ class GareyManWorkLogController extends Controller
 
     public function update(Request $request, GareyManWorkLog $gareyManWorkLog)
     {
+        $oldGareyManId = $gareyManWorkLog->garey_man_id;
         $gareyManWorkLog->update($this->validated($request));
+        $gareyManWorkLog->fresh('gareyMan')->gareyMan?->recalculateFinancials();
+
+        if ($oldGareyManId !== $gareyManWorkLog->garey_man_id) {
+            GareyMan::find($oldGareyManId)?->recalculateFinancials();
+        }
 
         return redirect()->route('garey-man-work-logs.index')->with('success', 'Garey man work log updated successfully.');
     }
 
     public function destroy(GareyManWorkLog $gareyManWorkLog)
     {
+        $gareyMan = $gareyManWorkLog->gareyMan;
         $gareyManWorkLog->delete();
+        $gareyMan?->recalculateFinancials();
 
         return redirect()->route('garey-man-work-logs.index')->with('success', 'Garey man work log deleted successfully.');
     }

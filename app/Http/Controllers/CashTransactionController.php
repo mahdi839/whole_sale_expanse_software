@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\CashTransaction;
+use App\Models\CarryMan;
+use App\Models\ComputerMan;
 use App\Models\Customer;
+use App\Models\GareyMan;
 use App\Models\SalesMan;
 use App\Models\Supplier;
 use App\Models\Tailor;
@@ -25,7 +28,7 @@ class CashTransactionController extends Controller
         ];
 
         $query = CashTransaction::query()
-            ->with(['customer', 'supplier', 'salesMan', 'tailor'])
+            ->with(['customer', 'supplier', 'salesMan', 'tailor', 'carryMan', 'computerMan', 'gareyMan'])
             ->when($filters['direction'], fn($q) => $q->where('direction', $filters['direction']))
             ->when($filters['type'], fn($q) => $q->where('type', $filters['type']))
             ->when($filters['date_from'], fn($q) => $q->whereDate('date', '>=', $filters['date_from']))
@@ -39,7 +42,10 @@ class CashTransactionController extends Controller
                         ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
                         ->orWhereHas('supplier', fn($sp) => $sp->where('name', 'like', "%{$s}%"))
                         ->orWhereHas('salesMan', fn($sm) => $sm->where('name', 'like', "%{$s}%"))
-                        ->orWhereHas('tailor', fn($tailor) => $tailor->where('name', 'like', "%{$s}%"));
+                        ->orWhereHas('tailor', fn($tailor) => $tailor->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('carryMan', fn($worker) => $worker->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('computerMan', fn($worker) => $worker->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('gareyMan', fn($worker) => $worker->where('name', 'like', "%{$s}%"));
                 });
             });
 
@@ -63,8 +69,11 @@ class CashTransactionController extends Controller
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
         $tailors = Tailor::orderBy('name')->get(['id', 'name']);
+        $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone']);
+        $computerMen = ComputerMan::orderBy('name')->get(['id', 'name', 'phone']);
+        $gareyMen = GareyMan::orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('cash_transactions.create', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors'));
+        return view('cash_transactions.create', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors', 'carryMen', 'computerMen', 'gareyMen'));
     }
 
     public function store(Request $request)
@@ -86,8 +95,11 @@ class CashTransactionController extends Controller
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
         $tailors = Tailor::orderBy('name')->get(['id', 'name']);
+        $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone']);
+        $computerMen = ComputerMan::orderBy('name')->get(['id', 'name', 'phone']);
+        $gareyMen = GareyMan::orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('cash_transactions.edit', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors'));
+        return view('cash_transactions.edit', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors', 'carryMen', 'computerMen', 'gareyMen'));
     }
 
     public function update(Request $request, CashTransaction $cashTransaction)
@@ -123,10 +135,14 @@ class CashTransactionController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'date' => 'required|date',
             'payment_method' => 'nullable|string|max:100',
-            'customer_id' => 'nullable|exists:customers,id',
-            'supplier_id' => 'nullable|exists:suppliers,id',
+            'customer_id' => 'nullable|required_if:cash_entry_type,customer|exists:customers,id',
+            'supplier_id' => 'nullable|required_if:cash_entry_type,supplier|exists:suppliers,id',
             'sales_man_id' => 'nullable|exists:sales_men,id',
-            'tailor_id' => 'nullable|exists:tailors,id',
+            'tailor_id' => 'nullable|required_if:cash_entry_type,tailor|exists:tailors,id',
+            'carry_man_id' => 'nullable|required_if:cash_entry_type,carry_man|exists:carry_men,id',
+            'computer_man_id' => 'nullable|required_if:cash_entry_type,computer|exists:computer_men,id',
+            'garey_man_id' => 'nullable|required_if:cash_entry_type,garey_man|exists:garey_men,id',
+            'cash_entry_type' => ['nullable', Rule::in(['customer', 'supplier', 'tailor', 'computer', 'carry_man', 'garey_man'])],
             'note' => 'nullable|string|max:2000',
         ]);
 
@@ -136,6 +152,24 @@ class CashTransactionController extends Controller
 
         if ($data['type'] === 'manual_out') {
             $data['direction'] = 'out';
+        }
+
+        $entryType = $data['cash_entry_type'] ?? null;
+        unset($data['cash_entry_type']);
+
+        foreach (['customer_id', 'supplier_id', 'tailor_id', 'carry_man_id', 'computer_man_id', 'garey_man_id'] as $field) {
+            $typeForField = match ($field) {
+                'customer_id' => 'customer',
+                'supplier_id' => 'supplier',
+                'tailor_id' => 'tailor',
+                'carry_man_id' => 'carry_man',
+                'computer_man_id' => 'computer',
+                'garey_man_id' => 'garey_man',
+            };
+
+            if ($entryType !== $typeForField) {
+                $data[$field] = null;
+            }
         }
 
         return $data;
@@ -173,6 +207,29 @@ class CashTransactionController extends Controller
                     'total_expense' => max(0, (float) $salesMan->total_expense + $expenseAmount),
                 ]);
             }
+        }
+
+        foreach ([
+            'carry_man_id' => CarryMan::class,
+            'computer_man_id' => ComputerMan::class,
+            'garey_man_id' => GareyMan::class,
+        ] as $field => $modelClass) {
+            if (! $transaction->{$field}) {
+                continue;
+            }
+
+            $worker = $modelClass::find($transaction->{$field});
+
+            if (! $worker) {
+                continue;
+            }
+
+            $paidAmount = $transaction->direction === 'out' ? $amount : -1 * $amount;
+            $worker->update([
+                'total_paid' => max(0, (float) $worker->total_paid + $paidAmount),
+            ]);
+            $worker->refresh();
+            $worker->recalculateFinancials();
         }
     }
 }

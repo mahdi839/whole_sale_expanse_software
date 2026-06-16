@@ -91,11 +91,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereNumber('tailor')
         ->middleware('permission:manage cloth sewings|delete cloth sewings');
     $crudResource('/received-cloths', ReceivedClothController::class, 'received cloths', ['parameters' => ['received-cloths' => 'receivedCloth'], 'except' => ['show']]);
-    $crudResource('/carry-men', CarryManController::class, 'carry men', ['except' => ['show']]);
+    $crudResource('/carry-men', CarryManController::class, 'carry men');
     $crudResource('/carry-man-work-logs', CarryManWorkLogController::class, 'carry man work logs', ['except' => ['show']]);
-    $crudResource('/computer-men', ComputerManController::class, 'computer men', ['except' => ['show']]);
+    $crudResource('/computer-men', ComputerManController::class, 'computer men');
     $crudResource('/computer-man-work-logs', ComputerManWorkLogController::class, 'computer man work logs', ['except' => ['show']]);
-    $crudResource('/garey-men', GareyManController::class, 'garey men', ['except' => ['show']]);
+    $crudResource('/garey-men', GareyManController::class, 'garey men');
     $crudResource('/garey-man-work-logs', GareyManWorkLogController::class, 'garey man work logs', ['except' => ['show']]);
     $crudResource('/users', UserController::class, 'users', ['except' => ['show']]);
     $crudResource('/roles', RoleController::class, 'roles', ['except' => ['show']]);

@@ -22,6 +22,9 @@ class CashTransaction extends Model
         'supplier_id',
         'sales_man_id',
         'tailor_id',
+        'carry_man_id',
+        'computer_man_id',
+        'garey_man_id',
         'note',
     ];
 
@@ -57,6 +60,21 @@ class CashTransaction extends Model
     public function tailor()
     {
         return $this->belongsTo(Tailor::class);
+    }
+
+    public function carryMan()
+    {
+        return $this->belongsTo(CarryMan::class);
+    }
+
+    public function computerMan()
+    {
+        return $this->belongsTo(ComputerMan::class);
+    }
+
+    public function gareyMan()
+    {
+        return $this->belongsTo(GareyMan::class);
     }
 
     public static function generateReference(): string

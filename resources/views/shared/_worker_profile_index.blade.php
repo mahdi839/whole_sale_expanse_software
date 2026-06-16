@@ -56,6 +56,11 @@
                                 <td class="px-5 py-3 text-right">{{ number_format($worker->work_logs_count ?? 0) }}</td>
                                 <td class="px-5 py-3">
                                     <div class="flex justify-end gap-2">
+                                        @canany(['manage '.$permissionBase, 'view '.$permissionBase])
+                                            <a href="{{ route($routeBase.'.show', $worker) }}" class="inline-flex items-center justify-center w-8 h-8 text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100" title="View details">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            </a>
+                                        @endcanany
                                         @canany(['manage '.$permissionBase, 'edit '.$permissionBase])
                                             <a href="{{ route($routeBase.'.edit', $worker) }}" class="px-3 py-1.5 text-xs text-blue-700 bg-blue-50 rounded-lg">Edit</a>
                                         @endcanany
