@@ -9,6 +9,7 @@ class GareyManWorkLog extends Model
     protected $fillable = [
         'garey_man_id',
         'date',
+        'memo_no',
         'qty',
         'unit',
         'rate_per_goj',

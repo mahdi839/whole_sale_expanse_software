@@ -16,7 +16,8 @@ class CarryManWorkLogController extends Controller
         $workLogs = CarryManWorkLog::query()
             ->with('carryMan')
             ->when($search, fn ($query) => $query->where(function ($sub) use ($search) {
-                $sub->where('marka', 'like', "%{$search}%")
+                $sub->where('memo_no', 'like', "%{$search}%")
+                    ->orWhere('marka', 'like', "%{$search}%")
                     ->orWhereHas('carryMan', fn ($worker) => $worker->where('name', 'like', "%{$search}%"));
             }))
             ->latest('date')
@@ -78,6 +79,7 @@ class CarryManWorkLogController extends Controller
         $data = $request->validate([
             'carry_man_id' => 'required|exists:carry_men,id',
             'date' => 'required|date',
+            'memo_no' => 'nullable|string|max:100',
             'marka' => 'nullable|string|max:255',
             'document_path' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
             'bale_qty' => 'required|numeric|min:0',

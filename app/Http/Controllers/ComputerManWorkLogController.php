@@ -16,7 +16,8 @@ class ComputerManWorkLogController extends Controller
         $workLogs = ComputerManWorkLog::query()
             ->with(['computerMan', 'product'])
             ->when($search, fn ($query) => $query->where(function ($sub) use ($search) {
-                $sub->whereHas('computerMan', fn ($worker) => $worker->where('name', 'like', "%{$search}%"))
+                $sub->where('memo_no', 'like', "%{$search}%")
+                    ->orWhereHas('computerMan', fn ($worker) => $worker->where('name', 'like', "%{$search}%"))
                     ->orWhereHas('product', fn ($product) => $product
                         ->where('product_name', 'like', "%{$search}%")
                         ->orWhere('sku', 'like', "%{$search}%")
@@ -74,6 +75,7 @@ class ComputerManWorkLogController extends Controller
             'computer_man_id' => 'required|exists:computer_men,id',
             'product_id' => 'required|exists:products,id',
             'date' => 'required|date',
+            'memo_no' => 'nullable|string|max:100',
             'computer_design_qty' => 'required|numeric|min:0',
             'received_qty' => 'required|numeric|min:0',
             'rate_per_piece' => 'required|numeric|min:0',

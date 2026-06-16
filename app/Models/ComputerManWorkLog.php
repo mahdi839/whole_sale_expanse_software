@@ -10,6 +10,7 @@ class ComputerManWorkLog extends Model
         'computer_man_id',
         'product_id',
         'date',
+        'memo_no',
         'computer_design_qty',
         'received_qty',
         'rate_per_piece',

@@ -24,6 +24,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('carry_man_id')->constrained('carry_men')->cascadeOnDelete();
             $table->date('date');
+            $table->string('memo_no')->nullable();
             $table->string('marka')->nullable();
             $table->string('document_path')->nullable();
             $table->decimal('bale_qty', 12, 2)->default(0);
@@ -49,6 +50,7 @@ return new class extends Migration
             $table->foreignId('computer_man_id')->constrained('computer_men')->cascadeOnDelete();
             $table->foreignId('product_id')->constrained('products')->restrictOnDelete();
             $table->date('date');
+            $table->string('memo_no')->nullable();
             $table->decimal('computer_design_qty', 12, 2)->default(0);
             $table->decimal('received_qty', 12, 2)->default(0);
             $table->decimal('rate_per_piece', 12, 2)->default(0);
@@ -72,6 +74,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('garey_man_id')->constrained('garey_men')->cascadeOnDelete();
             $table->date('date');
+            $table->string('memo_no')->nullable();
             $table->decimal('qty', 12, 2)->default(0);
             $table->string('unit')->default('goj');
             $table->decimal('rate_per_goj', 12, 2)->default(0);

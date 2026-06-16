@@ -4,7 +4,7 @@
     <div class="space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <form method="GET" action="{{ route('computer-man-work-logs.index') }}" class="flex items-center gap-2 w-full sm:max-w-md">
-                <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search computer man or product..."
+                <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search computer man, memo or product..."
                     class="w-full h-10 px-3 text-sm bg-white border border-gray-200 rounded-lg">
                 <button class="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg">Search</button>
             </form>
@@ -23,6 +23,7 @@
                     <thead>
                         <tr class="bg-gray-50 border-b">
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Date</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Memo No</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Computer Man</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Product</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Design Code</th>
@@ -37,6 +38,7 @@
                         @forelse($workLogs as $workLog)
                             <tr>
                                 <td class="px-5 py-3 whitespace-nowrap">{{ optional($workLog->date)->format('d M Y') }}</td>
+                                <td class="px-5 py-3 text-gray-600">{{ $workLog->memo_no ?? '-' }}</td>
                                 <td class="px-5 py-3 font-medium text-gray-800">{{ $workLog->computerMan?->name ?? '-' }}</td>
                                 <td class="px-5 py-3 text-gray-600">{{ $workLog->product?->product_name ?? '-' }}</td>
                                 <td class="px-5 py-3 font-mono text-xs text-gray-500">{{ $workLog->product?->sku ?: ($workLog->product?->product_code ?: '-') }}</td>
@@ -60,7 +62,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" class="px-5 py-12 text-center text-gray-400">No work logs found.</td></tr>
+                            <tr><td colspan="10" class="px-5 py-12 text-center text-gray-400">No work logs found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

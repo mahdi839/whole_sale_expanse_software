@@ -9,6 +9,7 @@ class CarryManWorkLog extends Model
     protected $fillable = [
         'carry_man_id',
         'date',
+        'memo_no',
         'marka',
         'document_path',
         'bale_qty',

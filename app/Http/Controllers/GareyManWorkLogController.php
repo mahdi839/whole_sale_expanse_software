@@ -14,7 +14,10 @@ class GareyManWorkLogController extends Controller
 
         $workLogs = GareyManWorkLog::query()
             ->with('gareyMan')
-            ->when($search, fn ($query) => $query->whereHas('gareyMan', fn ($worker) => $worker->where('name', 'like', "%{$search}%")))
+            ->when($search, fn ($query) => $query->where(function ($sub) use ($search) {
+                $sub->where('memo_no', 'like', "%{$search}%")
+                    ->orWhereHas('gareyMan', fn ($worker) => $worker->where('name', 'like', "%{$search}%"));
+            }))
             ->latest('date')
             ->latest()
             ->paginate(15)
@@ -64,6 +67,7 @@ class GareyManWorkLogController extends Controller
         $data = $request->validate([
             'garey_man_id' => 'required|exists:garey_men,id',
             'date' => 'required|date',
+            'memo_no' => 'nullable|string|max:100',
             'qty' => 'required|numeric|min:0',
             'unit' => 'required|string|max:30',
             'rate_per_goj' => 'required|numeric|min:0',

@@ -1,6 +1,6 @@
 @php($record = $workLog ?? $carryManWorkLog ?? null)
 
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     <div>
         <div class="flex items-center justify-between gap-3 mb-1">
             <label class="block text-sm font-medium text-gray-700">Carry Man</label>
@@ -22,6 +22,13 @@
         <input type="date" name="date" value="{{ old('date', optional($record?->date)->format('Y-m-d') ?? now()->toDateString()) }}"
             class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
         @error('date')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Memo No</label>
+        <input type="text" name="memo_no" value="{{ old('memo_no', $record?->memo_no) }}"
+            class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+        @error('memo_no')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 </div>
 
