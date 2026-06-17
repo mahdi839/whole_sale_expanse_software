@@ -31,6 +31,7 @@
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Tailor</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Products</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Sewing Qty</th>
+                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Total Rate</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Received Qty</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Balance</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Actions</th>
@@ -44,17 +45,20 @@
                                 $productRows = $sewingByProduct->map(function ($items, $productId) use ($receivedByProduct) {
                                     $first = $items->first();
                                     $sewingQty = $items->sum(fn ($item) => (float) $item->item_qty);
+                                    $totalRate = $items->sum(fn ($item) => (float) $item->total_rate);
                                     $receivedQty = (float) ($receivedByProduct[$productId] ?? 0);
 
                                     return [
                                         'name' => $first->product?->product_name ?? '-',
                                         'design_code' => $first->product?->sku ?? $first->product?->product_code ?? '-',
                                         'sewing_qty' => $sewingQty,
+                                        'total_rate' => $totalRate,
                                         'received_qty' => $receivedQty,
                                         'balance_qty' => $sewingQty - $receivedQty,
                                     ];
                                 })->values();
                                 $totalSewing = (float) ($tailor->total_sewing_qty ?? 0);
+                                $totalRate = (float) ($tailor->total_sewing_rate ?? 0);
                                 $totalReceived = (float) ($tailor->total_received_qty ?? 0);
                             @endphp
                             <tr id="tailor-row-{{ $tailor->id }}">
@@ -67,6 +71,7 @@
                                                 <span>{{ $product['name'] }}</span>
                                                 <span class="shrink-0">
                                                     <span class="font-mono text-gray-400">{{ $product['design_code'] }}</span>
+                                                    <span class="text-amber-600 ml-2">{{ number_format($product['total_rate'], 2) }} tk</span>
                                                     <span class="text-indigo-600 ml-2">{{ number_format($product['balance_qty'], 2) }} left</span>
                                                 </span>
                                             </div>
@@ -79,6 +84,7 @@
                                     </div>
                                 </td>
                                 <td class="px-5 py-3 text-right text-indigo-600" data-field="sewing-qty">{{ number_format($totalSewing, 2) }}</td>
+                                <td class="px-5 py-3 text-right text-amber-600" data-field="total-rate">{{ number_format($totalRate, 2) }}</td>
                                 <td class="px-5 py-3 text-right text-green-600" data-field="received-qty">{{ number_format($totalReceived, 2) }}</td>
                                 <td class="px-5 py-3 text-right text-red-600" data-field="balance-qty">{{ number_format($totalSewing - $totalReceived, 2) }}</td>
                                 <td class="px-5 py-3">
@@ -107,7 +113,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="px-5 py-12 text-center text-gray-400">No cloth sewing records found.</td></tr>
+                            <tr><td colspan="8" class="px-5 py-12 text-center text-gray-400">No cloth sewing records found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -172,6 +178,8 @@
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-400">Product</th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-400">Design Code</th>
                             <th class="px-3 py-2 text-right text-xs font-medium text-gray-400">Qty</th>
+                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-400">Per Piece Rate</th>
+                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-400">Total Rate</th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-400">Note</th>
                         </tr>
                     </thead>
@@ -253,6 +261,7 @@
 
             tr.querySelector('[data-field="latest-date"]').textContent = row.latest_date || '-';
             tr.querySelector('[data-field="sewing-qty"]').textContent = row.total_sewing_qty;
+            tr.querySelector('[data-field="total-rate"]').textContent = row.total_sewing_rate;
             tr.querySelector('[data-field="received-qty"]').textContent = row.total_received_qty;
             tr.querySelector('[data-field="balance-qty"]').textContent = row.balance_qty;
             tr.querySelector('[data-field="products"]').innerHTML = productListHtml(row.products);
@@ -266,6 +275,7 @@
                             <span>${escapeHtml(product.name)}</span>
                             <span class="shrink-0">
                                 <span class="font-mono text-gray-400">${escapeHtml(product.design_code || '-')}</span>
+                                <span class="text-amber-600 ml-2">${product.total_rate} tk</span>
                                 <span class="text-indigo-600 ml-2">${product.balance_qty} left</span>
                             </span>
                         </div>
@@ -348,7 +358,7 @@
         document.querySelectorAll('.open-logs').forEach(button => {
             button.addEventListener('click', async () => {
                 document.getElementById('logs-tailor').textContent = button.dataset.tailorName;
-                document.getElementById('logs-body').innerHTML = '<tr><td colspan="6" class="px-3 py-8 text-center text-gray-400">Loading...</td></tr>';
+                document.getElementById('logs-body').innerHTML = '<tr><td colspan="8" class="px-3 py-8 text-center text-gray-400">Loading...</td></tr>';
                 showModal(logsModal);
 
                 const response = await fetch(button.dataset.url, { headers: { Accept: 'application/json' } });
@@ -362,10 +372,12 @@
                             <td class="px-3 py-2">${escapeHtml(log.product)}</td>
                             <td class="px-3 py-2 font-mono text-xs text-gray-500">${escapeHtml(log.design_code || '-')}</td>
                             <td class="px-3 py-2 text-right ${Number(log.qty) < 0 ? 'text-red-600' : 'text-gray-700'}">${escapeHtml(log.qty)}</td>
+                            <td class="px-3 py-2 text-right text-gray-700">${escapeHtml(log.type === 'Sewing' ? log.per_piece_rate : '-')}</td>
+                            <td class="px-3 py-2 text-right text-amber-600">${escapeHtml(log.type === 'Sewing' ? log.total_rate : '-')}</td>
                             <td class="px-3 py-2 text-gray-500">${escapeHtml(log.note || '-')}</td>
                         </tr>
                     `).join('')
-                    : '<tr><td colspan="6" class="px-3 py-8 text-center text-gray-400">No logs found.</td></tr>';
+                    : '<tr><td colspan="8" class="px-3 py-8 text-center text-gray-400">No logs found.</td></tr>';
             });
         });
 

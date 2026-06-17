@@ -2,6 +2,10 @@
     $record = $clothSewing ?? $receivedCloth ?? null;
     $routeBase = $routeBase ?? 'cloth-sewings';
     $isCreate = ! $record?->exists;
+    $isClothSewing = $routeBase === 'cloth-sewings';
+    $itemGridClass = $isClothSewing
+        ? ($isCreate ? 'sm:grid-cols-[1fr_120px_140px_140px_44px]' : 'sm:grid-cols-[1fr_120px_140px_140px]')
+        : ($isCreate ? 'sm:grid-cols-[1fr_140px_44px]' : 'sm:grid-cols-[1fr_140px]');
 
     $productOptions = $products->map(fn ($product) => [
         'id' => (string) $product->id,
@@ -16,6 +20,8 @@
         : [[
             'product_id' => old('product_id', $record?->product_id),
             'item_qty' => old('item_qty', $record?->item_qty),
+            'per_piece_rate' => old('per_piece_rate', $record?->per_piece_rate),
+            'total_rate' => old('total_rate', $record?->total_rate),
         ]];
 @endphp
 
@@ -54,7 +60,7 @@
 
     <div id="cloth-items" class="space-y-3">
         @foreach($items as $index => $item)
-            <div class="cloth-item grid grid-cols-1 sm:grid-cols-[1fr_140px_44px] gap-3">
+            <div class="cloth-item grid grid-cols-1 {{ $itemGridClass }} gap-3">
                 <div x-data="clothProductSelect(@js((string) ($item['product_id'] ?? '')))" class="relative" @click.outside="open = false">
                     <input type="hidden" name="{{ $isCreate ? 'items['.$index.'][product_id]' : 'product_id' }}" x-model="selectedId">
                     <button type="button" @click="open = !open; $nextTick(() => $refs.search.focus())"
@@ -79,9 +85,20 @@
 
                 <div>
                     <input type="number" step="0.01" min="0.01" name="{{ $isCreate ? 'items['.$index.'][item_qty]' : 'item_qty' }}" value="{{ $item['item_qty'] ?? '' }}"
-                        class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg" placeholder="Qty">
+                        class="sewing-qty w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg" placeholder="Qty">
                     @error($isCreate ? 'items.'.$index.'.item_qty' : 'item_qty')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                 </div>
+
+                @if($isClothSewing)
+                    <div>
+                        <input type="number" step="0.01" min="0" name="{{ $isCreate ? 'items['.$index.'][per_piece_rate]' : 'per_piece_rate' }}" value="{{ $item['per_piece_rate'] ?? '' }}"
+                            class="per-piece-rate w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg" placeholder="Per Piece Rate">
+                        @error($isCreate ? 'items.'.$index.'.per_piece_rate' : 'per_piece_rate')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                    </div>
+
+                    <input type="text" value="{{ isset($item['total_rate']) ? number_format((float) $item['total_rate'], 2, '.', '') : '' }}"
+                        class="total-rate w-full h-10 px-3 text-sm bg-gray-100 border border-gray-200 rounded-lg text-gray-600" placeholder="Total Rate" readonly>
+                @endif
 
                 @if($isCreate)
                     <button type="button" class="remove-cloth-item h-10 bg-red-50 text-red-700 rounded-lg">X</button>
@@ -93,7 +110,7 @@
 
 @if($isCreate)
     <template id="cloth-item-template">
-        <div class="cloth-item grid grid-cols-1 sm:grid-cols-[1fr_140px_44px] gap-3">
+        <div class="cloth-item grid grid-cols-1 {{ $itemGridClass }} gap-3">
             <div x-data="clothProductSelect('')" class="relative" @click.outside="open = false">
                 <input type="hidden" name="items[__INDEX__][product_id]" x-model="selectedId">
                 <button type="button" @click="open = !open; $nextTick(() => $refs.search.focus())"
@@ -112,7 +129,11 @@
                     </div>
                 </div>
             </div>
-            <input type="number" step="0.01" min="0.01" name="items[__INDEX__][item_qty]" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg" placeholder="Qty">
+            <input type="number" step="0.01" min="0.01" name="items[__INDEX__][item_qty]" class="sewing-qty w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg" placeholder="Qty">
+            @if($isClothSewing)
+                <input type="number" step="0.01" min="0" name="items[__INDEX__][per_piece_rate]" class="per-piece-rate w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg" placeholder="Per Piece Rate">
+                <input type="text" class="total-rate w-full h-10 px-3 text-sm bg-gray-100 border border-gray-200 rounded-lg text-gray-600" placeholder="Total Rate" readonly>
+            @endif
             <button type="button" class="remove-cloth-item h-10 bg-red-50 text-red-700 rounded-lg">X</button>
         </div>
     </template>
@@ -156,6 +177,21 @@ document.addEventListener('click', event => {
     if (event.target.classList.contains('remove-cloth-item')) {
         const rows = document.querySelectorAll('.cloth-item');
         if (rows.length > 1) event.target.closest('.cloth-item')?.remove();
+    }
+});
+
+function updateClothItemTotal(row) {
+    const qty = Number(row.querySelector('.sewing-qty')?.value) || 0;
+    const rate = Number(row.querySelector('.per-piece-rate')?.value) || 0;
+    const total = row.querySelector('.total-rate');
+    if (total) total.value = (qty * rate).toFixed(2);
+}
+
+document.querySelectorAll('.cloth-item').forEach(updateClothItemTotal);
+
+document.addEventListener('input', event => {
+    if (event.target.classList.contains('sewing-qty') || event.target.classList.contains('per-piece-rate')) {
+        updateClothItemTotal(event.target.closest('.cloth-item'));
     }
 });
 </script>

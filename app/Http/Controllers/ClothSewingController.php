@@ -24,6 +24,7 @@ class ClothSewingController extends Controller
                 'receivedCloths.product',
             ])
             ->withSum('clothSewings as total_sewing_qty', 'item_qty')
+            ->withSum('clothSewings as total_sewing_rate', 'total_rate')
             ->withSum('receivedCloths as total_received_qty', 'item_qty')
             ->withMax('clothSewings as latest_sewing_date', 'date')
             ->when($search, fn ($query) => $query->where(function ($sub) use ($search) {
@@ -160,6 +161,8 @@ class ClothSewingController extends Controller
                 'product' => $log['product'],
                 'design_code' => $log['design_code'],
                 'qty' => number_format($log['qty'], 2),
+                'per_piece_rate' => number_format($log['per_piece_rate'], 2),
+                'total_rate' => number_format($log['total_rate'], 2),
                 'note' => $log['note'],
             ])->values(),
         ]);
@@ -171,6 +174,7 @@ class ClothSewingController extends Controller
         $summary = $this->tailorProductSummary($tailor);
         $headers = ['Date', 'Type', 'Product', 'Design Code', 'Qty', 'Note'];
         $totalSewing = (float) $summary->sum('sewing_qty');
+        $totalRate = (float) $logs->where('type', 'Sewing')->sum('total_rate');
         $totalReceived = (float) $summary->sum('received_qty');
         $rows = $logs->map(fn ($log) => [
             optional($log['date'])->format('Y-m-d'),
@@ -178,7 +182,9 @@ class ClothSewingController extends Controller
             $log['product'],
             $log['design_code'],
             $log['qty'],
-            $log['note'],
+            $log['type'] === 'Sewing'
+                ? 'Rate: '.number_format($log['per_piece_rate'], 2).' | Total: '.number_format($log['total_rate'], 2)
+                : $log['note'],
         ]);
 
         $fileName = 'tailor-'.$tailor->id.'-cloth-sewing-logs-'.now()->format('Y-m-d-H-i-s').'.pdf';
@@ -187,6 +193,7 @@ class ClothSewingController extends Controller
             'logo_path' => public_path('inaya_creation_logo.jpeg'),
             'summary' => [
                 ['label' => 'Total Sewing Qty', 'value' => number_format($totalSewing, 2)],
+                ['label' => 'Total Sewing Rate', 'value' => number_format($totalRate, 2)],
                 ['label' => 'Total Received Qty', 'value' => number_format($totalReceived, 2)],
                 ['label' => 'Balance Qty', 'value' => number_format($totalSewing - $totalReceived, 2)],
             ],
@@ -204,12 +211,15 @@ class ClothSewingController extends Controller
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.item_qty' => 'required|numeric|min:0.01',
+            'items.*.per_piece_rate' => 'required|numeric|min:0',
         ]);
 
         return collect($data['items'])->map(fn ($item) => [
             'tailor_id' => $data['tailor_id'],
             'product_id' => $item['product_id'],
             'item_qty' => $item['item_qty'],
+            'per_piece_rate' => $item['per_piece_rate'],
+            'total_rate' => round((float) $item['item_qty'] * (float) $item['per_piece_rate'], 2),
             'date' => $data['date'],
         ])->all();
     }
@@ -220,8 +230,11 @@ class ClothSewingController extends Controller
             'tailor_id' => 'required|exists:tailors,id',
             'product_id' => 'required|exists:products,id',
             'item_qty' => 'required|numeric|min:0.01',
+            'per_piece_rate' => 'required|numeric|min:0',
             'date' => 'required|date',
         ]);
+
+        $data['total_rate'] = round((float) $data['item_qty'] * (float) $data['per_piece_rate'], 2);
 
         return $data;
     }
@@ -232,6 +245,7 @@ class ClothSewingController extends Controller
             ->with('product')
             ->select('product_id')
             ->selectRaw('SUM(item_qty) as sewing_qty')
+            ->selectRaw('SUM(total_rate) as total_rate')
             ->where('tailor_id', $tailor->id)
             ->groupBy('product_id')
             ->get()
@@ -255,6 +269,7 @@ class ClothSewingController extends Controller
                 'sewing_qty' => $sewingQty,
                 'received_qty' => $receivedQty,
                 'balance_qty' => $sewingQty - $receivedQty,
+                'total_rate' => (float) $item->total_rate,
             ];
         });
     }
@@ -273,10 +288,12 @@ class ClothSewingController extends Controller
                 'sewing_qty' => number_format($item['sewing_qty'], 2),
                 'received_qty' => number_format($item['received_qty'], 2),
                 'balance_qty' => number_format($item['balance_qty'], 2),
+                'total_rate' => number_format($item['total_rate'], 2),
             ])->values(),
             'total_sewing_qty' => number_format($summary->sum('sewing_qty'), 2),
             'total_received_qty' => number_format($summary->sum('received_qty'), 2),
             'balance_qty' => number_format($summary->sum('balance_qty'), 2),
+            'total_sewing_rate' => number_format($summary->sum('total_rate'), 2),
         ];
     }
 
@@ -289,6 +306,8 @@ class ClothSewingController extends Controller
                 'product' => $item->product?->product_name ?? '-',
                 'design_code' => $item->product?->sku ?? $item->product?->product_code ?? '-',
                 'qty' => (float) $item->item_qty,
+                'per_piece_rate' => (float) $item->per_piece_rate,
+                'total_rate' => (float) $item->total_rate,
                 'note' => 'Assigned to tailor',
             ]))
             ->merge($tailor->receivedCloths()->with('product')->latest('date')->latest()->get()->map(fn ($item) => [
@@ -297,6 +316,8 @@ class ClothSewingController extends Controller
                 'product' => $item->product?->product_name ?? '-',
                 'design_code' => $item->product?->sku ?? $item->product?->product_code ?? '-',
                 'qty' => (float) $item->item_qty,
+                'per_piece_rate' => 0,
+                'total_rate' => 0,
                 'note' => $item->item_qty < 0 ? 'Received adjustment' : 'Received from tailor',
             ]))
             ->sortByDesc('date')

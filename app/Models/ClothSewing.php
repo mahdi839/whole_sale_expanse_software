@@ -10,11 +10,15 @@ class ClothSewing extends Model
         'tailor_id',
         'product_id',
         'item_qty',
+        'per_piece_rate',
+        'total_rate',
         'date',
     ];
 
     protected $casts = [
         'item_qty' => 'decimal:2',
+        'per_piece_rate' => 'decimal:2',
+        'total_rate' => 'decimal:2',
         'date' => 'date',
     ];
 
