@@ -14,6 +14,7 @@ class CarryManWorkLog extends Model
         'document_path',
         'bale_qty',
         'total_unit_kg',
+        'received_qty',
         'rate_per_kg',
         'total_rate',
     ];
@@ -22,6 +23,7 @@ class CarryManWorkLog extends Model
         'date' => 'date',
         'bale_qty' => 'decimal:2',
         'total_unit_kg' => 'decimal:2',
+        'received_qty' => 'decimal:2',
         'rate_per_kg' => 'decimal:2',
         'total_rate' => 'decimal:2',
     ];

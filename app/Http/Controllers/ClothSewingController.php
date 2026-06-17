@@ -246,6 +246,8 @@ class ClothSewingController extends Controller
             ->select('product_id')
             ->selectRaw('SUM(item_qty) as sewing_qty')
             ->selectRaw('SUM(total_rate) as total_rate')
+            ->selectRaw('MIN(per_piece_rate) as min_per_piece_rate')
+            ->selectRaw('MAX(per_piece_rate) as max_per_piece_rate')
             ->where('tailor_id', $tailor->id)
             ->groupBy('product_id')
             ->get()
@@ -261,12 +263,17 @@ class ClothSewingController extends Controller
         return $sewing->map(function ($item) use ($received) {
             $receivedQty = (float) ($received[$item->product_id] ?? 0);
             $sewingQty = (float) $item->sewing_qty;
+            $minRate = (float) $item->min_per_piece_rate;
+            $maxRate = (float) $item->max_per_piece_rate;
 
             return [
                 'product_id' => (int) $item->product_id,
                 'product_name' => $item->product?->product_name ?? '-',
                 'design_code' => $item->product?->sku ?? $item->product?->product_code ?? '-',
                 'sewing_qty' => $sewingQty,
+                'per_piece_rates' => $minRate === $maxRate
+                    ? number_format($minRate, 2)
+                    : number_format($minRate, 2).' - '.number_format($maxRate, 2),
                 'received_qty' => $receivedQty,
                 'balance_qty' => $sewingQty - $receivedQty,
                 'total_rate' => (float) $item->total_rate,
@@ -286,6 +293,7 @@ class ClothSewingController extends Controller
                 'name' => $item['product_name'],
                 'design_code' => $item['design_code'],
                 'sewing_qty' => number_format($item['sewing_qty'], 2),
+                'per_piece_rates' => $item['per_piece_rates'],
                 'received_qty' => number_format($item['received_qty'], 2),
                 'balance_qty' => number_format($item['balance_qty'], 2),
                 'total_rate' => number_format($item['total_rate'], 2),

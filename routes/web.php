@@ -92,10 +92,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('permission:manage cloth sewings|delete cloth sewings');
     $crudResource('/received-cloths', ReceivedClothController::class, 'received cloths', ['parameters' => ['received-cloths' => 'receivedCloth'], 'except' => ['show']]);
     $crudResource('/carry-men', CarryManController::class, 'carry men');
+    Route::post('/carry-man-work-logs/{carryManWorkLog}/receive', [CarryManWorkLogController::class, 'receive'])->name('carry-man-work-logs.receive')->middleware('permission:manage carry man work logs|edit carry man work logs');
     $crudResource('/carry-man-work-logs', CarryManWorkLogController::class, 'carry man work logs', ['except' => ['show']]);
     $crudResource('/computer-men', ComputerManController::class, 'computer men');
+    Route::post('/computer-man-work-logs/{computerManWorkLog}/receive', [ComputerManWorkLogController::class, 'receive'])->name('computer-man-work-logs.receive')->middleware('permission:manage computer man work logs|edit computer man work logs');
     $crudResource('/computer-man-work-logs', ComputerManWorkLogController::class, 'computer man work logs', ['except' => ['show']]);
     $crudResource('/garey-men', GareyManController::class, 'garey men');
+    Route::post('/garey-man-work-logs/{gareyManWorkLog}/receive', [GareyManWorkLogController::class, 'receive'])->name('garey-man-work-logs.receive')->middleware('permission:manage garey man work logs|edit garey man work logs');
     $crudResource('/garey-man-work-logs', GareyManWorkLogController::class, 'garey man work logs', ['except' => ['show']]);
     $crudResource('/users', UserController::class, 'users', ['except' => ['show']]);
     $crudResource('/roles', RoleController::class, 'roles', ['except' => ['show']]);

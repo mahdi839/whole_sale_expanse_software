@@ -71,6 +71,19 @@ class GareyManWorkLogController extends Controller
         return redirect()->route('garey-man-work-logs.index')->with('success', 'Garey man work log deleted successfully.');
     }
 
+    public function receive(Request $request, GareyManWorkLog $gareyManWorkLog)
+    {
+        $data = $request->validate([
+            'received_qty' => 'required|numeric|min:0|max:'.$gareyManWorkLog->qty,
+        ]);
+
+        $gareyManWorkLog->update([
+            'received_qty' => round((float) $data['received_qty'], 2),
+        ]);
+
+        return redirect()->route('garey-man-work-logs.index')->with('success', 'Received quantity updated successfully.');
+    }
+
     private function validated(Request $request): array
     {
         $data = $request->validate([

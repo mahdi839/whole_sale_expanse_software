@@ -78,6 +78,19 @@ class ComputerManWorkLogController extends Controller
         return redirect()->route('computer-man-work-logs.index')->with('success', 'Computer man work log deleted successfully.');
     }
 
+    public function receive(Request $request, ComputerManWorkLog $computerManWorkLog)
+    {
+        $data = $request->validate([
+            'received_qty' => 'required|numeric|min:0|max:'.$computerManWorkLog->computer_design_qty,
+        ]);
+
+        $computerManWorkLog->update([
+            'received_qty' => round((float) $data['received_qty'], 2),
+        ]);
+
+        return redirect()->route('computer-man-work-logs.index')->with('success', 'Received quantity updated successfully.');
+    }
+
     private function validated(Request $request): array
     {
         $data = $request->validate([
@@ -90,6 +103,7 @@ class ComputerManWorkLogController extends Controller
             'rate_per_piece' => 'required|numeric|min:0',
         ]);
 
+        $data['received_qty'] = min((float) $data['received_qty'], (float) $data['computer_design_qty']);
         $data['total_rate'] = round((float) $data['computer_design_qty'] * (float) $data['rate_per_piece'], 2);
 
         return $data;

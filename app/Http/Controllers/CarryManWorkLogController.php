@@ -84,6 +84,19 @@ class CarryManWorkLogController extends Controller
         return redirect()->route('carry-man-work-logs.index')->with('success', 'Carry man work log deleted successfully.');
     }
 
+    public function receive(Request $request, CarryManWorkLog $carryManWorkLog)
+    {
+        $data = $request->validate([
+            'received_qty' => 'required|numeric|min:0|max:'.$carryManWorkLog->total_unit_kg,
+        ]);
+
+        $carryManWorkLog->update([
+            'received_qty' => round((float) $data['received_qty'], 2),
+        ]);
+
+        return redirect()->route('carry-man-work-logs.index')->with('success', 'Received quantity updated successfully.');
+    }
+
     private function validated(Request $request, ?CarryManWorkLog $workLog = null): array
     {
         $data = $request->validate([

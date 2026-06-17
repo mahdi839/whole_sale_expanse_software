@@ -46,12 +46,18 @@
                                     $first = $items->first();
                                     $sewingQty = $items->sum(fn ($item) => (float) $item->item_qty);
                                     $totalRate = $items->sum(fn ($item) => (float) $item->total_rate);
+                                    $perPieceRates = $items
+                                        ->map(fn ($item) => number_format((float) $item->per_piece_rate, 2))
+                                        ->unique()
+                                        ->values()
+                                        ->implode(', ');
                                     $receivedQty = (float) ($receivedByProduct[$productId] ?? 0);
 
                                     return [
                                         'name' => $first->product?->product_name ?? '-',
                                         'design_code' => $first->product?->sku ?? $first->product?->product_code ?? '-',
                                         'sewing_qty' => $sewingQty,
+                                        'per_piece_rates' => $perPieceRates,
                                         'total_rate' => $totalRate,
                                         'received_qty' => $receivedQty,
                                         'balance_qty' => $sewingQty - $receivedQty,
@@ -71,6 +77,7 @@
                                                 <span>{{ $product['name'] }}</span>
                                                 <span class="shrink-0">
                                                     <span class="font-mono text-gray-400">{{ $product['design_code'] }}</span>
+                                                    <span class="text-gray-500 ml-2">{{ $product['per_piece_rates'] }} / pc</span>
                                                     <span class="text-amber-600 ml-2">{{ number_format($product['total_rate'], 2) }} tk</span>
                                                     <span class="text-indigo-600 ml-2">{{ number_format($product['balance_qty'], 2) }} left</span>
                                                 </span>
@@ -275,6 +282,7 @@
                             <span>${escapeHtml(product.name)}</span>
                             <span class="shrink-0">
                                 <span class="font-mono text-gray-400">${escapeHtml(product.design_code || '-')}</span>
+                                <span class="text-gray-500 ml-2">${escapeHtml(product.per_piece_rates || '0.00')} / pc</span>
                                 <span class="text-amber-600 ml-2">${product.total_rate} tk</span>
                                 <span class="text-indigo-600 ml-2">${product.balance_qty} left</span>
                             </span>

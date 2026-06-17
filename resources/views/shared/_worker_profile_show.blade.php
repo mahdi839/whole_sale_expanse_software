@@ -88,6 +88,7 @@
                                 <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Design Code</th>
                                 <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Design Qty</th>
                                 <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Received Qty</th>
+                                <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Balance</th>
                                 <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Rate</th>
                                 <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Total</th>
                             </tr>
@@ -98,6 +99,8 @@
                                 <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Marka</th>
                                 <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Bale Qty</th>
                                 <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">KG</th>
+                                <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Received KG</th>
+                                <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Balance KG</th>
                                 <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Rate/KG</th>
                                 <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Total</th>
                             </tr>
@@ -106,6 +109,8 @@
                                 <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Date</th>
                                 <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Memo No</th>
                                 <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Qty</th>
+                                <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Received Qty</th>
+                                <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Balance</th>
                                 <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Unit</th>
                                 <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Per Goj Rate</th>
                                 <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Total</th>
@@ -122,6 +127,7 @@
                                     <td class="px-5 py-3 font-mono text-xs text-gray-500">{{ $log->product?->sku ?: ($log->product?->product_code ?: '-') }}</td>
                                     <td class="px-5 py-3 text-right">{{ number_format($log->computer_design_qty, 2) }}</td>
                                     <td class="px-5 py-3 text-right">{{ number_format($log->received_qty, 2) }}</td>
+                                    <td class="px-5 py-3 text-right text-red-600">{{ number_format((float) $log->computer_design_qty - (float) $log->received_qty, 2) }}</td>
                                     <td class="px-5 py-3 text-right">{{ number_format($log->rate_per_piece, 2) }}</td>
                                     <td class="px-5 py-3 text-right text-green-600">{{ number_format($log->total_rate, 2) }}</td>
                                 </tr>
@@ -132,6 +138,8 @@
                                     <td class="px-5 py-3">{{ $log->marka ?? '-' }}</td>
                                     <td class="px-5 py-3 text-right">{{ number_format($log->bale_qty, 2) }}</td>
                                     <td class="px-5 py-3 text-right">{{ number_format($log->total_unit_kg, 2) }}</td>
+                                    <td class="px-5 py-3 text-right">{{ number_format($log->received_qty, 2) }}</td>
+                                    <td class="px-5 py-3 text-right text-red-600">{{ number_format((float) $log->total_unit_kg - (float) $log->received_qty, 2) }}</td>
                                     <td class="px-5 py-3 text-right">{{ number_format($log->rate_per_kg, 2) }}</td>
                                     <td class="px-5 py-3 text-right text-green-600">{{ number_format($log->total_rate, 2) }}</td>
                                 </tr>
@@ -140,13 +148,15 @@
                                     <td class="px-5 py-3 whitespace-nowrap">{{ optional($log->date)->format('d M Y') }}</td>
                                     <td class="px-5 py-3">{{ $log->memo_no ?? '-' }}</td>
                                     <td class="px-5 py-3 text-right">{{ number_format($log->qty, 2) }}</td>
+                                    <td class="px-5 py-3 text-right">{{ number_format($log->received_qty, 2) }}</td>
+                                    <td class="px-5 py-3 text-right text-red-600">{{ number_format((float) $log->qty - (float) $log->received_qty, 2) }}</td>
                                     <td class="px-5 py-3">{{ $log->unit }}</td>
                                     <td class="px-5 py-3 text-right">{{ number_format($log->rate_per_goj, 2) }}</td>
                                     <td class="px-5 py-3 text-right text-green-600">{{ number_format($log->total_rate, 2) }}</td>
                                 </tr>
                             @endif
                         @empty
-                            <tr><td colspan="8" class="px-5 py-10 text-center text-gray-400">No work logs found.</td></tr>
+                            <tr><td colspan="10" class="px-5 py-10 text-center text-gray-400">No work logs found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

@@ -11,6 +11,7 @@ class GareyManWorkLog extends Model
         'date',
         'memo_no',
         'qty',
+        'received_qty',
         'unit',
         'rate_per_goj',
         'total_rate',
@@ -19,6 +20,7 @@ class GareyManWorkLog extends Model
     protected $casts = [
         'date' => 'date',
         'qty' => 'decimal:2',
+        'received_qty' => 'decimal:2',
         'rate_per_goj' => 'decimal:2',
         'total_rate' => 'decimal:2',
     ];
