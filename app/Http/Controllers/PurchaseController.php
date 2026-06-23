@@ -77,7 +77,7 @@ class PurchaseController extends Controller
             ->when($filters['date'], fn ($q) => $q->whereDate('purchases.date', $filters['date']))
             ->sum('purchase_items.qty');
 
-        $totals->total_stock = (float) Stock::sum('stock_qty');
+        $totals->total_stock = (float) Stock::forExistingLocation()->sum('stock_qty');
 
         return view('purchases.index', compact('purchases', 'filters', 'totals'));
     }

@@ -26,4 +26,17 @@ class Stock extends Model
     {
         return $query->whereNull('shop_id');
     }
+
+    public function scopeForExistingLocation($query)
+    {
+        return $query->where(function ($query) {
+            $query->whereNull('shop_id')
+                ->orWhereHas('shop');
+        });
+    }
+
+    public function scopeForExistingShop($query)
+    {
+        return $query->whereNotNull('shop_id')->whereHas('shop');
+    }
 }
