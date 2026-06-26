@@ -15,6 +15,10 @@ class ManualDue extends Model
         'adjustment_type',
         'customer_id',
         'supplier_id',
+        'tailor_id',
+        'carry_man_id',
+        'computer_man_id',
+        'garey_man_id',
         'amount',
         'date',
         'note',
@@ -42,6 +46,39 @@ class ManualDue extends Model
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function tailor()
+    {
+        return $this->belongsTo(Tailor::class);
+    }
+
+    public function carryMan()
+    {
+        return $this->belongsTo(CarryMan::class);
+    }
+
+    public function computerMan()
+    {
+        return $this->belongsTo(ComputerMan::class);
+    }
+
+    public function gareyMan()
+    {
+        return $this->belongsTo(GareyMan::class);
+    }
+
+    public function partyName(): string
+    {
+        return match ($this->party_type) {
+            'customer' => $this->customer?->full_name ?? '-',
+            'supplier' => $this->supplier?->name ?? '-',
+            'tailor' => $this->tailor?->name ?? '-',
+            'carry_man' => $this->carryMan?->name ?? '-',
+            'computer_man' => $this->computerMan?->name ?? '-',
+            'garey_man' => $this->gareyMan?->name ?? '-',
+            default => '-',
+        };
     }
 
     public static function generateReference(): string

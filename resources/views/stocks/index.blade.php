@@ -15,6 +15,7 @@
         <div class="flex flex-wrap gap-2 justify-end">
             @can('manage stock')
                 <a href="{{ route('stocks.create') }}" class="h-10 px-4 bg-blue-600 text-white rounded-lg text-sm inline-flex items-center">Set Central Stock</a>
+                <a href="{{ route('stocks.adjustments') }}" class="h-10 px-4 bg-indigo-600 text-white rounded-lg text-sm inline-flex items-center">Adjust / Transfer</a>
             @endcan
             @can('distribute stock')
                 <a href="{{ route('stocks.distribute') }}" class="h-10 px-4 bg-green-600 text-white rounded-lg text-sm inline-flex items-center">Distribute to Shop</a>

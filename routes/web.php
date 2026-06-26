@@ -117,6 +117,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('purchase-returns.export')->middleware('permission:manage purchase returns|view purchase returns');
     Route::get('stocks/distribute/create', [StockController::class, 'distribute'])->name('stocks.distribute')->middleware('permission:distribute stock');
     Route::post('stocks/distribute', [StockController::class, 'storeDistribution'])->name('stocks.distribute.store')->middleware('permission:distribute stock');
+    Route::get('stocks/adjustments', [StockController::class, 'adjustments'])->name('stocks.adjustments')->middleware('permission:manage stock|edit stock');
+    Route::post('stocks/adjustments', [StockController::class, 'storeAdjustment'])->name('stocks.adjustments.store')->middleware('permission:manage stock|edit stock');
+    Route::post('stocks/transfers', [StockController::class, 'storeTransfer'])->name('stocks.transfers.store')->middleware('permission:manage stock|edit stock');
     Route::get('stocks/distributions/pending', [StockController::class, 'pendingDistributions'])->name('stocks.distributions.pending')->middleware('permission:view stock distributions|receive stock distributions');
     Route::post('stocks/distributions/{distribution}/receive', [StockController::class, 'receiveDistribution'])->name('stocks.distributions.receive')->middleware('permission:receive stock distributions');
     Route::post('stocks/distributions/{distribution}/cancel', [StockController::class, 'cancelDistribution'])->name('stocks.distributions.cancel')->middleware('permission:receive stock distributions');

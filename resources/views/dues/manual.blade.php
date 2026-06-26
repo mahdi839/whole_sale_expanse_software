@@ -17,6 +17,10 @@
                     <select name="party_type" x-model="partyType" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                         <option value="customer">Customer</option>
                         <option value="supplier">Supplier</option>
+                        <option value="tailor">Tailor</option>
+                        <option value="computer_man">Computer Man</option>
+                        <option value="carry_man">Carry Man</option>
+                        <option value="garey_man">Garey Man</option>
                     </select>
                 </div>
 
@@ -57,6 +61,50 @@
                     </div>
                     <p class="mt-1 text-xs text-gray-500">Present due: <span id="supplier-present-due" class="font-semibold text-red-600">0.00</span></p>
                     @error('supplier_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="lg:col-span-2" x-show="partyType === 'tailor'">
+                    <label class="block text-xs text-gray-400 mb-1">Tailor</label>
+                    <select name="tailor_id" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                        <option value="">Select tailor</option>
+                        @foreach($tailors as $tailor)
+                            <option value="{{ $tailor->id }}" @selected(old('tailor_id') == $tailor->id)>{{ $tailor->name }}{{ $tailor->phone ? ' - '.$tailor->phone : '' }}</option>
+                        @endforeach
+                    </select>
+                    @error('tailor_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="lg:col-span-2" x-show="partyType === 'computer_man'">
+                    <label class="block text-xs text-gray-400 mb-1">Computer Man</label>
+                    <select name="computer_man_id" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                        <option value="">Select computer man</option>
+                        @foreach($computerMen as $computerMan)
+                            <option value="{{ $computerMan->id }}" @selected(old('computer_man_id') == $computerMan->id)>{{ $computerMan->name }}{{ $computerMan->phone ? ' - '.$computerMan->phone : '' }}</option>
+                        @endforeach
+                    </select>
+                    @error('computer_man_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="lg:col-span-2" x-show="partyType === 'carry_man'">
+                    <label class="block text-xs text-gray-400 mb-1">Carry Man</label>
+                    <select name="carry_man_id" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                        <option value="">Select carry man</option>
+                        @foreach($carryMen as $carryMan)
+                            <option value="{{ $carryMan->id }}" @selected(old('carry_man_id') == $carryMan->id)>{{ $carryMan->name }}{{ $carryMan->phone ? ' - '.$carryMan->phone : '' }}</option>
+                        @endforeach
+                    </select>
+                    @error('carry_man_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="lg:col-span-2" x-show="partyType === 'garey_man'">
+                    <label class="block text-xs text-gray-400 mb-1">Garey Man</label>
+                    <select name="garey_man_id" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                        <option value="">Select garey man</option>
+                        @foreach($gareyMen as $gareyMan)
+                            <option value="{{ $gareyMan->id }}" @selected(old('garey_man_id') == $gareyMan->id)>{{ $gareyMan->name }}{{ $gareyMan->phone ? ' - '.$gareyMan->phone : '' }}</option>
+                        @endforeach
+                    </select>
+                    @error('garey_man_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                 </div>
 
                 <div>
@@ -195,4 +243,3 @@
     </script>
     @endpush
 </x-app-layout>
-

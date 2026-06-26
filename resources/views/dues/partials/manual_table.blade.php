@@ -12,7 +12,10 @@
             @forelse($manualDues as $due)
                 <tr>
                     <td class="px-5 py-3"><span class="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-md text-xs font-mono">{{ $due->reference }}</span></td>
-                    <td class="px-5 py-3">{{ $due->party_type === 'customer' ? $due->customer?->full_name : $due->supplier?->name }}</td>
+                    <td class="px-5 py-3">
+                        {{ $due->partyName() }}
+                        <span class="block text-xs text-gray-400">{{ ucwords(str_replace('_', ' ', $due->party_type)) }}</span>
+                    </td>
                     <td class="px-5 py-3">
                         @if(($due->adjustment_type ?? 'add') === 'subtract')
                             <span class="px-2 py-1 text-xs text-green-700 bg-green-50 rounded-lg">Minus Due</span>

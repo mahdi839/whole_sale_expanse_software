@@ -65,6 +65,103 @@ class StockController extends Controller
         ]);
     }
 
+    public function adjustments()
+    {
+        return view('stocks.adjustments', [
+            'products' => Product::orderBy('product_name')->get(['id', 'product_name', 'sku']),
+            'shops' => Shop::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
+            'stocks' => Stock::with(['product', 'shop'])->forExistingLocation()->latest()->limit(25)->get(),
+        ]);
+    }
+
+    public function storeAdjustment(Request $request)
+    {
+        $validated = $request->validate([
+            'location_type' => 'required|in:central,shop',
+            'shop_id' => 'nullable|required_if:location_type,shop|exists:shops,id',
+            'product_id' => 'required|exists:products,id',
+            'adjustment_type' => 'required|in:plus,minus',
+            'qty' => 'required|numeric|min:0.01',
+        ], [], [
+            'shop_id' => 'shop',
+            'product_id' => 'product',
+            'adjustment_type' => 'adjustment',
+            'qty' => 'quantity',
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            $shopId = $validated['location_type'] === 'shop' ? $validated['shop_id'] : null;
+            $stock = Stock::where('product_id', $validated['product_id'])
+                ->where('shop_id', $shopId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $stock) {
+                $stock = Stock::create([
+                    'product_id' => $validated['product_id'],
+                    'shop_id' => $shopId,
+                    'stock_qty' => 0,
+                ]);
+            }
+
+            $qty = (float) $validated['qty'];
+
+            if ($validated['adjustment_type'] === 'minus') {
+                if ((float) $stock->stock_qty < $qty) {
+                    throw ValidationException::withMessages([
+                        'qty' => 'Not enough stock to minus this quantity.',
+                    ]);
+                }
+
+                $stock->decrement('stock_qty', $qty);
+                return;
+            }
+
+            $stock->increment('stock_qty', $qty);
+        });
+
+        return redirect()->route('stocks.adjustments')->with('success', 'Stock adjusted successfully.');
+    }
+
+    public function storeTransfer(Request $request)
+    {
+        $validated = $request->validate([
+            'from_shop_id' => 'required|exists:shops,id|different:to_shop_id',
+            'to_shop_id' => 'required|exists:shops,id',
+            'product_id' => 'required|exists:products,id',
+            'qty' => 'required|numeric|min:0.01',
+        ], [], [
+            'from_shop_id' => 'from shop',
+            'to_shop_id' => 'to shop',
+            'product_id' => 'product',
+            'qty' => 'quantity',
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            $qty = (float) $validated['qty'];
+            $fromStock = Stock::where('product_id', $validated['product_id'])
+                ->where('shop_id', $validated['from_shop_id'])
+                ->lockForUpdate()
+                ->first();
+
+            if (! $fromStock || (float) $fromStock->stock_qty < $qty) {
+                throw ValidationException::withMessages([
+                    'qty' => 'Not enough stock in the source shop.',
+                ]);
+            }
+
+            $toStock = Stock::firstOrCreate(
+                ['product_id' => $validated['product_id'], 'shop_id' => $validated['to_shop_id']],
+                ['stock_qty' => 0]
+            );
+
+            $fromStock->decrement('stock_qty', $qty);
+            $toStock->increment('stock_qty', $qty);
+        });
+
+        return redirect()->route('stocks.adjustments')->with('success', 'Stock transferred successfully.');
+    }
+
     public function storeDistribution(Request $request)
     {
         $validated = $request->validate([

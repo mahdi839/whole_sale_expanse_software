@@ -67,6 +67,7 @@ class DashboardController extends Controller
         // ── Summary cards ────────────────────────────────────────────
         $stockValue = Stock::query()
             ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->forExistingLocation()
             ->when($shopId, fn ($q) => $q->where('stocks.shop_id', $shopId))
             ->selectRaw('
                 COALESCE(SUM(stocks.stock_qty), 0) as total_stock_qty,
@@ -90,13 +91,13 @@ class DashboardController extends Controller
         $stats = [
             'total_products' => Product::count(),
             'total_customers' => Customer::count(),
-            'total_stock_qty' => (float) ($stockValue->total_stock_qty ?? 0) + (float) ($pendingStockValue->total_stock_qty ?? 0),
-            'total_stock_cost_value' => (float) ($stockValue->cost_value ?? 0) + (float) ($pendingStockValue->cost_value ?? 0),
-            'total_stock_retail_value' => (float) ($stockValue->retail_value ?? 0) + (float) ($pendingStockValue->retail_value ?? 0),
+            'total_stock_qty' => (float) ($stockValue->total_stock_qty ?? 0),
+            'total_stock_cost_value' => (float) ($stockValue->cost_value ?? 0),
+            'total_stock_retail_value' => (float) ($stockValue->retail_value ?? 0),
             'pending_stock_qty' => (float) ($pendingStockValue->total_stock_qty ?? 0),
             'pending_stock_cost_value' => (float) ($pendingStockValue->cost_value ?? 0),
             'pending_stock_retail_value' => (float) ($pendingStockValue->retail_value ?? 0),
-            'stock_scope_label' => $shopId ? 'Assigned shop + pending' : 'Central + shops + pending',
+            'stock_scope_label' => $shopId ? 'Assigned shop' : 'Central + shops',
             'total_sales' => Sale::where($saleScope)->sum('grand_total'),
             'total_sales_due' => Sale::where($saleScope)->sum('due'),
             'total_sale_returns' => SaleReturn::where($saleReturnScope)->sum('return_amount'),

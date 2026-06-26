@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\CarryMan;
+use App\Models\ComputerMan;
+use App\Models\GareyMan;
 use App\Models\ManualDue;
 use App\Models\Purchase;
 use App\Models\Sale;
 use App\Models\Supplier;
+use App\Models\Tailor;
 use App\Support\SimplePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -172,7 +176,7 @@ class DueManagementController extends Controller
     {
         $filters = $this->filters(request());
 
-        $manualDues = ManualDue::with(['customer', 'supplier'])
+        $manualDues = ManualDue::with(['customer', 'supplier', 'tailor', 'carryMan', 'computerMan', 'gareyMan'])
             ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
             ->when($filters['search'], function ($query) use ($filters) {
                 $search = $filters['search'];
@@ -190,6 +194,19 @@ class DueManagementController extends Controller
                                 ->orWhere('phone', 'like', "%{$search}%")
                                 ->orWhere('address', 'like', "%{$search}%")
                                 ->orWhere('code', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('tailor', fn ($tailor) => $tailor->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('carryMan', function ($worker) use ($search) {
+                            $worker->where('name', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('computerMan', function ($worker) use ($search) {
+                            $worker->where('name', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('gareyMan', function ($worker) use ($search) {
+                            $worker->where('name', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%");
                         });
                 });
             })
@@ -200,11 +217,19 @@ class DueManagementController extends Controller
 
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone', 'due']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'due']);
+        $tailors = Tailor::orderBy('name')->get(['id', 'name', 'phone']);
+        $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
+        $computerMen = ComputerMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
+        $gareyMen = GareyMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
 
         return view('dues.manual', compact(
             'manualDues',
             'customers',
             'suppliers',
+            'tailors',
+            'carryMen',
+            'computerMen',
+            'gareyMen',
             'filters',
         ));
     }
@@ -347,7 +372,7 @@ class DueManagementController extends Controller
     public function exportManual()
     {
         $filters = $this->filters(request());
-        $rows = ManualDue::with(['customer', 'supplier'])
+        $rows = ManualDue::with(['customer', 'supplier', 'tailor', 'carryMan', 'computerMan', 'gareyMan'])
             ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
             ->when($filters['search'], fn ($q) => $q->where(function ($sub) use ($filters) {
                 $search = $filters['search'];
@@ -359,7 +384,11 @@ class DueManagementController extends Controller
                     ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%")
                         ->orWhere('address', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%"));
+                        ->orWhere('code', 'like', "%{$search}%"))
+                    ->orWhereHas('tailor', fn ($tailor) => $tailor->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('carryMan', fn ($worker) => $worker->where('name', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%"))
+                    ->orWhereHas('computerMan', fn ($worker) => $worker->where('name', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%"))
+                    ->orWhereHas('gareyMan', fn ($worker) => $worker->where('name', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%"));
             }))
             ->latest('date')
             ->latest()
@@ -370,7 +399,7 @@ class DueManagementController extends Controller
             $row->reference,
             $row->party_type,
             $row->adjustment_type,
-            $row->customer?->full_name ?? $row->supplier?->name,
+            $row->partyName(),
             $row->amount,
             $row->note,
         ]));
@@ -392,8 +421,12 @@ class DueManagementController extends Controller
     {
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone', 'due']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'due']);
+        $tailors = Tailor::orderBy('name')->get(['id', 'name', 'phone']);
+        $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
+        $computerMen = ComputerMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
+        $gareyMen = GareyMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
 
-        return view('dues.edit', compact('manualDue', 'customers', 'suppliers'));
+        return view('dues.edit', compact('manualDue', 'customers', 'suppliers', 'tailors', 'carryMen', 'computerMen', 'gareyMen'));
     }
 
     public function update(Request $request, ManualDue $manualDue)
@@ -422,21 +455,35 @@ class DueManagementController extends Controller
     private function validated(Request $request): array
     {
         $data = $request->validate([
-            'party_type' => ['required', Rule::in(['customer', 'supplier'])],
+            'party_type' => ['required', Rule::in(['customer', 'supplier', 'tailor', 'carry_man', 'computer_man', 'garey_man'])],
             'adjustment_type' => ['required', Rule::in(['add', 'subtract'])],
             'customer_id' => 'nullable|exists:customers,id',
             'supplier_id' => 'nullable|exists:suppliers,id',
+            'tailor_id' => 'nullable|exists:tailors,id',
+            'carry_man_id' => 'nullable|exists:carry_men,id',
+            'computer_man_id' => 'nullable|exists:computer_men,id',
+            'garey_man_id' => 'nullable|exists:garey_men,id',
             'amount' => 'required|numeric|min:0.01',
             'date' => 'required|date',
             'note' => 'nullable|string|max:2000',
         ]);
 
-        if ($data['party_type'] === 'customer') {
-            $request->validate(['customer_id' => 'required|exists:customers,id']);
-            $data['supplier_id'] = null;
-        } else {
-            $request->validate(['supplier_id' => 'required|exists:suppliers,id']);
-            $data['customer_id'] = null;
+        $partyFields = [
+            'customer' => 'customer_id',
+            'supplier' => 'supplier_id',
+            'tailor' => 'tailor_id',
+            'carry_man' => 'carry_man_id',
+            'computer_man' => 'computer_man_id',
+            'garey_man' => 'garey_man_id',
+        ];
+
+        $selectedField = $partyFields[$data['party_type']];
+        $request->validate([$selectedField => 'required']);
+
+        foreach ($partyFields as $field) {
+            if ($field !== $selectedField) {
+                $data[$field] = null;
+            }
         }
 
         return $data;
@@ -468,6 +515,24 @@ class DueManagementController extends Controller
             if ($supplier) {
                 $supplier->increment('total_purchase', $amount);
                 $supplier->update(['due' => max(0, (float) $supplier->total_purchase - (float) $supplier->total_paid)]);
+            }
+        }
+
+        foreach ([
+            'carry_man_id' => CarryMan::class,
+            'computer_man_id' => ComputerMan::class,
+            'garey_man_id' => GareyMan::class,
+        ] as $field => $modelClass) {
+            if (! $due->{$field}) {
+                continue;
+            }
+
+            $worker = $modelClass::find($due->{$field});
+
+            if ($worker) {
+                $worker->update([
+                    'total_due' => max(0, (float) $worker->total_due + $amount),
+                ]);
             }
         }
     }
