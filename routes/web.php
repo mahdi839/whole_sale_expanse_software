@@ -123,6 +123,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('stocks/distributions/pending', [StockController::class, 'pendingDistributions'])->name('stocks.distributions.pending')->middleware('permission:view stock distributions|receive stock distributions');
     Route::post('stocks/distributions/{distribution}/receive', [StockController::class, 'receiveDistribution'])->name('stocks.distributions.receive')->middleware('permission:receive stock distributions');
     Route::post('stocks/distributions/{distribution}/cancel', [StockController::class, 'cancelDistribution'])->name('stocks.distributions.cancel')->middleware('permission:receive stock distributions');
+    Route::get('stocks/export/pdf', [StockController::class, 'exportPdf'])->name('stocks.export.pdf')->middleware('permission:manage stock|view stock');
     $crudResource('stocks', StockController::class, 'stock');
 
     Route::get('sales-export', [SaleController::class, 'exportCsv'])->name('sales.export')->middleware('permission:manage sales|view sales');

@@ -7,8 +7,10 @@ use App\Models\Shop;
 use App\Models\Stock;
 use App\Models\StockDistribution;
 use App\Models\StockDistributionItem;
+use App\Support\SimplePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Validation\ValidationException;
 
 class StockController extends Controller
@@ -25,6 +27,85 @@ class StockController extends Controller
         $shopStockValue = $shopStocks->sum(fn ($stock) => (float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0));
 
         return view('stocks.index', compact('centralStocks', 'shopStocks', 'distributions', 'centralStockValue', 'shopStockValue'));
+    }
+
+    public function exportPdf()
+    {
+        $centralStocks = Stock::with('product')->central()->latest()->get();
+        $shopStocks = Stock::with(['product', 'shop'])->forExistingShop()->latest()->get();
+        $distributions = StockDistribution::with(['shop', 'items.product', 'receivedBy'])
+            ->whereHas('shop')
+            ->latest()
+            ->get();
+
+        $centralStockValue = $centralStocks->sum(
+            fn ($stock) => (float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0)
+        );
+        $shopStockValue = $shopStocks->sum(
+            fn ($stock) => (float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0)
+        );
+
+        $sections = [
+            [
+                'title' => 'Central Inventory',
+                'headers' => ['#', 'Product Name', 'Design Code', 'Stock Qty', 'Created'],
+                'rows' => $centralStocks->values()->map(fn ($stock, $index) => [
+                    $index + 1,
+                    $stock->product?->product_name ?? 'Product #'.$stock->product_id,
+                    $stock->product?->sku ?? '-',
+                    number_format((float) $stock->stock_qty, 2),
+                    $stock->created_at?->format('d M Y') ?? '-',
+                ]),
+                'widths' => [35, 300, 160, 110, 165],
+            ],
+            [
+                'title' => 'Shop Inventory',
+                'headers' => ['#', 'Shop', 'Product', 'Design Code', 'Qty'],
+                'rows' => $shopStocks->values()->map(fn ($stock, $index) => [
+                    $index + 1,
+                    $stock->shop?->name ?? '-',
+                    $stock->product?->product_name ?? 'Product #'.$stock->product_id,
+                    $stock->product?->sku ?? '-',
+                    number_format((float) $stock->stock_qty, 2),
+                ]),
+                'widths' => [35, 180, 270, 170, 115],
+            ],
+            [
+                'title' => 'Shop Distribution History',
+                'headers' => ['Date & Time', 'Shop', 'Distributor', 'Carry Man', 'Receiver', 'Products', 'Qty', 'Status', 'Note'],
+                'rows' => $distributions->map(fn ($distribution) => [
+                    trim(($distribution->distribution_date?->format('d M Y') ?? '-').' '.($distribution->created_at?->format('h:i A') ?? '')),
+                    $distribution->shop?->name ?? '-',
+                    $distribution->distributor ?: '-',
+                    $distribution->carry_man ?: '-',
+                    $distribution->receiver ?: 'Pending receive',
+                    $distribution->items->map(
+                        fn ($item) => ($item->product?->product_name ?? 'Product #'.$item->product_id)
+                            .' x '.number_format((float) $item->qty, 2)
+                    )->implode(' | '),
+                    number_format((float) $distribution->items->sum('qty'), 2),
+                    ucfirst($distribution->status),
+                    $distribution->action_note ?: '-',
+                ]),
+                'widths' => [75, 75, 80, 70, 80, 180, 55, 60, 95],
+            ],
+        ];
+
+        $fileName = 'stock-inventory-'.now()->format('Y-m-d-H-i-s').'.pdf';
+
+        return Response::make(SimplePdf::tables('Inaya Creation - Stock Inventory', $sections, [
+            'logo_path' => public_path('inaya_creation_logo.jpeg'),
+            'summary' => [
+                ['label' => 'Central Items', 'value' => number_format($centralStocks->count())],
+                ['label' => 'Central Qty', 'value' => number_format((float) $centralStocks->sum('stock_qty'), 2)],
+                ['label' => 'Shop Qty', 'value' => number_format((float) $shopStocks->sum('stock_qty'), 2)],
+                ['label' => 'Central Value', 'value' => 'BDT '.number_format($centralStockValue, 2)],
+                ['label' => 'Shop Value', 'value' => 'BDT '.number_format($shopStockValue, 2)],
+            ],
+        ]), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
     }
 
     /**

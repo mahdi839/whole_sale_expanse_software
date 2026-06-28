@@ -93,6 +93,16 @@ class SimplePdf
         return (new self())->run($title, $headers, $rows, $widths, $options);
     }
 
+    /**
+     * Build a PDF containing multiple table sections.
+     *
+     * Each section accepts: title, headers, rows, and optional widths.
+     */
+    public static function tables(string $title, array $sections, array $options = []): string
+    {
+        return (new self())->runTables($title, $sections, $options);
+    }
+
     // ════════════════════════════════════════════════════════════════════════
     // CORE
     // ════════════════════════════════════════════════════════════════════════
@@ -118,6 +128,56 @@ class SimplePdf
 
         foreach ($rowArr as $idx => $row) {
             $this->drawRow((array) $row, $idx);
+        }
+
+        return $this->compile();
+    }
+
+    private function runTables(string $title, array $sections, array $options): string
+    {
+        $this->docTitle = $title;
+        $this->summary = $options['summary'] ?? [];
+        $this->logoPath = isset($options['logo_path']) && is_file($options['logo_path']) ? $options['logo_path'] : null;
+
+        foreach (array_values($sections) as $index => $section) {
+            $headers = array_values($section['headers'] ?? []);
+            $rows = $section['rows'] ?? [];
+            $rowArr = is_array($rows) ? $rows : iterator_to_array($rows);
+
+            $this->headers = $headers;
+            $this->colAlign = $this->detectAlignment($headers, $rowArr);
+            $usable = self::PW - self::ML - self::MR;
+            $this->colWidths = $section['widths'] ?? $this->autoWidths($headers, $rowArr, $usable);
+            $this->tableW = array_sum($this->colWidths);
+
+            $this->newPage();
+            $this->drawPageHeader();
+
+            if ($index === 0) {
+                $this->drawSummary();
+            }
+
+            $this->drawSectionTitle((string) ($section['title'] ?? ''));
+            $this->drawTableHeader();
+
+            if ($rowArr === []) {
+                $this->drawRow(array_merge(['No records found.'], array_fill(0, max(0, count($headers) - 1), '')), 0);
+                continue;
+            }
+
+            foreach ($rowArr as $rowIndex => $row) {
+                $this->drawRow((array) $row, $rowIndex);
+            }
+        }
+
+        if ($this->pages === []) {
+            $this->headers = ['Information'];
+            $this->colWidths = [self::PW - self::ML - self::MR];
+            $this->colAlign = ['L'];
+            $this->tableW = $this->colWidths[0];
+            $this->newPage();
+            $this->drawPageHeader();
+            $this->drawRow(['No report sections found.'], 0);
         }
 
         return $this->compile();
@@ -217,6 +277,18 @@ class SimplePdf
 
         $rows = (int) ceil(count($items) / $cols);
         $this->curY += ($cardH * $rows) + ($gap * max(0, $rows - 1)) + 12;
+    }
+
+    private function drawSectionTitle(string $title): void
+    {
+        if ($title === '') {
+            return;
+        }
+
+        $this->ensureSpace(24);
+        $baseline = self::PH - $this->curY - 12;
+        $this->em("BT /F2 11 Tf " . self::BODY_FG . " rg " . self::ML . " {$baseline} Td (" . $this->esc($title) . ") Tj ET\n");
+        $this->curY += 20;
     }
 
     private function drawFooter(int $pageNum, int $total): void

@@ -13,6 +13,12 @@
         @endif
 
         <div class="flex flex-wrap gap-2 justify-end">
+            <a href="{{ route('stocks.export.pdf') }}" class="h-10 px-4 bg-red-600 text-white rounded-lg text-sm inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/>
+                </svg>
+                Download PDF
+            </a>
             @can('manage stock')
                 <a href="{{ route('stocks.create') }}" class="h-10 px-4 bg-blue-600 text-white rounded-lg text-sm inline-flex items-center">Set Central Stock</a>
                 <a href="{{ route('stocks.adjustments') }}" class="h-10 px-4 bg-indigo-600 text-white rounded-lg text-sm inline-flex items-center">Adjust / Transfer</a>
