@@ -160,7 +160,7 @@ class CustomerController extends Controller
                 optional($log['display_at'] ?? $log['date'])->format('Y-m-d h:i A'),
                 $log['type'],
                 $log['reference'],
-                $log['amount'],
+                $log['type'] === 'Payment' ? '-' : $log['amount'],
                 $log['qty'],
                 $log['paid'],
                 $log['due'],

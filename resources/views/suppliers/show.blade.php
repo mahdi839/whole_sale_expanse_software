@@ -87,7 +87,11 @@
                                 <td class="px-5 py-3">
                                     <a href="{{ $log['url'] }}" class="font-mono text-xs text-blue-700 hover:underline">{{ $log['reference'] }}</a>
                                 </td>
-                                <td class="px-5 py-3 text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">{{ number_format($log['amount'], 2) }}</td>
+                                <td class="px-5 py-3 text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">
+                                    @if($log['type'] !== 'Payment')
+                                        {{ number_format($log['amount'], 2) }}
+                                    @endif
+                                </td>
                                 <td class="px-5 py-3 text-right text-gray-700">{{ is_null($log['qty']) ? '-' : number_format($log['qty'], 2) }}</td>
                                 <td class="px-5 py-3 text-right text-green-600">{{ $log['paid'] }}</td>
                                 <td class="px-5 py-3 text-right text-red-600">{{ $log['due']}}</td>

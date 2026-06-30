@@ -123,3 +123,25 @@ it('shows supplier currency on supplier and purchase index pages', function () {
         ->assertSee('USD 100.00')
         ->assertSee('USD 150.00');
 });
+
+it('leaves the amount column blank for supplier payment rows', function () {
+    $this->withoutMiddleware(\Spatie\Permission\Middleware\PermissionMiddleware::class);
+    $user = User::factory()->create();
+    $supplier = Supplier::create([
+        'name' => 'Payment Supplier',
+        'currency' => 'BDT',
+    ]);
+    CashTransaction::create([
+        'direction' => 'out',
+        'type' => 'manual_out',
+        'amount' => 100,
+        'date' => now()->toDateString(),
+        'supplier_id' => $supplier->id,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('suppliers.show', $supplier))
+        ->assertOk()
+        ->assertSee('Payment')
+        ->assertDontSee('100.00');
+});

@@ -838,7 +838,7 @@ class SaleController extends Controller
             'add_money'              => 'nullable|numeric|min:0',
             'cash_memo'              => 'nullable|string|max:100',
             'bell_no'                => 'nullable|string|max:100',
-            'payment_method'         => 'nullable|string|max:100',
+            'payment_method'         => [$saleId === null ? 'required' : 'nullable', 'string', 'max:100'],
             'bank'                   => 'nullable|string|max:100',
             'bank_details'           => 'nullable|string|max:255',
             'payment_status'         => 'required|in:due,paid,partial',
