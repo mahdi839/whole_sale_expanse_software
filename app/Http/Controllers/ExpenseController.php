@@ -13,11 +13,12 @@ class ExpenseController extends Controller
 {
     public function index(Request $request)
     {
+        $today = now()->toDateString();
         $filters = [
             'search' => $request->input('search'),
             'category' => $request->input('category'),
-            'date_from' => $request->input('date_from'),
-            'date_to' => $request->input('date_to'),
+            'date_from' => $request->input('date_from', $today),
+            'date_to' => $request->input('date_to', $today),
         ];
 
         $expenses = Expense::query()
@@ -136,11 +137,12 @@ class ExpenseController extends Controller
     public function exportCsv(Request $request)
     {
         $fileName = 'expenses-' . now()->format('Y-m-d-H-i-s') . '.csv';
+        $today = now()->toDateString();
         $filters = [
             'search' => $request->input('search'),
             'category' => $request->input('category'),
-            'date_from' => $request->input('date_from'),
-            'date_to' => $request->input('date_to'),
+            'date_from' => $request->input('date_from', $today),
+            'date_to' => $request->input('date_to', $today),
         ];
 
         $expenses = Expense::query()
