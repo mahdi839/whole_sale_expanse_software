@@ -25,6 +25,12 @@ class SupplierController extends Controller
             }, 'total_purchase_qty')
             ->first();
 
+        $currencyTotals = Supplier::query()
+            ->selectRaw('currency, SUM(total_purchase) as total_purchase, SUM(total_paid) as total_paid, SUM(due) as total_due')
+            ->groupBy('currency')
+            ->orderBy('currency')
+            ->get();
+
         $suppliers = Supplier::query()
             ->addSelect([
                 'total_purchase_qty' => DB::table('purchase_items')
@@ -42,7 +48,7 @@ class SupplierController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('suppliers.index', compact('suppliers', 'search', 'totals'));
+        return view('suppliers.index', compact('suppliers', 'search', 'totals', 'currencyTotals'));
     }
 
     public function create()

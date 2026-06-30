@@ -80,23 +80,29 @@
 
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Grand Total</p>
-                <p class="text-xl font-semibold text-green-600 break-words">
-                    ৳{{ number_format($totals->total_amount ?? 0, 2) }}
-                </p>
+                @foreach($currencyTotals as $currencyTotal)
+                    <p class="text-lg font-semibold text-green-600 break-words">
+                        {{ $currencyTotal->currency }} {{ number_format($currencyTotal->total_amount, 2) }}
+                    </p>
+                @endforeach
             </div>
 
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Total Paid</p>
-                <p class="text-xl font-semibold text-blue-600 break-words">
-                    ৳{{ number_format($totals->total_paid ?? 0, 2) }}
-                </p>
+                @foreach($currencyTotals as $currencyTotal)
+                    <p class="text-lg font-semibold text-blue-600 break-words">
+                        {{ $currencyTotal->currency }} {{ number_format($currencyTotal->total_paid, 2) }}
+                    </p>
+                @endforeach
             </div>
 
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Total Due</p>
-                <p class="text-xl font-semibold text-red-600 break-words">
-                    ৳{{ number_format($totals->total_due ?? 0, 2) }}
-                </p>
+                @foreach($currencyTotals as $currencyTotal)
+                    <p class="text-lg font-semibold text-red-600 break-words">
+                        {{ $currencyTotal->currency }} {{ number_format($currencyTotal->total_due, 2) }}
+                    </p>
+                @endforeach
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Total Qty</p>
@@ -126,7 +132,7 @@
                         <div class="text-right shrink-0">
                             <p class="text-xs text-gray-400">Grand Total</p>
                             <p class="text-sm font-semibold text-green-600">
-                                ৳{{ number_format($purchase->grand_total, 2) }}
+                                {{ $purchase->supplier?->currency ?? 'BDT' }} {{ number_format($purchase->grand_total, 2) }}
                             </p>
                         </div>
                     </div>
@@ -151,7 +157,7 @@
                                 <div class="break-words">
                                     {{ $item->product->product_name ?? 'Unknown' }}
                                     (x{{ number_format($item->qty, 2) }})
-                                    @ ৳{{ number_format($item->price, 2) }}
+                                    @ {{ $purchase->supplier?->currency ?? 'BDT' }} {{ number_format($item->price, 2) }}
                                 </div>
                             @endforeach
 
@@ -174,14 +180,14 @@
                         <div class="bg-gray-50 rounded-lg p-2">
                             <p class="text-gray-400">Paid</p>
                             <p class="mt-1 font-medium text-blue-600 break-words">
-                                ৳{{ number_format($purchase->paid_amount, 2) }}
+                                {{ $purchase->supplier?->currency ?? 'BDT' }} {{ number_format($purchase->paid_amount, 2) }}
                             </p>
                         </div>
 
                         <div class="bg-gray-50 rounded-lg p-2">
                             <p class="text-gray-400">Due</p>
                             <p class="mt-1 font-medium text-red-600 break-words">
-                                ৳{{ number_format($purchase->due_amount, 2) }}
+                                {{ $purchase->supplier?->currency ?? 'BDT' }} {{ number_format($purchase->due_amount, 2) }}
                             </p>
                         </div>
 
@@ -287,7 +293,7 @@
                                         <div class="bg-blue-100 p-2 rounded-md ">
                                             {{ $item->product->product_name ?? 'Unknown' }}
                                             (x{{ number_format($item->qty, 2) }}) - 
-                                            Unit Price: {{ number_format($item->price, 2) }}<br />
+                                            Unit Price: {{ $purchase->supplier?->currency ?? 'BDT' }} {{ number_format($item->price, 2) }}<br />
                                             Bale No: {{ $item->bale_no ?? '—' }}
                                         </div>
                                     @endforeach
@@ -308,15 +314,15 @@
                                 </td>
 
                                 <td class="px-5 py-3 text-right font-medium text-green-600">
-                                    ৳{{ number_format($purchase->grand_total, 2) }}
+                                    {{ $purchase->supplier?->currency ?? 'BDT' }} {{ number_format($purchase->grand_total, 2) }}
                                 </td>
 
                                 <td class="px-5 py-3 text-right text-blue-600">
-                                    ৳{{ number_format($purchase->paid_amount, 2) }}
+                                    {{ $purchase->supplier?->currency ?? 'BDT' }} {{ number_format($purchase->paid_amount, 2) }}
                                 </td>
 
                                 <td class="px-5 py-3 text-right text-red-600">
-                                    ৳{{ number_format($purchase->due_amount, 2) }}
+                                    {{ $purchase->supplier?->currency ?? 'BDT' }} {{ number_format($purchase->due_amount, 2) }}
                                 </td>
 
                                 <td class="px-5 py-3">
@@ -385,5 +391,3 @@
         </div>
     </div>
 </x-app-layout>
-
-

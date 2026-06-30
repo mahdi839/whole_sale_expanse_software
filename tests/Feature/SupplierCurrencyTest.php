@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\CashTransaction;
+use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Models\User;
 
@@ -85,4 +86,40 @@ it('requires supplier amount for a supplier cash out', function () {
         ])
         ->assertRedirect(route('cash-transactions.create'))
         ->assertSessionHasErrors('supplier_amount');
+});
+
+it('shows supplier currency on supplier and purchase index pages', function () {
+    $this->withoutMiddleware(\Spatie\Permission\Middleware\PermissionMiddleware::class);
+    $user = User::factory()->create();
+    $supplier = Supplier::create([
+        'name' => 'US Fabric House',
+        'currency' => 'USD',
+        'total_purchase' => 250,
+        'total_paid' => 100,
+        'due' => 150,
+    ]);
+    Purchase::create([
+        'reference' => 'PUR-000001',
+        'supplier_id' => $supplier->id,
+        'purchased_by' => 'Admin',
+        'grand_total' => 250,
+        'paid_amount' => 100,
+        'due_amount' => 150,
+        'date' => now()->toDateString(),
+        'purchase_status' => 'received',
+        'payment_status' => 'partial',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('suppliers.index'))
+        ->assertOk()
+        ->assertSee('USD 100.00')
+        ->assertSee('USD 150.00');
+
+    $this->actingAs($user)
+        ->get(route('purchases.index'))
+        ->assertOk()
+        ->assertSee('USD 250.00')
+        ->assertSee('USD 100.00')
+        ->assertSee('USD 150.00');
 });

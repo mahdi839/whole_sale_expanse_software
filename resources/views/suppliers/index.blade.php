@@ -67,17 +67,27 @@
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-500 mb-1">Total Purchase</p>
-                <p class="text-2xl font-semibold text-gray-800">৳{{ number_format($totals->tp, 2) }}</p>
+                @foreach($currencyTotals as $currencyTotal)
+                    <p class="text-lg font-semibold text-gray-800">
+                        {{ $currencyTotal->currency }} {{ number_format($currencyTotal->total_purchase, 2) }}
+                    </p>
+                @endforeach
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-500 mb-1">Total Paid</p>
-                <p class="text-2xl font-semibold text-green-600">৳{{ number_format($totals->tpd, 2) }}</p>
+                @foreach($currencyTotals as $currencyTotal)
+                    <p class="text-lg font-semibold text-green-600">
+                        {{ $currencyTotal->currency }} {{ number_format($currencyTotal->total_paid, 2) }}
+                    </p>
+                @endforeach
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-500 mb-1">Total Due</p>
-                <p class="text-2xl font-semibold {{ $totals->td > 0 ? 'text-red-600' : 'text-gray-400' }}">
-                    ৳{{ number_format($totals->td, 2) }}
-                </p>
+                @foreach($currencyTotals as $currencyTotal)
+                    <p class="text-lg font-semibold {{ $currencyTotal->total_due > 0 ? 'text-red-600' : 'text-gray-400' }}">
+                        {{ $currencyTotal->currency }} {{ number_format($currencyTotal->total_due, 2) }}
+                    </p>
+                @endforeach
             </div>
         </div>
 
@@ -119,21 +129,21 @@
                                     {{ $supplier->phone ?? '—' }}
                                 </td>
 
-                                <td class="px-5 py-3 text-gray-500 hidden lg:table-cell max-w-xs truncate">{{ $supplier->address ?? '�' }}</td><td class="px-5 py-3 text-right text-indigo-600 hidden lg:table-cell">{{ number_format($supplier->total_purchase_qty ?? 0, 2) }}</td>
+                                <td class="px-5 py-3 text-gray-500 hidden lg:table-cell max-w-xs truncate">{{ $supplier->address ?? '—' }}</td><td class="px-5 py-3 text-right text-indigo-600 hidden lg:table-cell">{{ number_format($supplier->total_purchase_qty ?? 0, 2) }}</td>
 
                                 <td class="px-5 py-3 text-right text-gray-700 hidden lg:table-cell">
-                                    ৳{{ number_format($supplier->total_purchase, 2) }}
+                                    {{ $supplier->currency }} {{ number_format($supplier->total_purchase, 2) }}
                                 </td>
 
                                 <td class="px-5 py-3 text-right text-green-600 hidden lg:table-cell">
-                                    ৳{{ number_format($supplier->total_paid, 2) }}
+                                    {{ $supplier->currency }} {{ number_format($supplier->total_paid, 2) }}
                                 </td>
 
                                 <td class="px-5 py-3 text-right">
                                     @if($supplier->due > 0)
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full
                                                      bg-red-50 text-red-700 text-xs font-medium">
-                                            ৳{{ number_format($supplier->due, 2) }}
+                                            {{ $supplier->currency }} {{ number_format($supplier->due, 2) }}
                                         </span>
                                     @else
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full
@@ -217,4 +227,3 @@
 
     </div>
 </x-app-layout>
-

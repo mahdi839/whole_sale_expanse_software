@@ -690,8 +690,9 @@
                                     {{ $product->product_name }}</div>
                                 <div class="sku">{{ $product->sku }}</div>
                             </div>
-                            <div style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">
-                                ৳{{ number_format($product->buying_price ?? 0, 2) }}</div>
+                            <div data-currency-amount="{{ $product->buying_price ?? 0 }}"
+                                 style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">
+                                BDT {{ number_format($product->buying_price ?? 0, 2) }}</div>
                         </div>
                     @endforeach
                 </div>
@@ -772,12 +773,12 @@
         <div style="display:flex;flex-direction:column;gap:8px">
             <div class="totals-row">
                 <span class="label">Items Total</span>
-                <span class="val" id="subtotal-display">৳0.00</span>
+                <span class="val" id="subtotal-display">BDT 0.00</span>
             </div>
 
             <div class="totals-row grand" style="padding-top:4px;border-top:1px solid #e5e7eb;margin-top:4px">
                 <span class="label">Grand Total</span>
-                <span class="val" id="grand-total-display">৳0.00</span>
+                <span class="val" id="grand-total-display">BDT 0.00</span>
             </div>
         </div>
 
@@ -809,7 +810,7 @@
         </div>
 
         <div id="paid-field" class="field-group" style="display:none">
-            <div class="field-label">Paid Amount (৳)</div>
+            <div class="field-label" id="paid-amount-label">Paid Amount (BDT)</div>
             <input type="number" name="paid_amount" id="paid_amount"
                 value="{{ old('paid_amount', $purchase?->paid_amount ?? 0) }}" step="0.01" min="0"
                 class="field-input">
@@ -819,7 +820,7 @@
         </div>
 
         <div id="due-field" class="field-group" style="display:none">
-            <div class="field-label">Due Amount (৳)</div>
+            <div class="field-label" id="due-amount-label">Due Amount (BDT)</div>
             <input type="number" name="due_amount" id="due_amount"
                 value="{{ old('due_amount', $purchase?->due_amount ?? 0) }}" step="0.01" min="0" readonly
                 class="field-input">
@@ -902,7 +903,13 @@
         </div>
         <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
             <input type="text" id="new_supplier_name" placeholder="Supplier Name *" class="field-input">
-            <input type="text" id="new_supplier_phone" placeholder="Phone" class="field-input">            <textarea id="new_supplier_address" placeholder="Address" rows="3" class="field-input"></textarea>
+            <input type="text" id="new_supplier_phone" placeholder="Phone" class="field-input">
+            <select id="new_supplier_currency" class="field-input">
+                <option value="BDT">BDT — Bangladeshi Taka</option>
+                <option value="INR">INR — Indian Rupee</option>
+                <option value="USD">USD — US Dollar</option>
+            </select>
+            <textarea id="new_supplier_address" placeholder="Address" rows="3" class="field-input"></textarea>
             <div id="supplier-modal-error" class="hidden" style="font-size:12px;color:#ef4444"></div>
         </div>
         <div style="padding:12px 20px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:8px">
@@ -939,7 +946,8 @@
                 {
                     id: "{{ $s->id }}",
                     name: @json($s->name),
-                    phone: "{{ $s->phone ?? '' }}"
+                    phone: "{{ $s->phone ?? '' }}",
+                    currency: "{{ $s->currency ?? 'BDT' }}"
                 },
             @endforeach
         ];
@@ -960,6 +968,23 @@
         const dueField   = document.getElementById('due-field');
         const paidInput  = document.getElementById('paid_amount');
         const dueInput   = document.getElementById('due_amount');
+        const paidAmountLabel = document.getElementById('paid-amount-label');
+        const dueAmountLabel = document.getElementById('due-amount-label');
+        let currentCurrency = 'BDT';
+
+        function formatMoney(value) {
+            return `${currentCurrency} ${Number(value || 0).toFixed(2)}`;
+        }
+
+        function setCurrency(currency) {
+            currentCurrency = ['BDT', 'INR', 'USD'].includes(currency) ? currency : 'BDT';
+            if (paidAmountLabel) paidAmountLabel.textContent = `Paid Amount (${currentCurrency})`;
+            if (dueAmountLabel) dueAmountLabel.textContent = `Due Amount (${currentCurrency})`;
+            document.querySelectorAll('[data-currency-amount]').forEach(element => {
+                element.textContent = formatMoney(element.dataset.currencyAmount);
+            });
+            renderCart();
+        }
 
         // ─────────────────────────────────────────────────────────────
         // Product search
@@ -983,7 +1008,7 @@
                             <div style="font-weight:600;color:#1e293b;word-break:break-word">${escHtml(p.name)}</div>
                             <div class="sku">${escHtml(p.sku)} · Stock: ${formatQty(p.stock_qty)}</div>
                         </div>
-                        <div style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">৳${Number(p.price).toFixed(2)}</div>
+                        <div style="font-size:12px;font-weight:600;color:#16a34a;flex-shrink:0">${formatMoney(p.price)}</div>
                     </div>
                 `).join('')
                 : '<div style="padding:14px 16px;font-size:13px;color:#94a3b8">No products found</div>';
@@ -1060,7 +1085,7 @@
                         <input type="number" name="items[${idx}][price]" class="price-edit item-price"
                                data-idx="${idx}" value="${Number(item.price).toFixed(2)}"
                                step="0.01" min="0" title="Unit price">
-                        <div class="line-total item-total">৳${Number(item.line_total).toFixed(2)}</div>
+                        <div class="line-total item-total">${formatMoney(item.line_total)}</div>
                     </div>
 
                     <button type="button" class="btn-remove" data-idx="${idx}" title="Remove">
@@ -1138,7 +1163,7 @@
             const qtyInp = cartList.querySelector(`.item-qty[data-idx="${idx}"]`);
             if (qtyInp) qtyInp.value = cartItems[idx].qty;
             const totalEl = cartList.querySelectorAll('.item-total')[idx];
-            if (totalEl) totalEl.textContent = '৳' + cartItems[idx].line_total.toFixed(2);
+            if (totalEl) totalEl.textContent = formatMoney(cartItems[idx].line_total);
             recalc();
         }
 
@@ -1156,8 +1181,8 @@
             const other = parseFloat(otherCostInput?.value) || 0;
             const grand = Math.max(0, sub + other - disc);
 
-            subtotalSpan.textContent = '৳' + sub.toFixed(2);
-            grandSpan.textContent    = '৳' + grand.toFixed(2);
+            subtotalSpan.textContent = formatMoney(sub);
+            grandSpan.textContent    = formatMoney(grand);
             updatePayment(grand);
         }
 
@@ -1216,7 +1241,10 @@
             const preId = supHidden.value;
             if (preId) {
                 const pre = ALL_SUPPLIERS.find(s => String(s.id) === String(preId));
-                if (pre) supDisplay.value = pre.name + (pre.phone ? ' · ' + pre.phone : '');
+                if (pre) {
+                    supDisplay.value = pre.name + (pre.phone ? ' · ' + pre.phone : '') + ` (${pre.currency})`;
+                    setCurrency(pre.currency);
+                }
             }
 
             function renderSupList(q = '') {
@@ -1245,7 +1273,7 @@
                 hits.forEach(s => {
                     const d = document.createElement('div');
                     d.className = 'sup-option' + (supHidden.value && String(s.id) === String(supHidden.value) ? ' sup-selected' : '');
-                    d.innerHTML = `<span class="sup-name">${escHtml(s.name)}</span>` +
+                    d.innerHTML = `<span class="sup-name">${escHtml(s.name)} (${escHtml(s.currency)})</span>` +
                         (s.phone ? `<span class="sup-phone">${escHtml(s.phone)}</span>` : '');
                     d.addEventListener('click', () => pickSupplier(s));
                     supList.appendChild(d);
@@ -1254,11 +1282,13 @@
 
             function pickSupplier(s) {
                 if (s) {
-                    supDisplay.value = s.name + (s.phone ? ' · ' + s.phone : '');
+                    supDisplay.value = s.name + (s.phone ? ' · ' + s.phone : '') + ` (${s.currency})`;
                     supHidden.value  = s.id;
+                    setCurrency(s.currency);
                 } else {
                     supDisplay.value = '';
                     supHidden.value  = '';
+                    setCurrency('BDT');
                 }
                 closeSupDropdown();
             }
@@ -1308,6 +1338,7 @@
             const name = document.getElementById('new_supplier_name').value.trim();
             const phone = document.getElementById('new_supplier_phone').value.trim();
             const address = document.getElementById('new_supplier_address').value.trim();
+            const currency = document.getElementById('new_supplier_currency').value;
             const error = document.getElementById('supplier-modal-error');
             const button = document.getElementById('save-supplier-btn');
 
@@ -1328,7 +1359,7 @@
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ name, phone , address })
+                    body: JSON.stringify({ name, phone, address, currency })
                 });
 
                 const data = await response.json();
@@ -1339,16 +1370,19 @@
                 ALL_SUPPLIERS.push({
                     id: String(data.id),
                     name: data.name,
-                    phone: data.phone || ''
+                    phone: data.phone || '',
+                    currency: data.currency || 'BDT'
                 });
 
                 document.getElementById('supplier_id').value = data.id;
-                document.getElementById('sup-display').value = data.name + (data.phone ? ' · ' + data.phone : '');
+                document.getElementById('sup-display').value = data.name + (data.phone ? ' · ' + data.phone : '') + ` (${data.currency || 'BDT'})`;
+                setCurrency(data.currency || 'BDT');
 
                 closeSupplierModal();
                 document.getElementById('new_supplier_name').value = '';
                 document.getElementById('new_supplier_phone').value = '';
                 document.getElementById('new_supplier_address').value = '';
+                document.getElementById('new_supplier_currency').value = 'BDT';
             } catch (exception) {
                 error.textContent = exception.message;
                 error.classList.remove('hidden');
@@ -1376,4 +1410,3 @@
         setTimeout(recalc, 100);
     </script>
 @endpush
-

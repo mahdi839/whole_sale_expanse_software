@@ -79,13 +79,40 @@ class PurchaseController extends Controller
 
         $totals->total_stock = (float) Stock::forExistingLocation()->sum('stock_qty');
 
-        return view('purchases.index', compact('purchases', 'filters', 'totals'));
+        $currencyTotals = Purchase::query()
+            ->leftJoin('suppliers', 'suppliers.id', '=', 'purchases.supplier_id')
+            ->when($filters['purchase_status'], fn ($q) => $q->where('purchases.purchase_status', $filters['purchase_status']))
+            ->when($filters['payment_status'], fn ($q) => $q->where('purchases.payment_status', $filters['payment_status']))
+            ->when($filters['date'], fn ($q) => $q->whereDate('purchases.date', $filters['date']))
+            ->when($filters['search'], function ($q) use ($filters) {
+                $s = $filters['search'];
+
+                $q->where(function ($sub) use ($s) {
+                    $sub->where('purchases.reference', 'like', "%{$s}%")
+                        ->orWhere('purchases.cash_memo', 'like', "%{$s}%")
+                        ->orWhere('purchases.seller_store_name', 'like', "%{$s}%")
+                        ->orWhere('purchases.purchased_by', 'like', "%{$s}%")
+                        ->orWhere('suppliers.name', 'like', "%{$s}%")
+                        ->orWhereHas('items.product', fn ($product) => $product->where('product_name', 'like', "%{$s}%"));
+                });
+            })
+            ->selectRaw("
+                COALESCE(suppliers.currency, 'BDT') as currency,
+                SUM(purchases.grand_total) as total_amount,
+                SUM(purchases.paid_amount) as total_paid,
+                SUM(purchases.due_amount) as total_due
+            ")
+            ->groupByRaw("COALESCE(suppliers.currency, 'BDT')")
+            ->orderBy('currency')
+            ->get();
+
+        return view('purchases.index', compact('purchases', 'filters', 'totals', 'currencyTotals'));
     }
 
     public function create()
     {
         $nextReference = Purchase::generateReference();
-        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'currency']);
         $products = Product::with('stock')
             ->orderBy('product_name')
             ->get(['id', 'product_name', 'sku', 'product_code', 'selling_price']);
@@ -169,7 +196,7 @@ class PurchaseController extends Controller
     public function edit(Purchase $purchase)
     {
         $purchase->load('items.product.stock');
-        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'currency']);
         $products = Product::with('stock')
             ->orderBy('product_name')
             ->get(['id', 'product_name', 'sku', 'product_code', 'selling_price']);
@@ -288,6 +315,7 @@ class PurchaseController extends Controller
             fputcsv($file, [
                 'Reference',
                 'Supplier',
+                'Currency',
                 'Store',
                 'Purchased By',
                 'Grand Total',
@@ -310,6 +338,7 @@ class PurchaseController extends Controller
                 fputcsv($file, [
                     $purchase->reference,
                     $purchase->supplier?->name,
+                    $purchase->supplier?->currency ?? 'BDT',
                     $purchase->seller_store_name,
                     $purchase->purchased_by,
                     $purchase->grand_total,
