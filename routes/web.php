@@ -70,6 +70,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     $crudResource('/products', ProductController::class, 'products', ['except' => ['show']]);
     Route::get('/products/{product}/barcode', [ProductController::class, 'barcode'])->name('products.barcode')->middleware('permission:manage products|view products');
+    Route::get('/customers/suggestions', [CustomerController::class, 'suggestions'])->name('customers.suggestions')->middleware('permission:manage customers|view customers');
     Route::get('/customers/{customer}/transactions/export', [CustomerController::class, 'exportTransactions'])->name('customers.transactions.export')->middleware('permission:manage customers|view customers|manage dues|view dues');
     $crudResource('/customers', CustomerController::class, 'customers');
     Route::get('/suppliers/{supplier}/transactions/export', [SupplierController::class, 'exportTransactions'])->name('suppliers.transactions.export')->middleware('permission:manage suppliers|view suppliers|manage dues|view dues');

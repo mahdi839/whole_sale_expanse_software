@@ -28,7 +28,7 @@
     </div>
 
     <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Amount (BDT)</label>
         <input type="number" step="0.01" min="0.01" name="amount" value="{{ old('amount', $transaction?->amount) }}"
             class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
         @error('amount')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
@@ -78,15 +78,27 @@
 
     <div data-party-field="supplier">
         <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
-        <select name="supplier_id" class="tom-select w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+        <select name="supplier_id" id="cash-supplier" class="tom-select w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
             <option value="">No supplier</option>
             @foreach($suppliers as $supplier)
-                <option value="{{ $supplier->id }}" @selected(old('supplier_id', $transaction?->supplier_id) == $supplier->id)>
-                    {{ $supplier->name }}{{ $supplier->phone ? ' - '.$supplier->phone : '' }}
+                <option value="{{ $supplier->id }}"
+                        data-currency="{{ $supplier->currency }}"
+                        data-due="{{ $supplier->due }}"
+                        @selected(old('supplier_id', $transaction?->supplier_id) == $supplier->id)>
+                    {{ $supplier->name }}{{ $supplier->phone ? ' - '.$supplier->phone : '' }} ({{ $supplier->currency }})
                 </option>
             @endforeach
         </select>
         @error('supplier_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
+
+    <div id="supplier-amount-field" class="hidden">
+        <label id="supplier-amount-label" class="block text-sm font-medium text-gray-700 mb-1">Supplier Amount</label>
+        <input type="number" step="0.01" min="0.01" name="supplier_amount"
+               value="{{ old('supplier_amount', $transaction?->supplier_amount ?? ($transaction?->supplier_id ? $transaction?->amount : null)) }}"
+               class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+        <p id="supplier-due-help" class="text-xs text-gray-500 mt-1"></p>
+        @error('supplier_amount')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div data-party-field="tailor">
@@ -156,6 +168,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const cashType = document.getElementById('cash-type');
     const cashDirection = document.getElementById('cash-direction');
     const cashEntryType = document.getElementById('cash-entry-type');
+    const supplierSelect = document.getElementById('cash-supplier');
+    const supplierAmountField = document.getElementById('supplier-amount-field');
+    const supplierAmountInput = supplierAmountField?.querySelector('input');
+    const supplierAmountLabel = document.getElementById('supplier-amount-label');
+    const supplierDueHelp = document.getElementById('supplier-due-help');
     const partyFields = document.querySelectorAll('[data-party-field]');
 
     function syncCashDirection() {
@@ -190,10 +207,36 @@ document.addEventListener('DOMContentLoaded', () => {
             field.classList.toggle('z-40', isActive);
             setSelectState(select, isActive);
         });
+
+        syncSupplierAmount();
     }
 
-    cashType?.addEventListener('change', syncCashDirection);
+    function syncSupplierAmount() {
+        const show = cashEntryType.value === 'supplier' && cashType.value === 'manual_out';
+        const option = supplierSelect?.options[supplierSelect.selectedIndex];
+        const currency = option?.dataset.currency || 'supplier currency';
+        const due = Number(option?.dataset.due || 0);
+
+        supplierAmountField?.classList.toggle('hidden', !show);
+        if (supplierAmountInput) {
+            supplierAmountInput.disabled = !show;
+        }
+        if (supplierAmountLabel) {
+            supplierAmountLabel.textContent = `Supplier Amount (${currency})`;
+        }
+        if (supplierDueHelp) {
+            supplierDueHelp.textContent = option?.value
+                ? `Current due: ${currency} ${due.toFixed(2)}`
+                : 'Select a supplier to see their currency and due.';
+        }
+    }
+
+    cashType?.addEventListener('change', () => {
+        syncCashDirection();
+        syncSupplierAmount();
+    });
     cashEntryType?.addEventListener('change', syncPartyFields);
+    supplierSelect?.addEventListener('change', syncSupplierAmount);
 
     requestAnimationFrame(() => {
         syncCashDirection();

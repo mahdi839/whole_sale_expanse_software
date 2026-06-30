@@ -51,6 +51,10 @@
                     <dd class="font-medium text-gray-800">{{ $supplier->address ?? '-' }}</dd>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-10 py-3">
+                    <dt class="text-gray-500">Currency</dt>
+                    <dd class="font-medium text-gray-800">{{ $supplier->currency }} — {{ $supplier->currency_name }}</dd>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-10 py-3">
                     <dt class="text-gray-500">Added on</dt>
                     <dd class="font-medium text-gray-800">{{ $supplier->created_at->format('d M Y') }}</dd>
                 </div>
@@ -104,16 +108,16 @@
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Total Purchase</p>
-                <p class="text-xl font-semibold text-gray-800">{{ number_format($supplier->total_purchase, 2) }}</p>
+                <p class="text-xl font-semibold text-gray-800">{{ $supplier->currency }} {{ number_format($supplier->total_purchase, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Total Paid</p>
-                <p class="text-xl font-semibold text-green-600">{{ number_format($supplier->total_paid, 2) }}</p>
+                <p class="text-xl font-semibold text-green-600">{{ $supplier->currency }} {{ number_format($supplier->total_paid, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 mb-1">Due</p>
                 <p class="text-xl font-semibold {{ $supplier->due > 0 ? 'text-red-600' : 'text-gray-400' }}">
-                    {{ number_format($supplier->due, 2) }}
+                    {{ $supplier->currency }} {{ number_format($supplier->due, 2) }}
                 </p>
                 @if($supplier->due <= 0)
                     <span class="text-xs text-green-600 font-medium">Cleared</span>

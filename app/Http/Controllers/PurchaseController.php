@@ -372,7 +372,7 @@ class PurchaseController extends Controller
         $cashPaid = (float) CashTransaction::where('supplier_id', $supplierId)
             ->whereNull('source_type')
             ->selectRaw('
-                COALESCE(SUM(CASE WHEN direction = "out" THEN amount ELSE -amount END), 0) as total_paid
+                COALESCE(SUM(CASE WHEN direction = "out" THEN COALESCE(supplier_amount, amount) ELSE -COALESCE(supplier_amount, amount) END), 0) as total_paid
             ')
             ->value('total_paid');
 

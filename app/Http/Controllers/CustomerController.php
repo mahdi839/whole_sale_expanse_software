@@ -28,11 +28,15 @@ class CustomerController extends Controller
                     ->whereColumn('sales.customer_id', 'customers.id'),
             ])
             ->when($search, function ($q) use ($search) {
-                $q->where('full_name', 'like', "%{$search}%")
-                  ->orWhere('code',     'like', "%{$search}%")
-                  ->orWhere('phone',    'like', "%{$search}%")
-                  ->orWhere('alternative_phone', 'like', "%{$search}%")
-                  ->orWhere('address',  'like', "%{$search}%");
+                foreach (preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY) as $term) {
+                    $q->where(function ($match) use ($term) {
+                        $match->where('full_name', 'like', "%{$term}%")
+                            ->orWhere('code', 'like', "%{$term}%")
+                            ->orWhere('phone', 'like', "%{$term}%")
+                            ->orWhere('alternative_phone', 'like', "%{$term}%")
+                            ->orWhere('address', 'like', "%{$term}%");
+                    });
+                }
             })
             ->latest()
             ->paginate(15)
@@ -49,6 +53,39 @@ class CustomerController extends Controller
         ];
 
         return view('customers.index', compact('customers', 'search', 'summary'));
+    }
+
+    public function suggestions(Request $request)
+    {
+        $search = trim((string) $request->input('q'));
+
+        if (mb_strlen($search) < 2) {
+            return response()->json([]);
+        }
+
+        $query = Customer::query();
+
+        foreach (preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY) as $term) {
+            $query->where(function ($match) use ($term) {
+                $match->where('full_name', 'like', "%{$term}%")
+                    ->orWhere('code', 'like', "%{$term}%")
+                    ->orWhere('phone', 'like', "%{$term}%")
+                    ->orWhere('alternative_phone', 'like', "%{$term}%")
+                    ->orWhere('address', 'like', "%{$term}%");
+            });
+        }
+
+        return response()->json(
+            $query->orderBy('full_name')
+                ->limit(8)
+                ->get(['id', 'code', 'full_name', 'phone'])
+                ->map(fn (Customer $customer) => [
+                    'name' => $customer->full_name,
+                    'code' => $customer->code,
+                    'phone' => $customer->phone,
+                    'url' => route('customers.show', $customer),
+                ])
+        );
     }
  
     // -------------------------------------------------------

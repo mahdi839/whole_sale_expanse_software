@@ -16,11 +16,16 @@
                     </span>
                     <input
                         type="text"
+                        id="customer-search"
                         name="search"
                         value="{{ $search ?? '' }}"
+                        autocomplete="off"
+                        data-suggestions-url="{{ route('customers.suggestions') }}"
                         placeholder="Search by name, code or phone…"
                         class="w-full pl-9 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
+                    <div id="customer-suggestions"
+                         class="hidden absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"></div>
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -371,7 +376,69 @@
         @endif
 
     </div>
+
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('customer-search');
+        const results = document.getElementById('customer-suggestions');
+        let timer;
+        let request;
+
+        function hideResults() {
+            results.classList.add('hidden');
+            results.innerHTML = '';
+        }
+
+        function escapeHtml(value) {
+            const element = document.createElement('div');
+            element.textContent = value ?? '';
+            return element.innerHTML;
+        }
+
+        input?.addEventListener('input', () => {
+            window.clearTimeout(timer);
+            request?.abort();
+
+            const query = input.value.trim();
+            if (query.length < 2) {
+                hideResults();
+                return;
+            }
+
+            timer = window.setTimeout(async () => {
+                request = new AbortController();
+
+                try {
+                    const response = await fetch(`${input.dataset.suggestionsUrl}?q=${encodeURIComponent(query)}`, {
+                        headers: { Accept: 'application/json' },
+                        signal: request.signal,
+                    });
+                    const customers = await response.json();
+
+                    if (!customers.length) {
+                        results.innerHTML = '<div class="px-3 py-2 text-sm text-gray-500">No matching customers</div>';
+                    } else {
+                        results.innerHTML = customers.map((customer) => `
+                            <a href="${customer.url}" class="block px-3 py-2 hover:bg-blue-50 border-b border-gray-100 last:border-0">
+                                <span class="block text-sm font-medium text-gray-800">${escapeHtml(customer.name)}</span>
+                                <span class="block text-xs text-gray-500">${escapeHtml(customer.code)}${customer.phone ? ` · ${escapeHtml(customer.phone)}` : ''}</span>
+                            </a>
+                        `).join('');
+                    }
+
+                    results.classList.remove('hidden');
+                } catch (error) {
+                    if (error.name !== 'AbortError') hideResults();
+                }
+            }, 200);
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!results?.contains(event.target) && event.target !== input) hideResults();
+        });
+    });
+    </script>
+    @endpush
 </x-app-layout>
-
-
 

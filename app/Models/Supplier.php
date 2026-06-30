@@ -13,6 +13,7 @@ class Supplier extends Model
         'name',
         'phone',
         'address',
+        'currency',
         'total_purchase',
         'total_paid',
         'due',
@@ -46,6 +47,15 @@ class Supplier extends Model
             : 1;
  
         return 'SUP-' . str_pad($next, 6, '0', STR_PAD_LEFT);
+    }
+
+    public function getCurrencyNameAttribute(): string
+    {
+        return match ($this->currency) {
+            'INR' => 'Indian Rupee',
+            'USD' => 'US Dollar',
+            default => 'Bangladeshi Taka',
+        };
     }
 
     public function purchases()

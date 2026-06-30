@@ -34,6 +34,22 @@
             <p class="text-xs text-red-600">{{ $message }}</p>
         @enderror
     </div>
+
+    <div class="space-y-1.5">
+        <label for="currency" class="block text-sm font-medium text-gray-700">
+            Currency <span class="text-red-500">*</span>
+        </label>
+        <select id="currency" name="currency"
+                class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-white
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+            <option value="BDT" @selected(old('currency', $supplier?->currency ?? 'BDT') === 'BDT')>BDT — Bangladeshi Taka</option>
+            <option value="INR" @selected(old('currency', $supplier?->currency ?? 'BDT') === 'INR')>INR — Indian Rupee</option>
+            <option value="USD" @selected(old('currency', $supplier?->currency ?? 'BDT') === 'USD')>USD — US Dollar</option>
+        </select>
+        @error('currency')
+            <p class="text-xs text-red-600">{{ $message }}</p>
+        @enderror
+    </div>
 </div>
 
 {{-- Address --}}

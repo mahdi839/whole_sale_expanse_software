@@ -66,7 +66,7 @@ class CashTransactionController extends Controller
     {
         $transaction = new CashTransaction(['date' => now()->toDateString(), 'direction' => 'in', 'type' => 'manual_add']);
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
-        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'currency', 'due']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
         $tailors = Tailor::orderBy('name')->get(['id', 'name']);
         $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone']);
@@ -92,7 +92,7 @@ class CashTransactionController extends Controller
 
         $transaction = $cashTransaction;
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
-        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone']);
+        $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'currency', 'due']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
         $tailors = Tailor::orderBy('name')->get(['id', 'name']);
         $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone']);
@@ -133,6 +133,13 @@ class CashTransactionController extends Controller
             'direction' => ['required', Rule::in(['in', 'out'])],
             'type' => ['required', Rule::in(['manual_add', 'collection', 'manual_out'])],
             'amount' => 'required|numeric|min:0.01',
+            'supplier_amount' => [
+                'nullable',
+                Rule::requiredIf(fn () => $request->input('cash_entry_type') === 'supplier'
+                    && $request->input('type') === 'manual_out'),
+                'numeric',
+                'min:0.01',
+            ],
             'date' => 'required|date',
             'payment_method' => 'nullable|string|max:100',
             'customer_id' => 'nullable|required_if:cash_entry_type,customer|exists:customers,id',
@@ -157,6 +164,13 @@ class CashTransactionController extends Controller
         $entryType = $data['cash_entry_type'] ?? null;
         unset($data['cash_entry_type']);
 
+        if ($entryType === 'supplier' && ! empty($data['supplier_id'])) {
+            $data['supplier_currency'] = Supplier::find($data['supplier_id'])?->currency;
+        } else {
+            $data['supplier_amount'] = null;
+            $data['supplier_currency'] = null;
+        }
+
         foreach (['customer_id', 'supplier_id', 'tailor_id', 'carry_man_id', 'computer_man_id', 'garey_man_id'] as $field) {
             $typeForField = match ($field) {
                 'customer_id' => 'customer',
@@ -179,7 +193,8 @@ class CashTransactionController extends Controller
     {
         $amount = (float) $transaction->amount * $multiplier;
         $customerAmount = $transaction->direction === 'in' ? $amount : -1 * $amount;
-        $supplierAmount = $transaction->direction === 'out' ? $amount : -1 * $amount;
+        $supplierBaseAmount = (float) ($transaction->supplier_amount ?? $transaction->amount) * $multiplier;
+        $supplierAmount = $transaction->direction === 'out' ? $supplierBaseAmount : -1 * $supplierBaseAmount;
 
         if ($transaction->customer_id) {
             $customer = Customer::find($transaction->customer_id);

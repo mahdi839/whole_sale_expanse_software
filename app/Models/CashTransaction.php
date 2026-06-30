@@ -14,6 +14,8 @@ class CashTransaction extends Model
         'direction',
         'type',
         'amount',
+        'supplier_amount',
+        'supplier_currency',
         'date',
         'payment_method',
         'source_type',
@@ -30,6 +32,7 @@ class CashTransaction extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'supplier_amount' => 'decimal:2',
         'date' => 'date',
     ];
 

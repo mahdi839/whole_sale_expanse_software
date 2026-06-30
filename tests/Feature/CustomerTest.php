@@ -4,7 +4,7 @@ use App\Models\Customer;
 use App\Models\User;
 
 it('preserves customer financial totals when editing profile details only', function () {
-    $this->withoutMiddleware();
+    $this->withoutMiddleware(\Spatie\Permission\Middleware\PermissionMiddleware::class);
 
     $user = User::factory()->create();
     $customer = Customer::create([
@@ -29,4 +29,29 @@ it('preserves customer financial totals when editing profile details only', func
         ->and((float) $customer->total_paid)->toBe(0.0)
         ->and((float) $customer->due)->toBe(2000.0)
         ->and($customer->address)->toBe('Mirpur, Dhaka');
+});
+
+it('suggests customers after two characters and matches multiple terms', function () {
+    $this->withoutMiddleware(\Spatie\Permission\Middleware\PermissionMiddleware::class);
+    $user = User::factory()->create();
+    Customer::create([
+        'full_name' => 'Mehedi Hasan',
+        'phone' => '01700000000',
+        'address' => 'Mirpur, Dhaka',
+    ]);
+    Customer::create([
+        'full_name' => 'Another Customer',
+        'phone' => '01800000000',
+    ]);
+
+    $this->actingAs($user)
+        ->getJson(route('customers.suggestions', ['q' => 'Me Hasan']))
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonPath('0.name', 'Mehedi Hasan');
+
+    $this->actingAs($user)
+        ->getJson(route('customers.suggestions', ['q' => 'M']))
+        ->assertOk()
+        ->assertExactJson([]);
 });

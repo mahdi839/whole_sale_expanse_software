@@ -162,12 +162,14 @@ class SupplierController extends Controller
             'name'           => 'required|string|max:255',
             'phone'          => 'nullable|string|max:20',
             'address'        => 'nullable|string|max:500',
+            'currency'       => 'nullable|in:BDT,INR,USD',
             'total_purchase' => 'nullable|numeric|min:0',
             'total_paid'     => 'nullable|numeric|min:0',
         ]);
 
         $data['total_purchase'] = $data['total_purchase'] ?? 0;
         $data['total_paid']     = $data['total_paid']     ?? 0;
+        $data['currency']       = $data['currency']       ?? 'BDT';
 
         return $data;
     }
@@ -210,9 +212,11 @@ class SupplierController extends Controller
                 'sort_at' => $this->logSortAt($cash->date, $cash->created_at),
                 'type' => 'Payment',
                 'reference' => $cash->reference,
-                'amount' => $cash->direction === 'out' ? (float) $cash->amount : -1 * (float) $cash->amount,
+                'amount' => $cash->direction === 'out'
+                    ? (float) ($cash->supplier_amount ?? $cash->amount)
+                    : -1 * (float) ($cash->supplier_amount ?? $cash->amount),
                 'qty' => null,
-                'paid' => (float) $cash->amount,
+                'paid' => (float) ($cash->supplier_amount ?? $cash->amount),
                 'due' => "-",
                 'products' => '',
                 'note' => $cash->note,
