@@ -194,7 +194,7 @@ class SupplierController extends Controller
                 'due' => (float) $purchase->due_amount,
                 'products' => $purchase->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', '),
                 'note' => $purchase->note,
-                'url' => route('purchases.show', $purchase),
+                'url' => route('purchases.edit', $purchase),
             ]))
             ->merge($supplier->purchaseReturns()->with('items.product')->get()->map(function ($return) {
                 $products = $return->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', ');
