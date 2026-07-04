@@ -742,14 +742,14 @@
 
         <div class="field-group">
             <div class="field-label">Payment Method <span class="text-red-500">*</span></div>
-            <select name="payment_method" id="payment_method" class="field-input" required>
+            <select name="payment_method" id="payment_method" class="field-input" >
                 <option value=""> Select Payment Method</option>
                 @foreach (['Cash','Bank','Bkash','Nagad','Card'] as $method)
                     <option value="{{ $method }}" @selected(old('payment_method', $sale?->payment_method) == $method)>{{ $method }}</option>
                 @endforeach
             </select>
             @error('payment_method')
-                <p class="text-error">{{ $message }}</p>
+                <p class="text-red-500 text-sm">{{ $message }}</p>
             @enderror
         </div>
 
