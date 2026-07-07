@@ -24,7 +24,6 @@ class TailorController extends Controller
             ->latest()
             ->paginate(15)
             ->withQueryString();
-
         return view('tailors.index', compact('tailors', 'search'));
     }
 

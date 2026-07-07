@@ -45,12 +45,21 @@ class Tailor extends Model
 
     public function recalculateFinancials(): void
     {
+         $sewingBill = (float) $this->clothSewings()
+        ->selectRaw('COALESCE(SUM(total_rate), 0) as total')
+        ->value('total');
+
         $manualDue = (float) $this->manualDues()
             ->selectRaw('COALESCE(SUM(CASE WHEN adjustment_type = "subtract" THEN -amount ELSE amount END), 0) as total')
             ->value('total');
 
+        $totalPayable = $sewingBill + $manualDue;
+        $totalPaid = (float) $this->total_paid;
+
         $this->updateQuietly([
-            'total_due' => max(0, $manualDue - (float) $this->total_paid),
+            'total_due' => max(0, $totalPayable - $totalPaid),
+            'advance' => max(0, $totalPaid - $totalPayable),
         ]);
+        
     }
 }
