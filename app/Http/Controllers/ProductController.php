@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Shop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -13,7 +14,7 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
-        $query = Product::with('stock');
+        $query = Product::with(['stock', 'stocks.shop']);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -24,8 +25,9 @@ class ProductController extends Controller
         }
 
         $products = $query->latest()->paginate(12)->withQueryString();
+        $shops = Shop::orderBy('name')->get(['id', 'name', 'code']);
 
-        return view('products.index', compact('products', 'search'));
+        return view('products.index', compact('products', 'search', 'shops'));
     }
 
     public function create()

@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">Products</x-slot>
 
-    <div class="space-y-4">
+    <div class="space-y-4" x-data="{ stockModal: null }">
 
         {{-- Top bar: search + add button --}}
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -78,6 +78,19 @@
         {{-- Mobile cards --}}
         <div class="sm:hidden space-y-3">
             @forelse($products as $product)
+                @php
+                    $shopStocks = $shops->map(fn ($shop) => [
+                        'name' => $shop->name,
+                        'code' => $shop->code,
+                        'qty' => (float) ($product->stocks->firstWhere('shop_id', $shop->id)?->stock_qty ?? 0),
+                    ])->values();
+                    $stockPayload = [
+                        'name' => $product->product_name,
+                        'sku' => $product->sku,
+                        'central' => (float) ($product->stock?->stock_qty ?? 0),
+                        'shops' => $shopStocks,
+                    ];
+                @endphp
                 <div class="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
                     <div class="flex items-start gap-3">
                         <div class="shrink-0">
@@ -118,11 +131,18 @@
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div class="bg-gray-50 rounded-lg p-2">
                             <p class="text-gray-400">Stock</p>
-                            <p class="mt-1">
+                            <p class="mt-1 flex items-center gap-2">
                                 <span
                                     class="inline-flex items-center px-2 py-0.5 rounded-md @if ($product->stock?->stock_qty < 10) bg-red-100 text-red-600 @else bg-gray-100 text-gray-600 @endif text-xs font-mono font-medium">
                                     {{ $product->stock?->stock_qty ?? 0 }}
                                 </span>
+                                <button type="button" @click="stockModal = @js($stockPayload)"
+                                    class="inline-flex items-center justify-center w-7 h-7 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg"
+                                    title="Shop wise stock">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l8-4 6 3v15M9 9h1m-1 4h1m4-4h1m-1 4h1M9 21v-4h6v4" />
+                                    </svg>
+                                </button>
                             </p>
                         </div>
 
@@ -221,6 +241,19 @@
 
                     <tbody class="divide-y divide-gray-100">
                         @forelse($products as $product)
+                            @php
+                                $shopStocks = $shops->map(fn ($shop) => [
+                                    'name' => $shop->name,
+                                    'code' => $shop->code,
+                                    'qty' => (float) ($product->stocks->firstWhere('shop_id', $shop->id)?->stock_qty ?? 0),
+                                ])->values();
+                                $stockPayload = [
+                                    'name' => $product->product_name,
+                                    'sku' => $product->sku,
+                                    'central' => (float) ($product->stock?->stock_qty ?? 0),
+                                    'shops' => $shopStocks,
+                                ];
+                            @endphp
                             <tr class="hover:bg-gray-50/50 transition-colors">
 
                                 {{-- Image --}}
@@ -266,10 +299,19 @@
 
                                 {{-- Stock --}}
                                 <td class="px-5 py-3">
-                                    <span
-                                        class="inline-flex items-center px-2 py-0.5 rounded-md @if ($product->stock?->stock_qty < 10) bg-red-100 text-red-600 @else bg-gray-100 text-gray-600 @endif text-xs font-mono font-medium">
-                                        {{ $product->stock?->stock_qty ?? 0 }}
-                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="inline-flex items-center px-2 py-0.5 rounded-md @if ($product->stock?->stock_qty < 10) bg-red-100 text-red-600 @else bg-gray-100 text-gray-600 @endif text-xs font-mono font-medium">
+                                            {{ $product->stock?->stock_qty ?? 0 }}
+                                        </span>
+                                        <button type="button" @click="stockModal = @js($stockPayload)"
+                                            class="inline-flex items-center justify-center w-8 h-8 text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition"
+                                            title="Shop wise stock">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l8-4 6 3v15M9 9h1m-1 4h1m4-4h1m-1 4h1M9 21v-4h6v4" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </td>
 
                                 {{-- Date --}}
@@ -358,6 +400,56 @@
                 @endif
             </p>
         @endif
+
+        <div x-cloak x-show="stockModal" x-transition.opacity
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+            @keydown.escape.window="stockModal = null">
+            <div class="w-full max-w-lg bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden" @click.outside="stockModal = null">
+                <div class="flex items-start justify-between gap-4 px-5 py-4 border-b border-gray-100">
+                    <div class="min-w-0">
+                        <h2 class="text-sm font-semibold text-gray-800 truncate" x-text="stockModal?.name"></h2>
+                        <p class="mt-1 text-xs text-gray-400" x-text="stockModal?.sku"></p>
+                    </div>
+                    <button type="button" @click="stockModal = null"
+                        class="inline-flex items-center justify-center w-8 h-8 text-gray-500 bg-gray-50 rounded-lg hover:bg-gray-100"
+                        title="Close">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-5 space-y-4">
+                    <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
+                        <span class="text-sm text-gray-500">Central stock</span>
+                        <span class="text-sm font-semibold text-gray-800" x-text="Number(stockModal?.central || 0).toFixed(2)"></span>
+                    </div>
+                    <div class="overflow-hidden border border-gray-100 rounded-lg">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-400">Shop</th>
+                                    <th class="px-4 py-2.5 text-right text-xs font-medium text-gray-400">Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <template x-for="shop in stockModal?.shops || []" :key="shop.name + shop.code">
+                                    <tr>
+                                        <td class="px-4 py-2.5">
+                                            <div class="font-medium text-gray-700" x-text="shop.name"></div>
+                                            <div class="text-xs text-gray-400" x-show="shop.code" x-text="shop.code"></div>
+                                        </td>
+                                        <td class="px-4 py-2.5 text-right font-mono text-gray-700" x-text="Number(shop.qty || 0).toFixed(2)"></td>
+                                    </tr>
+                                </template>
+                                <tr x-show="!stockModal?.shops?.length">
+                                    <td colspan="2" class="px-4 py-8 text-center text-gray-400">No shops found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </div>
 </x-app-layout>

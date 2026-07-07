@@ -56,7 +56,7 @@ class CashTransactionController extends Controller
             COALESCE(SUM(CASE WHEN direction = "out" THEN amount ELSE 0 END), 0) as cash_out
         ')->first();
 
-        $balance = CashTransaction::selectRaw('
+        $balance = (clone $query)->selectRaw('
             COALESCE(SUM(CASE WHEN direction = "in" THEN amount ELSE -amount END), 0) as balance
         ')->value('balance');
         return view('cash_transactions.index', compact('transactions', 'filters', 'totals', 'balance'));
@@ -225,6 +225,7 @@ class CashTransactionController extends Controller
         }
 
         foreach ([
+            'tailor_id' => Tailor::class,
             'carry_man_id' => CarryMan::class,
             'computer_man_id' => ComputerMan::class,
             'garey_man_id' => GareyMan::class,

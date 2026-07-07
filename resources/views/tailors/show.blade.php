@@ -38,6 +38,14 @@
                     <dt class="text-gray-500">Total Received Qty</dt>
                     <dd class="font-medium text-green-600">{{ number_format($tailor->receivedCloths->sum(fn ($item) => (float) $item->item_qty), 2) }}</dd>
                 </div>
+                <div class="flex justify-between py-3">
+                    <dt class="text-gray-500">Total Paid</dt>
+                    <dd class="font-medium text-blue-600">{{ number_format($tailor->total_paid ?? 0, 2) }}</dd>
+                </div>
+                <div class="flex justify-between py-3">
+                    <dt class="text-gray-500">Total Due</dt>
+                    <dd class="font-medium text-red-600">{{ number_format($tailor->total_due ?? 0, 2) }}</dd>
+                </div>
             </dl>
         </div>
 

@@ -217,7 +217,7 @@ class DueManagementController extends Controller
 
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone', 'due']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'due']);
-        $tailors = Tailor::orderBy('name')->get(['id', 'name', 'phone']);
+        $tailors = Tailor::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
         $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
         $computerMen = ComputerMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
         $gareyMen = GareyMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
@@ -421,7 +421,7 @@ class DueManagementController extends Controller
     {
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone', 'due']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'due']);
-        $tailors = Tailor::orderBy('name')->get(['id', 'name', 'phone']);
+        $tailors = Tailor::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
         $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
         $computerMen = ComputerMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
         $gareyMen = GareyMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
@@ -519,6 +519,7 @@ class DueManagementController extends Controller
         }
 
         foreach ([
+            'tailor_id' => Tailor::class,
             'carry_man_id' => CarryMan::class,
             'computer_man_id' => ComputerMan::class,
             'garey_man_id' => GareyMan::class,
@@ -533,6 +534,11 @@ class DueManagementController extends Controller
                 $worker->update([
                     'total_due' => max(0, (float) $worker->total_due + $amount),
                 ]);
+
+                if ($worker instanceof Tailor) {
+                    $worker->refresh();
+                    $worker->recalculateFinancials();
+                }
             }
         }
     }

@@ -34,6 +34,8 @@
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Address</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Sewing Qty</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Received Qty</th>
+                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Paid</th>
+                            <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Due</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Actions</th>
                         </tr>
                     </thead>
@@ -68,6 +70,8 @@
                                 <td class="px-5 py-3 text-gray-600 max-w-xs truncate">{{ $tailor->address ?? '-' }}</td>
                                 <td class="px-5 py-3 text-right text-indigo-600">{{ number_format($tailor->sewing_qty ?? 0, 2) }}</td>
                                 <td class="px-5 py-3 text-right text-green-600">{{ number_format($tailor->received_qty ?? 0, 2) }}</td>
+                                <td class="px-5 py-3 text-right text-blue-600">{{ number_format($tailor->total_paid ?? 0, 2) }}</td>
+                                <td class="px-5 py-3 text-right text-red-600">{{ number_format($tailor->total_due ?? 0, 2) }}</td>
                                 <td class="px-5 py-3">
                                     <div class="flex justify-end gap-2">
                                         <a href="{{ route('tailors.show', $tailor) }}" class="inline-flex items-center justify-center w-8 h-8 text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100" title="View profile">
@@ -87,7 +91,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="px-5 py-12 text-center text-gray-400">No tailors found.</td></tr>
+                            <tr><td colspan="9" class="px-5 py-12 text-center text-gray-400">No tailors found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
