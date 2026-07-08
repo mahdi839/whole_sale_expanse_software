@@ -449,6 +449,16 @@ class CustomerController extends Controller
             'autoLangToFont' => true,
         ]);
         $mpdf->useSubstitutions = true;
+        $mpdf->SetTitle($title);
+        $mpdf->SetHTMLFooter('<div style="background:#f3f6fb;border-top:1px solid #2260d9;color:#808897;font-size:8pt;padding:6px 8px;">
+            <span>Confidential - For internal use only</span>
+            <span style="float:right;">Page {PAGENO} of {nbpg}</span>
+        </div>');
+
+        $logoPath = public_path('inaya_creation_logo.jpeg');
+        $logoHtml = is_file($logoPath)
+            ? '<img src="'.e(str_replace('\\', '/', $logoPath)).'" class="logo" alt="Logo">'
+            : '';
 
         $summaryHtml = collect($summary)->map(fn ($item) => '<div class="summary-card"><span>'.
             e((string) ($item['label'] ?? '')).'</span><strong>'.
@@ -465,22 +475,27 @@ class CustomerController extends Controller
         }
 
         $html = '<html lang="bn"><head><meta charset="UTF-8"><style>
-            body { font-family: freeserif, sans-serif; color: #1f2937; font-size: 10pt; }
-            h1 { font-size: 16pt; margin: 0 0 4mm; color: #1e3a8a; }
-            .date { color: #64748b; font-size: 8pt; margin-bottom: 5mm; }
-            .summary { display: table; width: 100%; border-spacing: 3mm; margin-bottom: 5mm; }
-            .summary-card { display: table-cell; border: 0.2mm solid #d8dee9; background: #f8fafc; padding: 3mm; }
-            .summary-card span { display: block; color: #64748b; font-size: 8pt; text-transform: uppercase; }
-            .summary-card strong { display: block; margin-top: 1.5mm; font-size: 11pt; color: #111827; }
+            @page { margin: 12mm 12mm 12mm 12mm; }
+            body { font-family: freeserif, sans-serif; color: #333949; font-size: 8.2pt; }
+            .report-header { background: #1e3a5f; border-left: 5px solid #2260d9; border-bottom: 2px solid #2260d9; color: #fff; padding: 10px 14px; margin-bottom: 10px; }
+            .logo { width: 34px; height: 34px; object-fit: cover; float: left; margin-right: 12px; }
+            h1 { font-size: 15pt; margin: 0; color: #ffffff; font-weight: bold; }
+            .date { color: #bfdbfe; font-size: 8pt; margin-top: 5px; }
+            .summary { display: flex; width: 100%; border-spacing: 8px 0; margin: 0 -8px 12px -8px; }
+            .summary-card { display: table-cell; border: 1px solid #d9dde5; background: #f3f6fb; padding: 8px; }
+            .summary-card span { display: block; color: #808897; font-size: 7.5pt; text-transform: uppercase; }
+            .summary-card strong { display: block; margin-top: 4px; font-size: 10pt; color: #333949; font-weight: bold; }
             table { width: 100%; border-collapse: collapse; }
-            th { background: #1d4ed8; color: #ffffff; font-weight: bold; padding: 2.2mm; border: 0.2mm solid #1d4ed8; }
-            td { padding: 2mm; border: 0.2mm solid #d8dee9; vertical-align: top; }
-            tr:nth-child(even) td { background: #f8fafc; }
-            td:nth-child(4), td:nth-child(5), td:nth-child(6), td:nth-child(7) { text-align: right; }
+            th { background: #1e3a5f; color: #ffffff; font-weight: bold; padding: 6px 5px; border-bottom: 2px solid #2260d9; text-transform: uppercase; font-size: 7.3pt; }
+            td { padding: 5px 4px; border-bottom: 1px solid #d9dde5; vertical-align: top; }
+            tr:nth-child(even) td { background: #f3f6fb; }
+            td { text-align: center; }
             .empty { text-align: center; color: #64748b; }
         </style></head><body>
-            <h1>'.e($title).'</h1>
-            <div class="date">Generated: '.e(now()->format('d M Y H:i')).'</div>
+            <div class="report-header">'.$logoHtml.'
+                <h1>'.e($title).'</h1>
+                <div class="date">Generated: '.e(now()->format('d M Y H:i')).'</div>
+            </div>
             <div class="summary">'.$summaryHtml.'</div>
             <table><thead><tr>'.$headerHtml.'</tr></thead><tbody>'.$bodyHtml.'</tbody></table>
         </body></html>';
