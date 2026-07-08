@@ -6,10 +6,14 @@
             <div class="px-4 py-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl">{{ session('success') }}</div>
         @endif
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div class="bg-white border border-gray-200 rounded-xl p-4">
-                <p class="text-xs text-gray-400 uppercase">Current Cash</p>
-                <p class="text-xl font-semibold text-emerald-600">৳{{ number_format($balance ?? 0, 2) }}</p>
+                <p class="text-xs text-gray-400 uppercase">All Current Cash</p>
+                <p class="text-xl font-semibold text-emerald-600">৳{{ number_format($overallBalance ?? 0, 2) }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                <p class="text-xs text-gray-400 uppercase">Date Current Cash</p>
+                <p class="text-xl font-semibold text-teal-600">৳{{ number_format($dateBalance ?? 0, 2) }}</p>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Cash In</p>

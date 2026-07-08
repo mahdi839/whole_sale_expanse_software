@@ -95,7 +95,7 @@ class SalaryAdvanceController extends Controller
         $advance->loadMissing('employee');
 
         app(CashLedger::class)->syncSource('salary_advance', $advance->id, 'out', 'salary_advance', (float) $advance->amount, [
-            'date' => $advance->advance_month?->toDateString() ?? now()->toDateString(),
+            'date' => $advance->created_at?->toDateString() ?? now()->toDateString(),
             'note' => 'Advance salary: '.$advance->employee?->name.' - '.$advance->advance_month?->format('F Y'),
         ]);
     }

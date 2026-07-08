@@ -56,10 +56,19 @@ class CashTransactionController extends Controller
             COALESCE(SUM(CASE WHEN direction = "out" THEN amount ELSE 0 END), 0) as cash_out
         ')->first();
 
-        $balance = (clone $query)->selectRaw('
+        $overallBalance = CashTransaction::query()->selectRaw('
             COALESCE(SUM(CASE WHEN direction = "in" THEN amount ELSE -amount END), 0) as balance
         ')->value('balance');
-        return view('cash_transactions.index', compact('transactions', 'filters', 'totals', 'balance'));
+
+        $dateBalance = CashTransaction::query()
+            ->when($filters['date_from'], fn($q) => $q->whereDate('date', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn($q) => $q->whereDate('date', '<=', $filters['date_to']))
+            ->selectRaw('
+                COALESCE(SUM(CASE WHEN direction = "in" THEN amount ELSE -amount END), 0) as balance
+            ')
+            ->value('balance');
+
+        return view('cash_transactions.index', compact('transactions', 'filters', 'totals', 'overallBalance', 'dateBalance'));
     }
 
     public function create()

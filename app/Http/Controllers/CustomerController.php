@@ -10,6 +10,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
+use Mpdf\Mpdf;
+use Mpdf\Output\Destination;
 
 class CustomerController extends Controller
 {
@@ -184,7 +186,7 @@ class CustomerController extends Controller
                 ['label' => 'Total Sale', 'value' =>  $customer->total_sale],
             ];
 
-            return $this->streamPdf(
+            return $this->streamCustomerTransactionsPdf(
                 'customer-'.$customer->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.pdf',
                 'Inaya Creation - Customer Transactions - '.$customer->full_name,
                 $headers,
@@ -426,6 +428,66 @@ class CustomerController extends Controller
             'summary' => $summary,
             'logo_path' => public_path('inaya_creation_logo.jpeg'),
         ]), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
+    }
+
+    private function streamCustomerTransactionsPdf(string $fileName, string $title, array $headers, $rows, array $summary = [])
+    {
+        $tempDir = storage_path('app/mpdf-temp');
+        if (! is_dir($tempDir)) {
+            @mkdir($tempDir, 0775, true);
+        }
+
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4-L',
+            'tempDir' => $tempDir,
+            'default_font' => 'freeserif',
+            'autoScriptToLang' => true,
+            'autoLangToFont' => true,
+        ]);
+        $mpdf->useSubstitutions = true;
+
+        $summaryHtml = collect($summary)->map(fn ($item) => '<div class="summary-card"><span>'.
+            e((string) ($item['label'] ?? '')).'</span><strong>'.
+            e(is_numeric($item['value'] ?? null) ? number_format((float) $item['value'], 2) : (string) ($item['value'] ?? '')).'</strong></div>'
+        )->implode('');
+
+        $headerHtml = collect($headers)->map(fn ($header) => '<th>'.e($header).'</th>')->implode('');
+        $bodyHtml = collect($rows)->map(function ($row) {
+            return '<tr>'.collect($row)->map(fn ($value) => '<td>'.e((string) ($value ?? '-')).'</td>')->implode('').'</tr>';
+        })->implode('');
+
+        if ($bodyHtml === '') {
+            $bodyHtml = '<tr><td colspan="'.count($headers).'" class="empty">No transactions found.</td></tr>';
+        }
+
+        $html = '<html lang="bn"><head><meta charset="UTF-8"><style>
+            body { font-family: freeserif, sans-serif; color: #1f2937; font-size: 10pt; }
+            h1 { font-size: 16pt; margin: 0 0 4mm; color: #1e3a8a; }
+            .date { color: #64748b; font-size: 8pt; margin-bottom: 5mm; }
+            .summary { display: table; width: 100%; border-spacing: 3mm; margin-bottom: 5mm; }
+            .summary-card { display: table-cell; border: 0.2mm solid #d8dee9; background: #f8fafc; padding: 3mm; }
+            .summary-card span { display: block; color: #64748b; font-size: 8pt; text-transform: uppercase; }
+            .summary-card strong { display: block; margin-top: 1.5mm; font-size: 11pt; color: #111827; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background: #1d4ed8; color: #ffffff; font-weight: bold; padding: 2.2mm; border: 0.2mm solid #1d4ed8; }
+            td { padding: 2mm; border: 0.2mm solid #d8dee9; vertical-align: top; }
+            tr:nth-child(even) td { background: #f8fafc; }
+            td:nth-child(4), td:nth-child(5), td:nth-child(6), td:nth-child(7) { text-align: right; }
+            .empty { text-align: center; color: #64748b; }
+        </style></head><body>
+            <h1>'.e($title).'</h1>
+            <div class="date">Generated: '.e(now()->format('d M Y H:i')).'</div>
+            <div class="summary">'.$summaryHtml.'</div>
+            <table><thead><tr>'.$headerHtml.'</tr></thead><tbody>'.$bodyHtml.'</tbody></table>
+        </body></html>';
+
+        $mpdf->WriteHTML($html);
+
+        return Response::make($mpdf->Output('', Destination::STRING_RETURN), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
