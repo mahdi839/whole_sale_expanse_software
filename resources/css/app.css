@@ -1,3 +1,33 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.summary-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 7px 0;
+    margin: 0 0 12px 0;
+}
+
+.summary-cell {
+    background: #f8fafc;
+    border: 1px solid #d9dde5;
+    border-top: 3px solid #2260d9;
+    padding: 9px 10px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.summary-label {
+    color: #64748b;
+    font-size: 7.2pt;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 4px;
+}
+
+.summary-value {
+    color: #1e3a5f;
+    font-size: 11pt;
+    font-weight: bold;
+}

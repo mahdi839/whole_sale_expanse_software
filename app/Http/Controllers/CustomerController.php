@@ -460,10 +460,28 @@ class CustomerController extends Controller
             ? '<img src="'.e(str_replace('\\', '/', $logoPath)).'" class="logo" alt="Logo">'
             : '';
 
-        $summaryHtml = collect($summary)->map(fn ($item) => '<div class="summary-card"><span>'.
-            e((string) ($item['label'] ?? '')).'</span><strong>'.
-            e(is_numeric($item['value'] ?? null) ? number_format((float) $item['value'], 2) : (string) ($item['value'] ?? '')).'</strong></div>'
-        )->implode('');
+      $summaryHtml = '';
+
+if (! empty($summary)) {
+    $summaryHtml .= '<table class="summary-table"><tr>';
+
+    foreach ($summary as $item) {
+        $value = $item['value'] ?? '';
+
+        $formattedValue = is_numeric($value)
+            ? number_format((float) $value, 2)
+            : (string) $value;
+
+        $summaryHtml .= '
+            <td class="summary-cell">
+                <div class="summary-label">'.e((string) ($item['label'] ?? '')).'</div>
+                <div class="summary-value">'.e($formattedValue).'</div>
+            </td>
+        ';
+    }
+
+    $summaryHtml .= '</tr></table>';
+}
 
         $headerHtml = collect($headers)->map(fn ($header) => '<th>'.e($header).'</th>')->implode('');
         $bodyHtml = collect($rows)->map(function ($row) {
