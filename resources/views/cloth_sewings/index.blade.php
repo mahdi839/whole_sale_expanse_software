@@ -366,7 +366,7 @@
         document.querySelectorAll('.open-logs').forEach(button => {
             button.addEventListener('click', async () => {
                 document.getElementById('logs-tailor').textContent = button.dataset.tailorName;
-                document.getElementById('logs-body').innerHTML = '<tr><td colspan="8" class="px-3 py-8 text-center text-gray-400">Loading...</td></tr>';
+                document.getElementById('logs-body').innerHTML = '<tr><td colspan="9" class="px-3 py-8 text-center text-gray-400">Loading...</td></tr>';
                 showModal(logsModal);
 
                 const response = await fetch(button.dataset.url, { headers: { Accept: 'application/json' } });
@@ -383,9 +383,18 @@
                             <td class="px-3 py-2 text-right text-gray-700">${escapeHtml(log.type === 'Sewing' ? log.per_piece_rate : '-')}</td>
                             <td class="px-3 py-2 text-right text-amber-600">${escapeHtml(log.type === 'Sewing' ? log.total_rate : '-')}</td>
                             <td class="px-3 py-2 text-gray-500">${escapeHtml(log.note || '-')}</td>
+                            <td class="px-3 py-2 text-right">
+                                ${log.delete_url ? `
+                                    <form method="POST" action="${escapeHtml(log.delete_url)}" onsubmit="return confirm('Delete this sewing record?')">
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <input type="hidden" name="_method" value="DELETE">
+                                        <button type="submit" class="px-2.5 py-1 text-xs text-red-700 bg-red-50 rounded-lg">Delete</button>
+                                    </form>
+                                ` : '-'}
+                            </td>
                         </tr>
                     `).join('')
-                    : '<tr><td colspan="8" class="px-3 py-8 text-center text-gray-400">No logs found.</td></tr>';
+                    : '<tr><td colspan="9" class="px-3 py-8 text-center text-gray-400">No logs found.</td></tr>';
             });
         });
 

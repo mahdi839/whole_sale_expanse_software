@@ -31,24 +31,39 @@ class SupplierController extends Controller
             ->orderBy('currency')
             ->get();
 
-        $suppliers = Supplier::query()
-            ->addSelect([
-                'total_purchase_qty' => DB::table('purchase_items')
-                    ->selectRaw('COALESCE(SUM(purchase_items.qty), 0)')
-                    ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
-                    ->whereColumn('purchases.supplier_id', 'suppliers.id'),
-            ])
-            ->when($search, fn($q) => $q
-                ->where('name',  'like', "%{$search}%")
-                ->orWhere('code',  'like', "%{$search}%")
-                ->orWhere('phone', 'like', "%{$search}%")
-                ->orWhere('address', 'like', "%{$search}%")
-            )
+        $suppliers = $this->supplierIndexQuery($search)
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
         return view('suppliers.index', compact('suppliers', 'search', 'totals', 'currencyTotals'));
+    }
+
+    public function exportIndexPdf(Request $request)
+    {
+        $search = $request->input('search');
+        $suppliers = $this->supplierIndexQuery($search)
+            ->orderBy('name')
+            ->get();
+
+        $headers = ['Code', 'Full Name', 'Phone', 'Address', 'Total Quantity', 'Total Purchase', 'Total Paid', 'Total Due'];
+        $rows = $suppliers->map(fn (Supplier $supplier) => [
+            $supplier->code,
+            $supplier->name,
+            $supplier->phone ?? '-',
+            $supplier->address ?? '-',
+            number_format((float) ($supplier->total_purchase_qty ?? 0), 2),
+            trim(($supplier->currency ?? 'BDT').' '.number_format((float) $supplier->total_purchase, 2)),
+            trim(($supplier->currency ?? 'BDT').' '.number_format((float) $supplier->total_paid, 2)),
+            trim(($supplier->currency ?? 'BDT').' '.number_format((float) $supplier->due, 2)),
+        ]);
+
+        return Response::make(SimplePdf::table('Inaya Creation - Suppliers', $headers, $rows, null, [
+            'logo_path' => public_path('inaya_creation_logo.jpeg'),
+        ]), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="suppliers-'.now()->format('Y-m-d-H-i-s').'.pdf"',
+        ]);
     }
 
     public function create()
@@ -249,6 +264,23 @@ class SupplierController extends Controller
                 return $log;
             })
             ->values();
+    }
+
+    private function supplierIndexQuery(?string $search)
+    {
+        return Supplier::query()
+            ->addSelect([
+                'total_purchase_qty' => DB::table('purchase_items')
+                    ->selectRaw('COALESCE(SUM(purchase_items.qty), 0)')
+                    ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
+                    ->whereColumn('purchases.supplier_id', 'suppliers.id'),
+            ])
+            ->when($search, fn($q) => $q
+                ->where('name',  'like', "%{$search}%")
+                ->orWhere('code',  'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%")
+                ->orWhere('address', 'like', "%{$search}%")
+            );
     }
 
     private function logSortAt($date, $createdAt): ?Carbon

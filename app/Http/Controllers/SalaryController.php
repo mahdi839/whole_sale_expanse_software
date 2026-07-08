@@ -59,7 +59,7 @@ class SalaryController extends Controller
         $salary->loadMissing('employee');
 
         app(CashLedger::class)->syncSource('salary', $salary->id, 'out', 'salary', (float) $salary->amount, [
-            'date' => $salary->salary_month?->toDateString() ?? now()->toDateString(),
+            'date' => $salary->created_at?->toDateString() ?? now()->toDateString(),
             'note' => 'Salary: '.$salary->employee?->name.' - '.$salary->salary_month?->format('F Y'),
         ]);
     }

@@ -35,7 +35,7 @@
                     </select>
                     <select name="type" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                         <option value="">All types</option>
-                        @foreach(['manual_add' => 'Add money', 'collection' => 'Collection', 'manual_out' => 'Cash out', 'sale_payment' => 'Sale payment', 'purchase_payment' => 'Purchase payment', 'sale_return_refund' => 'Sale return', 'purchase_return_refund' => 'Purchase return'] as $value => $label)
+                        @foreach(['manual_add' => 'Add money', 'collection' => 'Collection', 'manual_out' => 'Cash out', 'salary' => 'Salary', 'salary_advance' => 'Advance salary', 'sale_payment' => 'Sale payment', 'purchase_payment' => 'Purchase payment', 'sale_return_refund' => 'Sale return', 'purchase_return_refund' => 'Purchase return'] as $value => $label)
                             <option value="{{ $value }}" @selected(($filters['type'] ?? '') === $value)>{{ $label }}</option>
                         @endforeach
                     </select>

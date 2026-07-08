@@ -71,8 +71,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     $crudResource('/products', ProductController::class, 'products', ['except' => ['show']]);
     Route::get('/products/{product}/barcode', [ProductController::class, 'barcode'])->name('products.barcode')->middleware('permission:manage products|view products');
     Route::get('/customers/suggestions', [CustomerController::class, 'suggestions'])->name('customers.suggestions')->middleware('permission:manage customers|view customers');
+    Route::get('/customers/export/pdf', [CustomerController::class, 'exportIndexPdf'])->name('customers.export.pdf')->middleware('permission:manage customers|view customers');
     Route::get('/customers/{customer}/transactions/export', [CustomerController::class, 'exportTransactions'])->name('customers.transactions.export')->middleware('permission:manage customers|view customers|manage dues|view dues');
     $crudResource('/customers', CustomerController::class, 'customers');
+    Route::get('/suppliers/export/pdf', [SupplierController::class, 'exportIndexPdf'])->name('suppliers.export.pdf')->middleware('permission:manage suppliers|view suppliers');
     Route::get('/suppliers/{supplier}/transactions/export', [SupplierController::class, 'exportTransactions'])->name('suppliers.transactions.export')->middleware('permission:manage suppliers|view suppliers|manage dues|view dues');
     $crudResource('/suppliers', SupplierController::class, 'suppliers');
     Route::get('/cloth-sewings/tailors/{tailor}/receive', [ClothSewingController::class, 'receiveData'])->name('cloth-sewings.tailors.receive')->middleware('permission:manage cloth sewings|view cloth sewings');

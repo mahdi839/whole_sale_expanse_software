@@ -80,7 +80,16 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
-                        @if($workLogType === 'computer')
+                        @if($workLogType === 'tailor')
+                            <tr class="bg-gray-50 border-b">
+                                <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Date</th>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Product</th>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Design Code</th>
+                                <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Qty</th>
+                                <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Per Piece Rate</th>
+                                <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Total</th>
+                            </tr>
+                        @elseif($workLogType === 'computer')
                             <tr class="bg-gray-50 border-b">
                                 <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Date</th>
                                 <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Memo No</th>
@@ -119,7 +128,16 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @forelse($workLogs as $log)
-                            @if($workLogType === 'computer')
+                            @if($workLogType === 'tailor')
+                                <tr>
+                                    <td class="px-5 py-3 whitespace-nowrap">{{ optional($log->date)->format('d M Y') }}</td>
+                                    <td class="px-5 py-3">{{ $log->product?->product_name ?? '-' }}</td>
+                                    <td class="px-5 py-3 font-mono text-xs text-gray-500">{{ $log->product?->sku ?: ($log->product?->product_code ?: '-') }}</td>
+                                    <td class="px-5 py-3 text-right">{{ number_format($log->item_qty, 2) }}</td>
+                                    <td class="px-5 py-3 text-right">{{ number_format($log->per_piece_rate, 2) }}</td>
+                                    <td class="px-5 py-3 text-right text-green-600">{{ number_format($log->total_rate, 2) }}</td>
+                                </tr>
+                            @elseif($workLogType === 'computer')
                                 <tr>
                                     <td class="px-5 py-3 whitespace-nowrap">{{ optional($log->date)->format('d M Y') }}</td>
                                     <td class="px-5 py-3">{{ $log->memo_no ?? '-' }}</td>

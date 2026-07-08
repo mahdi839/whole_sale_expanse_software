@@ -41,9 +41,20 @@ class TailorController extends Controller
 
     public function show(Tailor $tailor)
     {
-        $tailor->load(['clothSewings.product', 'receivedCloths.product']);
+        $tailor->load([
+            'cashTransactions' => fn ($query) => $query->latest('date')->latest(),
+        ]);
+        $workLogs = $tailor->clothSewings()->with('product')->latest('date')->latest()->get();
 
-        return view('tailors.show', compact('tailor'));
+        return view('shared._worker_profile_show', [
+            'worker' => $tailor,
+            'title' => 'Tailor Details',
+            'routeBase' => 'tailors',
+            'workLogType' => 'tailor',
+            'workLogs' => $workLogs,
+            'cashTransactions' => $tailor->cashTransactions,
+            'totalWorkAmount' => $workLogs->sum(fn ($log) => (float) $log->total_rate),
+        ]);
     }
 
     public function edit(Tailor $tailor)
@@ -68,11 +79,6 @@ class TailorController extends Controller
 
     public function destroy(Tailor $tailor)
     {
-        if ($tailor->clothSewings()->exists() || $tailor->receivedCloths()->exists()) {
-            return redirect()->route('tailors.index')
-                ->with('error', 'This tailor has cloth sewing records and cannot be deleted.');
-        }
-
         Storage::disk('public')->delete(array_filter([
             $tailor->profile_picture,
             $tailor->document_path,

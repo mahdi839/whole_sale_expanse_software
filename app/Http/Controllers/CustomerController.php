@@ -20,24 +20,7 @@ class CustomerController extends Controller
     {
         $search = $request->input('search');
  
-        $customers = Customer::query()
-            ->addSelect([
-                'total_sell_qty' => DB::table('sale_items')
-                    ->selectRaw('COALESCE(SUM(sale_items.qty), 0)')
-                    ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-                    ->whereColumn('sales.customer_id', 'customers.id'),
-            ])
-            ->when($search, function ($q) use ($search) {
-                foreach (preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY) as $term) {
-                    $q->where(function ($match) use ($term) {
-                        $match->where('full_name', 'like', "%{$term}%")
-                            ->orWhere('code', 'like', "%{$term}%")
-                            ->orWhere('phone', 'like', "%{$term}%")
-                            ->orWhere('alternative_phone', 'like', "%{$term}%")
-                            ->orWhere('address', 'like', "%{$term}%");
-                    });
-                }
-            })
+        $customers = $this->customerIndexQuery($search)
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -53,6 +36,33 @@ class CustomerController extends Controller
         ];
 
         return view('customers.index', compact('customers', 'search', 'summary'));
+    }
+
+    public function exportIndexPdf(Request $request)
+    {
+        $search = $request->input('search');
+        $customers = $this->customerIndexQuery($search)
+            ->orderBy('full_name')
+            ->get();
+
+        $headers = ['Code', 'Full Name', 'Phone', 'Address', 'Total Quantity', 'Total Sale', 'Total Paid', 'Total Due'];
+        $rows = $customers->map(fn (Customer $customer) => [
+            $customer->code,
+            $customer->full_name,
+            $customer->phone ?? '-',
+            $customer->address ?? '-',
+            number_format((float) ($customer->total_sell_qty ?? 0), 2),
+            number_format((float) $customer->total_sale, 2),
+            number_format((float) $customer->total_paid, 2),
+            number_format((float) $customer->due, 2),
+        ]);
+
+        return $this->streamPdf(
+            'customers-'.now()->format('Y-m-d-H-i-s').'.pdf',
+            'Inaya Creation - Customers',
+            $headers,
+            $rows
+        );
     }
 
     public function suggestions(Request $request)
@@ -338,6 +348,28 @@ class CustomerController extends Controller
             ->values();
 
         return [$logs, $totalQty];
+    }
+
+    private function customerIndexQuery(?string $search)
+    {
+        return Customer::query()
+            ->addSelect([
+                'total_sell_qty' => DB::table('sale_items')
+                    ->selectRaw('COALESCE(SUM(sale_items.qty), 0)')
+                    ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+                    ->whereColumn('sales.customer_id', 'customers.id'),
+            ])
+            ->when($search, function ($q) use ($search) {
+                foreach (preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY) as $term) {
+                    $q->where(function ($match) use ($term) {
+                        $match->where('full_name', 'like', "%{$term}%")
+                            ->orWhere('code', 'like', "%{$term}%")
+                            ->orWhere('phone', 'like', "%{$term}%")
+                            ->orWhere('alternative_phone', 'like', "%{$term}%")
+                            ->orWhere('address', 'like', "%{$term}%");
+                    });
+                }
+            });
     }
 
     private function logSortAt($date, $createdAt): ?Carbon

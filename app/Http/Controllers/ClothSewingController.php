@@ -156,6 +156,7 @@ class ClothSewingController extends Controller
             ],
             'pdf_url' => route('cloth-sewings.tailors.logs.export', [$tailor, 'format' => 'pdf']),
             'logs' => $this->tailorLogs($tailor)->map(fn ($log) => [
+                'id' => $log['id'],
                 'date' => optional($log['date'])->format('d M Y'),
                 'type' => $log['type'],
                 'product' => $log['product'],
@@ -164,6 +165,7 @@ class ClothSewingController extends Controller
                 'per_piece_rate' => number_format($log['per_piece_rate'], 2),
                 'total_rate' => number_format($log['total_rate'], 2),
                 'note' => $log['note'],
+                'delete_url' => $log['delete_url'],
             ])->values(),
         ]);
     }
@@ -309,6 +311,7 @@ class ClothSewingController extends Controller
     {
         return collect()
             ->merge($tailor->clothSewings()->with('product')->latest('date')->latest()->get()->map(fn ($item) => [
+                'id' => $item->id,
                 'date' => $item->date,
                 'type' => 'Sewing',
                 'product' => $item->product?->product_name ?? '-',
@@ -317,8 +320,10 @@ class ClothSewingController extends Controller
                 'per_piece_rate' => (float) $item->per_piece_rate,
                 'total_rate' => (float) $item->total_rate,
                 'note' => 'Assigned to tailor',
+                'delete_url' => route('cloth-sewings.destroy', $item),
             ]))
             ->merge($tailor->receivedCloths()->with('product')->latest('date')->latest()->get()->map(fn ($item) => [
+                'id' => null,
                 'date' => $item->date,
                 'type' => 'Received',
                 'product' => $item->product?->product_name ?? '-',
@@ -327,6 +332,7 @@ class ClothSewingController extends Controller
                 'per_piece_rate' => 0,
                 'total_rate' => 0,
                 'note' => $item->item_qty < 0 ? 'Received adjustment' : 'Received from tailor',
+                'delete_url' => null,
             ]))
             ->sortByDesc('date')
             ->values();
