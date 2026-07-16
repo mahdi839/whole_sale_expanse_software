@@ -13,6 +13,7 @@ use App\Models\Salary;
 use App\Models\SalaryAdvance;
 use App\Models\Stock;
 use App\Models\StockDistributionItem;
+use App\Models\Shop;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,9 @@ class DashboardController extends Controller
         $dateTo = $request->input('date_to', $today);
         $paymentStatus = $request->input('payment_status');
         $canViewProfit = auth()->user()->hasRole('Super Admin');
-        $shopId = auth()->user()->canManageAllShops() ? null : (auth()->user()->shop_id ?: -1);
+        $shopId = auth()->user()->canManageAllShops()
+            ? ($request->filled('shop_id') ? (int) $request->input('shop_id') : null)
+            : (auth()->user()->shop_id ?: -1);
 
         // ── Base query scopes ────────────────────────────────────────
         $saleScope = function ($q) use ($dateFrom, $dateTo, $paymentStatus, $shopId) {
@@ -41,9 +44,10 @@ class DashboardController extends Controller
                 ->when($dateTo, fn ($q) => $q->whereDate('created_at', '<=', $dateTo));
         };
 
-        $expenseScope = function ($q) use ($dateFrom, $dateTo) {
+        $expenseScope = function ($q) use ($dateFrom, $dateTo, $shopId) {
             $q->when($dateFrom, fn ($q) => $q->whereDate('date', '>=', $dateFrom))
-                ->when($dateTo, fn ($q) => $q->whereDate('date', '<=', $dateTo));
+                ->when($dateTo, fn ($q) => $q->whereDate('date', '<=', $dateTo))
+                ->when($shopId, fn ($q) => $q->where('shop_id', $shopId));
         };
 
         $salaryScope = function ($q) use ($dateFrom, $dateTo) {
@@ -90,7 +94,7 @@ class DashboardController extends Controller
 
         $stats = [
             'total_products' => Product::count(),
-            'total_customers' => Customer::count(),
+            'total_customers' => Customer::when($shopId, fn ($q) => $q->where('shop_id', $shopId))->count(),
             'total_stock_qty' => (float) ($stockValue->total_stock_qty ?? 0),
             'total_stock_cost_value' => (float) ($stockValue->cost_value ?? 0),
             'total_stock_retail_value' => (float) ($stockValue->retail_value ?? 0),
@@ -208,7 +212,7 @@ class DashboardController extends Controller
 
         // ── Low stock alerts ─────────────────────────────────────────
         $lowStock = Stock::with('product')
-            ->when($shopId, fn ($q) => $q->where('shop_id', $shopId), fn ($q) => $q->whereNull('shop_id'))
+            ->when($shopId, fn ($q) => $q->where('shop_id', $shopId))
             ->where('stock_qty', '<=', 10)
             ->orderBy('stock_qty')
             ->limit(6)
@@ -224,7 +228,8 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        $filters = compact('dateFrom', 'dateTo', 'paymentStatus');
+        $filters = compact('dateFrom', 'dateTo', 'paymentStatus', 'shopId');
+        $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect();
 
         return view('dashboard', compact(
             'stats',
@@ -236,6 +241,7 @@ class DashboardController extends Controller
             'recentSales',
             'filters',
             'canViewProfit',
+            'shops',
         ));
     }
 }

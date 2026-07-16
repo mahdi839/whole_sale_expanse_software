@@ -11,6 +11,7 @@ class Customer extends Model
  
     protected $fillable = [
         'code',
+        'shop_id',
         'full_name',
         'phone',
         'alternative_phone',
@@ -67,6 +68,11 @@ class Customer extends Model
     public function sales()
     {
         return $this->hasMany(Sale::class);
+    }
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class);
     }
 
     public function saleReturns()

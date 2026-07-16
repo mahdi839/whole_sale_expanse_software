@@ -244,7 +244,7 @@
                                         <span class="text-gray-400">{{ $item->qty }}</span>
                                     </span>
                                     <span class="shrink-0 text-right text-gray-500 font-mono">
-                                        <span class="block">P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}</span>
+                                        @if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin)<span class="block">P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}</span>@endif
                                         <span class="block">S: {{ number_format($item->price_on_sale, 2) }}/pc</span>
                                     </span>
                                 </div>
@@ -264,7 +264,7 @@
                                                     <span class="text-gray-400">{{ $item->qty }}</span>
                                                 </span>
                                                 <span class="shrink-0 text-right text-gray-500 font-mono">
-                                                    <span class="block">P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}</span>
+                                                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin)<span class="block">P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}</span>@endif
                                                     <span class="block">S: {{ number_format($item->price_on_sale, 2) }}/pc</span>
                                                 </span>
                                             </div>
@@ -399,7 +399,7 @@
                                         <div>
                                             {{ $item->product->product_name }} <span class="text-gray-400">({{ $item->qty }})</span>
                                             <span class="block text-[11px] text-gray-400">
-                                                P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}
+                                                @if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin)P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}@endif
                                                 | S: {{ number_format($item->price_on_sale, 2) }}
                                             </span>
                                         </div>
@@ -416,7 +416,7 @@
                                                     <div>
                                                         {{ $item->product->product_name }} <span class="text-gray-400">({{ $item->qty }})</span>
                                                         <span class="block text-[11px] text-gray-400">
-                                                            P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}
+                                                            @if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin)P: {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}@endif
                                                             | S: {{ number_format($item->price_on_sale, 2) }}
                                                         </span>
                                                     </div>
@@ -429,7 +429,7 @@
                                 <td class="px-4 py-3 text-right text-xs">
                                     @foreach ($sale->items->take(2) as $item)
                                         <div class="text-gray-700 font-mono">
-                                            {{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}</div>
+                                            @if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin){{ number_format($item->cost_price ?? $item->product?->purchase_price ?? 0, 2) }}@endif</div>
                                     @endforeach
                                     @if ($sale->items->count() > 2)
                                         <div class="text-gray-300">See products</div>

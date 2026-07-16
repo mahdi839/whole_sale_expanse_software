@@ -47,7 +47,7 @@
                             <td class="px-4 py-3">{{ $stock->product?->product_name }}</td>
                             <td class="px-4 py-3 font-mono text-xs text-gray-600">{{ $stock->product?->sku ?? '-' }}</td>
                             <td class="px-4 py-3 text-right">{{ number_format($stock->stock_qty, 2) }}</td>
-                            <td class="px-4 py-3 text-right">BDT {{ number_format((float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0), 2) }}</td>
+                            @if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin)<td class="px-4 py-3 text-right">BDT {{ number_format((float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0), 2) }}</td>@endif
                         </tr>
                     @empty
                         <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">{{ $search ? 'No products match your search.' : 'No stock distributed.' }}</td></tr>

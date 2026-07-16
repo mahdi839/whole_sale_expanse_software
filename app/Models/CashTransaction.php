@@ -11,6 +11,7 @@ class CashTransaction extends Model
 
     protected $fillable = [
         'reference',
+        'shop_id',
         'direction',
         'type',
         'amount',
@@ -48,6 +49,11 @@ class CashTransaction extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class);
     }
 
     public function supplier()

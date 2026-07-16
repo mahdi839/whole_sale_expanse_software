@@ -58,6 +58,6 @@ class User extends Authenticatable
 
     public function canManageAllShops(): bool
     {
-        return $this->is_admin || $this->hasRole('Super Admin') || $this->can('manage shops');
+        return $this->is_admin || $this->hasRole('Super Admin');
     }
 }

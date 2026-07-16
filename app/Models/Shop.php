@@ -35,4 +35,19 @@ class Shop extends Model
     {
         return $this->hasMany(Sale::class);
     }
+
+    public function cashTransactions()
+    {
+        return $this->hasMany(CashTransaction::class);
+    }
+
+    public function expenses()
+    {
+        return $this->hasMany(Expense::class);
+    }
+
+    public function customers()
+    {
+        return $this->hasMany(Customer::class);
+    }
 }

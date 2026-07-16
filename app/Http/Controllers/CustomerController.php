@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Shop;
 use App\Support\SimplePdf;
 use DateTimeInterface;
 use Illuminate\Http\Request;
@@ -21,29 +22,33 @@ class CustomerController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $shopId = auth()->user()->canManageAllShops() ? $request->input('shop_id') : auth()->user()->shop_id;
  
-        $customers = $this->customerIndexQuery($search)
+        $customers = $this->customerIndexQuery($search, $shopId)
             ->latest()
             ->paginate(15)
             ->withQueryString();
  
         $summary = [
-            'total_sale' => (float) Customer::sum('total_sale'),
-            'total_paid' => (float) Customer::sum('total_paid'),
-            'total_due' => (float) Customer::sum('due'),
-            'count' => Customer::count(),
+            'total_sale' => (float) Customer::when($shopId, fn ($q) => $q->where('shop_id', $shopId))->sum('total_sale'),
+            'total_paid' => (float) Customer::when($shopId, fn ($q) => $q->where('shop_id', $shopId))->sum('total_paid'),
+            'total_due' => (float) Customer::when($shopId, fn ($q) => $q->where('shop_id', $shopId))->sum('due'),
+            'count' => Customer::when($shopId, fn ($q) => $q->where('shop_id', $shopId))->count(),
             'total_sell_qty' => (float) DB::table('sale_items')
                 ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+                ->when($shopId, fn ($q) => $q->where('sales.shop_id', $shopId))
                 ->sum('sale_items.qty'),
         ];
 
-        return view('customers.index', compact('customers', 'search', 'summary'));
+        $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect();
+        return view('customers.index', compact('customers', 'search', 'summary', 'shops', 'shopId'));
     }
 
     public function exportIndexPdf(Request $request)
     {
         $search = $request->input('search');
-        $customers = $this->customerIndexQuery($search)
+        $shopId = auth()->user()->canManageAllShops() ? $request->input('shop_id') : auth()->user()->shop_id;
+        $customers = $this->customerIndexQuery($search, $shopId)
             ->orderBy('full_name')
             ->get();
 
@@ -75,7 +80,8 @@ class CustomerController extends Controller
             return response()->json([]);
         }
 
-        $query = Customer::query();
+        $query = Customer::query()
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1));
 
         foreach (preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY) as $term) {
             $query->where(function ($match) use ($term) {
@@ -106,7 +112,8 @@ class CustomerController extends Controller
     public function create()
     {
         $nextCode = Customer::generateCode();
-        return view('customers.create', compact('nextCode'));
+        $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect([auth()->user()->shop]);
+        return view('customers.create', compact('nextCode', 'shops'));
     }
  
     // -------------------------------------------------------
@@ -115,6 +122,7 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'shop_id' => 'nullable|exists:shops,id',
             'full_name'  => 'required|string|max:255',
             'phone'      => 'nullable|string|max:20',
             'alternative_phone' => 'nullable|string|max:20',
@@ -123,6 +131,7 @@ class CustomerController extends Controller
             'total_sale' => 'nullable|numeric|min:0',
             'total_paid' => 'nullable|numeric|min:0',
         ]);
+        $validated['shop_id'] = $this->resolveShopId($validated);
  
         $validated['total_sale'] = $validated['total_sale'] ?? 0;
         $validated['total_paid'] = $validated['total_paid'] ?? 0;
@@ -158,12 +167,14 @@ class CustomerController extends Controller
     // -------------------------------------------------------
     public function show(Customer $customer)
     {
+        $this->authorizeShop($customer);
         [$logs, $totalQty] = $this->customerLogs($customer);
         return view('customers.show', compact('customer', 'logs', 'totalQty'));
     }
 
     public function exportTransactions(Customer $customer)
     {
+        $this->authorizeShop($customer);
         [$logs, $totalQty] = $this->customerLogs($customer);
         $headers = ['Date & Time', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due','Note'];
 
@@ -205,7 +216,9 @@ class CustomerController extends Controller
     // -------------------------------------------------------
     public function edit(Customer $customer)
     {
-        return view('customers.edit', compact('customer'));
+        $this->authorizeShop($customer);
+        $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect([auth()->user()->shop]);
+        return view('customers.edit', compact('customer', 'shops'));
     }
  
     // -------------------------------------------------------
@@ -213,7 +226,9 @@ class CustomerController extends Controller
     // -------------------------------------------------------
     public function update(Request $request, Customer $customer)
     {
+        $this->authorizeShop($customer);
         $validated = $request->validate([
+            'shop_id' => 'nullable|exists:shops,id',
             'full_name'  => 'required|string|max:255',
             'phone'      => 'nullable|string|max:20',
             'alternative_phone' => 'nullable|string|max:20',
@@ -222,6 +237,7 @@ class CustomerController extends Controller
             'total_sale' => 'nullable|numeric|min:0',
             'total_paid' => 'nullable|numeric|min:0',
         ]);
+        $validated['shop_id'] = $this->resolveShopId($validated, $customer);
 
         if ($request->hasFile('image')) {
             if ($customer->image) {
@@ -256,6 +272,7 @@ class CustomerController extends Controller
     // -------------------------------------------------------
     public function destroy(Customer $customer)
     {
+        $this->authorizeShop($customer);
         if ($customer->image) {
             Storage::disk('public')->delete($customer->image);
         }
@@ -352,9 +369,10 @@ class CustomerController extends Controller
         return [$logs, $totalQty];
     }
 
-    private function customerIndexQuery(?string $search)
+    private function customerIndexQuery(?string $search, ?int $shopId = null)
     {
         return Customer::query()
+            ->when($shopId, fn ($q) => $q->where('customers.shop_id', $shopId))
             ->addSelect([
                 'total_sell_qty' => DB::table('sale_items')
                     ->selectRaw('COALESCE(SUM(sale_items.qty), 0)')
@@ -372,6 +390,25 @@ class CustomerController extends Controller
                     });
                 }
             });
+    }
+
+    private function resolveShopId(array $validated, ?Customer $customer = null): int
+    {
+        if (auth()->user()->canManageAllShops()) {
+            $shopId = $validated['shop_id'] ?? $customer?->shop_id;
+            abort_unless($shopId, 422, 'Please select a shop.');
+            return (int) $shopId;
+        }
+
+        abort_unless(auth()->user()->shop_id, 403, 'No shop assigned to your user.');
+        return (int) auth()->user()->shop_id;
+    }
+
+    private function authorizeShop(Customer $customer): void
+    {
+        if (! auth()->user()->canManageAllShops()) {
+            abort_unless($customer->shop_id === auth()->user()->shop_id, 403);
+        }
     }
 
     private function logSortAt($date, $createdAt): ?Carbon

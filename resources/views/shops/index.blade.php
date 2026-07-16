@@ -20,7 +20,7 @@
                             </td>
                             <td class="px-4 py-3">{{ $shop->sales_count }}</td>
                             <td class="px-4 py-3 text-right">{{ number_format($shop->stocks->sum('stock_qty'), 2) }}</td>
-                            <td class="px-4 py-3 text-right">BDT {{ number_format($shop->stocks->sum(fn($stock) => (float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0)), 2) }}</td>
+                            @if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin)<td class="px-4 py-3 text-right">BDT {{ number_format($shop->stocks->sum(fn($stock) => (float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0)), 2) }}</td>@endif
                             <td class="px-4 py-3 text-right">
                                 <a href="{{ route('shops.executives', $shop) }}" class="text-green-600">Executives</a>
                                 <a href="{{ route('shops.edit', $shop) }}" class="text-blue-600 ml-2">Edit</a>

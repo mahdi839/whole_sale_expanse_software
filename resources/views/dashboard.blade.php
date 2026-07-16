@@ -7,6 +7,15 @@
         <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
             <form method="GET" action="{{ route('dashboard') }}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-3">
+                    @if(auth()->user()->canManageAllShops())
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 ml-0.5">Shop</label>
+                        <select name="shop_id" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full">
+                            <option value="">All shops</option>
+                            @foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(($filters['shopId'] ?? null) == $shop->id)>{{ $shop->name }}</option>@endforeach
+                        </select>
+                    </div>
+                    @endif
                     <div>
                         <label class="block text-xs text-gray-400 mb-1 ml-0.5">From</label>
                         <input type="date" name="date_from" value="{{ $filters['dateFrom'] }}"

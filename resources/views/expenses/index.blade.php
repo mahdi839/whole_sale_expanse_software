@@ -11,6 +11,9 @@
         <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
             <form method="GET" action="{{ route('expenses.index') }}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-3.5">
+                    @if(auth()->user()->canManageAllShops())
+                    <div><label class="block text-xs font-medium text-gray-500 mb-1">Shop</label><select name="shop_id" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full"><option value="">All shops</option>@foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(($filters['shop_id'] ?? null) == $shop->id)>{{ $shop->name }}</option>@endforeach</select></div>
+                    @endif
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
                         <input type="text"

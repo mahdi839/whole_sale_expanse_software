@@ -1237,7 +1237,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ full_name: name, phone, alternative_phone: alternativePhone, address })
+            body: JSON.stringify({ full_name: name, phone, alternative_phone: alternativePhone, address, shop_id: shopInput?.value })
         });
 
         const data = await res.json();

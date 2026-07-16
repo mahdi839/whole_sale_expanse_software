@@ -10,6 +10,7 @@ use App\Models\GareyMan;
 use App\Models\SalesMan;
 use App\Models\Supplier;
 use App\Models\Tailor;
+use App\Models\Shop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -20,6 +21,7 @@ class CashTransactionController extends Controller
     {
         $today = now()->toDateString();
         $filters = [
+            'shop_id' => $request->input('shop_id'),
             'search' => $request->input('search'),
             'direction' => $request->input('direction'),
             'type' => $request->input('type'),
@@ -28,7 +30,9 @@ class CashTransactionController extends Controller
         ];
 
         $query = CashTransaction::query()
-            ->with(['customer', 'supplier', 'salesMan', 'tailor', 'carryMan', 'computerMan', 'gareyMan'])
+            ->with(['shop', 'customer', 'supplier', 'salesMan', 'tailor', 'carryMan', 'computerMan', 'gareyMan'])
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn ($q) => $q->where('shop_id', $filters['shop_id']))
             ->when($filters['direction'], fn($q) => $q->where('direction', $filters['direction']))
             ->when($filters['type'], fn($q) => $q->where('type', $filters['type']))
             ->when($filters['date_from'], fn($q) => $q->whereDate('date', '>=', $filters['date_from']))
@@ -56,33 +60,39 @@ class CashTransactionController extends Controller
             COALESCE(SUM(CASE WHEN direction = "out" THEN amount ELSE 0 END), 0) as cash_out
         ')->first();
 
-        $overallBalance = CashTransaction::query()->selectRaw('
+        $overallBalance = CashTransaction::query()
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn ($q) => $q->where('shop_id', $filters['shop_id']))
+            ->selectRaw('
             COALESCE(SUM(CASE WHEN direction = "in" THEN amount ELSE -amount END), 0) as balance
         ')->value('balance');
 
         $dateBalance = CashTransaction::query()
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn ($q) => $q->where('shop_id', $filters['shop_id']))
             ->when($filters['date_from'], fn($q) => $q->whereDate('date', '>=', $filters['date_from']))
             ->when($filters['date_to'], fn($q) => $q->whereDate('date', '<=', $filters['date_to']))
             ->selectRaw('
                 COALESCE(SUM(CASE WHEN direction = "in" THEN amount ELSE -amount END), 0) as balance
             ')
             ->value('balance');
-
-        return view('cash_transactions.index', compact('transactions', 'filters', 'totals', 'overallBalance', 'dateBalance'));
+        $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect();
+        return view('cash_transactions.index', compact('transactions', 'filters', 'totals', 'overallBalance', 'dateBalance', 'shops'));
     }
 
     public function create()
     {
         $transaction = new CashTransaction(['date' => now()->toDateString(), 'direction' => 'in', 'type' => 'manual_add']);
-        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
+        $customers = Customer::when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))->orderBy('full_name')->get(['id', 'full_name', 'phone']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'currency', 'due']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
         $tailors = Tailor::orderBy('name')->get(['id', 'name']);
         $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone']);
         $computerMen = ComputerMan::orderBy('name')->get(['id', 'name', 'phone']);
         $gareyMen = GareyMan::orderBy('name')->get(['id', 'name', 'phone']);
+        $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect([auth()->user()->shop]);
 
-        return view('cash_transactions.create', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors', 'carryMen', 'computerMen', 'gareyMen'));
+        return view('cash_transactions.create', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors', 'carryMen', 'computerMen', 'gareyMen', 'shops'));
     }
 
     public function store(Request $request)
@@ -100,19 +110,22 @@ class CashTransactionController extends Controller
         abort_if($cashTransaction->source_type, 403, 'Automatic cash entries are edited from their source document.');
 
         $transaction = $cashTransaction;
-        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
+        $this->authorizeShop($cashTransaction);
+        $customers = Customer::when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))->orderBy('full_name')->get(['id', 'full_name', 'phone']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'currency', 'due']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
         $tailors = Tailor::orderBy('name')->get(['id', 'name']);
         $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone']);
         $computerMen = ComputerMan::orderBy('name')->get(['id', 'name', 'phone']);
         $gareyMen = GareyMan::orderBy('name')->get(['id', 'name', 'phone']);
+        $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect([auth()->user()->shop]);
 
-        return view('cash_transactions.edit', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors', 'carryMen', 'computerMen', 'gareyMen'));
+        return view('cash_transactions.edit', compact('transaction', 'customers', 'suppliers', 'salesMen', 'tailors', 'carryMen', 'computerMen', 'gareyMen', 'shops'));
     }
 
     public function update(Request $request, CashTransaction $cashTransaction)
     {
+        $this->authorizeShop($cashTransaction);
         abort_if($cashTransaction->source_type, 403, 'Automatic cash entries are edited from their source document.');
 
         DB::transaction(function () use ($request, $cashTransaction) {
@@ -126,6 +139,7 @@ class CashTransactionController extends Controller
 
     public function destroy(CashTransaction $cashTransaction)
     {
+        $this->authorizeShop($cashTransaction);
         abort_if($cashTransaction->source_type, 403, 'Automatic cash entries are deleted from their source document.');
 
         DB::transaction(function () use ($cashTransaction) {
@@ -139,6 +153,7 @@ class CashTransactionController extends Controller
     private function validated(Request $request): array
     {
         $data = $request->validate([
+            'shop_id' => 'nullable|exists:shops,id',
             'direction' => ['required', Rule::in(['in', 'out'])],
             'type' => ['required', Rule::in(['manual_add', 'collection', 'manual_out'])],
             'amount' => 'required|numeric|min:0.01',
@@ -161,6 +176,13 @@ class CashTransactionController extends Controller
             'cash_entry_type' => ['nullable', Rule::in(['customer', 'supplier', 'tailor', 'computer', 'carry_man', 'garey_man'])],
             'note' => 'nullable|string|max:2000',
         ]);
+
+        if (auth()->user()->canManageAllShops()) {
+            abort_unless(! empty($data['shop_id']), 422, 'Please select a shop.');
+        } else {
+            abort_unless(auth()->user()->shop_id, 403, 'No shop assigned to your user.');
+            $data['shop_id'] = auth()->user()->shop_id;
+        }
 
         if ($data['type'] === 'manual_add' || $data['type'] === 'collection') {
             $data['direction'] = 'in';
@@ -255,6 +277,13 @@ class CashTransactionController extends Controller
             ]);
             $worker->refresh();
             $worker->recalculateFinancials();
+        }
+    }
+
+    private function authorizeShop(CashTransaction $transaction): void
+    {
+        if (! auth()->user()->canManageAllShops()) {
+            abort_unless($transaction->shop_id === auth()->user()->shop_id, 403);
         }
     }
 }

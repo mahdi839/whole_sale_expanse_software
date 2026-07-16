@@ -15,6 +15,15 @@
 
             <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                    <label class="{{ $labelClass }}">Shop</label>
+                    @if(auth()->user()->canManageAllShops())
+                        <select name="shop_id" required class="{{ $inputClass }}"><option value="">Select shop</option>@foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(old('shop_id', $expense?->shop_id) == $shop->id)>{{ $shop->name }}</option>@endforeach</select>
+                    @else
+                        <input type="hidden" name="shop_id" value="{{ auth()->user()->shop_id }}"><div class="{{ $inputClass }} flex items-center">{{ auth()->user()->shop?->name ?? 'No shop assigned' }}</div>
+                    @endif
+                    @error('shop_id')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                </div>
+                <div>
                     <label class="{{ $labelClass }}">Reference</label>
                     <input type="text"
                            name="reference"
