@@ -446,7 +446,18 @@ class DueManagementController extends Controller
     {
         DB::transaction(function () use ($manualDue) {
             $this->applyManualDue($manualDue, -1);
+            $workerField = match ($manualDue->party_type) {
+                'tailor' => ['tailor_id', Tailor::class],
+                'carry_man' => ['carry_man_id', CarryMan::class],
+                'computer_man' => ['computer_man_id', ComputerMan::class],
+                'garey_man' => ['garey_man_id', GareyMan::class],
+                default => null,
+            };
             $manualDue->delete();
+
+            if ($workerField && $manualDue->{$workerField[0]}) {
+                $workerField[1]::find($manualDue->{$workerField[0]})?->recalculateFinancials();
+            }
         });
 
         return redirect()->route('dues.manual')->with('success', 'Manual due deleted successfully.');
@@ -531,14 +542,7 @@ class DueManagementController extends Controller
             $worker = $modelClass::find($due->{$field});
 
             if ($worker) {
-                $worker->update([
-                    'total_due' => max(0, (float) $worker->total_due + $amount),
-                ]);
-
-                if ($worker instanceof Tailor) {
-                    $worker->refresh();
-                    $worker->recalculateFinancials();
-                }
+                $worker->recalculateFinancials();
             }
         }
     }
