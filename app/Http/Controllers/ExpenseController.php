@@ -63,7 +63,6 @@ class ExpenseController extends Controller
 
         $categories = $this->categories();
         $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect();
-
         return view('expenses.index', compact('expenses', 'filters', 'totals', 'categories', 'shops'));
     }
 
