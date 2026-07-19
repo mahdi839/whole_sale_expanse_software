@@ -39,7 +39,6 @@ class CustomerController extends Controller
                 ->when($shopId, fn ($q) => $q->where('sales.shop_id', $shopId))
                 ->sum('sale_items.qty'),
         ];
-
         $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect();
         return view('customers.index', compact('customers', 'search', 'summary', 'shops', 'shopId'));
     }
@@ -48,6 +47,7 @@ class CustomerController extends Controller
     {
         $search = $request->input('search');
         $shopId = auth()->user()->canManageAllShops() ? $request->input('shop_id') : auth()->user()->shop_id;
+        $related_shop = Shop::find($shopId);
         $customers = $this->customerIndexQuery($search, $shopId)
             ->orderBy('full_name')
             ->get();
@@ -66,7 +66,7 @@ class CustomerController extends Controller
 
         return $this->streamPdf(
             'customers-'.now()->format('Y-m-d-H-i-s').'.pdf',
-            'Inaya Creation - Customers',
+            $related_shop?->name??"Inaya Creation",
             $headers,
             $rows
         );

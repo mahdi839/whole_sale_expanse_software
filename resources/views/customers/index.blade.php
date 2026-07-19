@@ -234,6 +234,7 @@
                     <thead>
                         <tr class="border-b border-gray-100 bg-gray-50/60">
                             <th class="text-left px-5 py-3 font-medium text-gray-500 whitespace-nowrap">Code</th>
+                            <th class="text-left px-5 py-3 font-medium text-gray-500">Shop</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Full Name</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden md:table-cell">Phone</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden xl:table-cell">Address</th>
@@ -253,6 +254,10 @@
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-mono font-medium">
                                         {{ $customer->code }}
                                     </span>
+                                </td>
+
+                                 <td class="px-5 py-3 text-gray-500 hidden xl:table-cell max-w-xs truncate">
+                                    {{ $customer->shop?->name ?? '—' }} - {{ $customer->shop?->code ?? '—' }}
                                 </td>
 
                                 {{-- Name --}}
