@@ -18,6 +18,19 @@
 
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Shop</label>
+        @if(auth()->user()->canManageAllShops())
+            <select name="shop_id" required class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                <option value="">Select shop</option>
+                @foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(old('shop_id', $transaction?->shop_id) == $shop->id)>{{ $shop->name }}</option>@endforeach
+            </select>
+        @else
+            <input type="hidden" name="shop_id" value="{{ auth()->user()->shop_id }}">
+            <div class="h-10 px-3 flex items-center text-sm bg-gray-100 border border-gray-200 rounded-lg">{{ auth()->user()->shop?->name ?? 'No shop assigned' }}</div>
+        @endif
+        @error('shop_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
+    <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Cash Type</label>
         <select name="type" id="cash-type" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
             <option value="manual_add" @selected($selectedType === 'manual_add')>Add money</option>

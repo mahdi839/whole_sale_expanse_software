@@ -259,6 +259,7 @@
 </div>
 
 {{-- Purchase Price --}}
+@if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin)
 <div class="pf-field">
     <label for="purchase_price" class="pf-label">
         Purchase Price<span class="req">*</span>
@@ -280,6 +281,7 @@
     @enderror
     <p class="pf-hint">This price is used for sale profit calculation.</p>
 </div>
+@endif
 
 {{-- Sell Price --}}
 <div class="pf-field">

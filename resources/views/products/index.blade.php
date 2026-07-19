@@ -16,9 +16,14 @@
                                 d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
                         </svg>
                     </span>
-                    <input type="text" name="search" value="{{ $search ?? '' }}"
+                    <input type="text" name="search" list="product-search-suggestions" autocomplete="off" value="{{ $search ?? '' }}"
                         placeholder="Search by name, design code or product code…"
                         class="w-full pl-9 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    <datalist id="product-search-suggestions">
+                        @foreach($suggestedProducts as $suggestion)
+                            <option value="{{ $suggestion->product_name }}">{{ $suggestion->sku }}{{ $suggestion->product_code ? ' · '.$suggestion->product_code : '' }}</option>
+                        @endforeach
+                    </datalist>
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -147,8 +152,8 @@
                         </div>
 
                         <div class="bg-gray-50 rounded-lg p-2">
-                            <p class="text-gray-400">Purchase Price</p>
-                            <p class="mt-1 font-medium text-gray-700">৳{{ number_format($product->purchase_price, 2) }}</p>
+                            @if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin)<p class="text-gray-400">Purchase Price</p>@endif
+                            @if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin)<p class="mt-1 font-medium text-gray-700">৳{{ number_format($product->purchase_price, 2) }}</p>@endif
                         </div>
 
                         <div class="bg-gray-50 rounded-lg p-2">
@@ -231,7 +236,7 @@
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Product Name</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Design Code</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Product Code</th>
-                            <th class="text-right px-5 py-3 font-medium text-gray-500">Purchase Price</th>
+                            @if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin)<th class="text-right px-5 py-3 font-medium text-gray-500">Purchase Price</th>@endif
                             <th class="text-right px-5 py-3 font-medium text-gray-500">Sale Price</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Stock</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden sm:table-cell">Added</th>
@@ -290,7 +295,7 @@
                                 </td>
 
                                 <td class="px-5 py-3 text-right font-medium text-gray-700">
-                                    ৳{{ number_format($product->purchase_price, 2) }}
+                                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->is_admin)৳{{ number_format($product->purchase_price, 2) }}@endif
                                 </td>
 
                                 <td class="px-5 py-3 text-right font-medium text-gray-700">

@@ -28,6 +28,9 @@
         <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
             <form method="GET" action="{{ route('cash-transactions.index') }}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 mb-3.5">
+                    @if(auth()->user()->canManageAllShops())
+                    <select name="shop_id" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg"><option value="">All shops</option>@foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(($filters['shop_id'] ?? null) == $shop->id)>{{ $shop->name }}</option>@endforeach</select>
+                    @endif
                     <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Reference, party, note..."
                         class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                     <input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
@@ -60,6 +63,7 @@
                     <thead>
                         <tr class="border-b bg-gray-50">
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Reference</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Shop</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Type</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Party</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Amount</th>
@@ -78,6 +82,7 @@
                                         <div class="text-xs text-gray-400 mt-1">Auto: {{ str_replace('_', ' ', $transaction->source_type) }}: {{ $transaction->note }}</div>
                                     @endif
                                 </td>
+                                <td class="px-5 py-3">{{ $transaction?->shop?->name??"No Shop Found" }}</td>
                                 <td class="px-5 py-3">{{ ucwords(str_replace('_', ' ', $transaction->type)) }}</td>
                                 <td class="px-5 py-3">
                                     {{ $transaction->customer?->full_name ?? $transaction->supplier?->name ?? $transaction->salesMan?->name ?? $transaction->tailor?->name ?? $transaction->computerMan?->name ?? $transaction->carryMan?->name ?? $transaction->gareyMan?->name ?? '—' }}

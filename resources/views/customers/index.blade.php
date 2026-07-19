@@ -8,6 +8,9 @@
 
             {{-- Search --}}
             <form method="GET" action="{{ route('customers.index') }}" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:max-w-md">
+                @if(auth()->user()->canManageAllShops())
+                    <select name="shop_id" class="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg"><option value="">All shops</option>@foreach($shops as $shop)<option value="{{ $shop->id }}" @selected($shopId == $shop->id)>{{ $shop->name }}</option>@endforeach</select>
+                @endif
                 <div class="relative flex-1">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -231,6 +234,7 @@
                     <thead>
                         <tr class="border-b border-gray-100 bg-gray-50/60">
                             <th class="text-left px-5 py-3 font-medium text-gray-500 whitespace-nowrap">Code</th>
+                            <th class="text-left px-5 py-3 font-medium text-gray-500">Shop</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500">Full Name</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden md:table-cell">Phone</th>
                             <th class="text-left px-5 py-3 font-medium text-gray-500 hidden xl:table-cell">Address</th>
@@ -250,6 +254,10 @@
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-mono font-medium">
                                         {{ $customer->code }}
                                     </span>
+                                </td>
+
+                                 <td class="px-5 py-3 text-gray-500 hidden xl:table-cell max-w-xs truncate">
+                                    {{ $customer->shop?->name ?? '—' }} - {{ $customer->shop?->code ?? '—' }}
                                 </td>
 
                                 {{-- Name --}}

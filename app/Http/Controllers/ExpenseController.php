@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Models\Shop;
 use App\Services\CashLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class ExpenseController extends Controller
     {
         $today = now()->toDateString();
         $filters = [
+            'shop_id' => $request->input('shop_id'),
             'search' => $request->input('search'),
             'category' => $request->input('category'),
             'date_from' => $request->input('date_from', $today),
@@ -22,6 +24,9 @@ class ExpenseController extends Controller
         ];
 
         $expenses = Expense::query()
+            ->with('shop')
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn ($q) => $q->where('shop_id', $filters['shop_id']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
 
@@ -39,6 +44,8 @@ class ExpenseController extends Controller
             ->withQueryString();
 
         $totals = Expense::query()
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn ($q) => $q->where('shop_id', $filters['shop_id']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
 
@@ -55,16 +62,17 @@ class ExpenseController extends Controller
             ->first();
 
         $categories = $this->categories();
-
-        return view('expenses.index', compact('expenses', 'filters', 'totals', 'categories'));
+        $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect();
+        return view('expenses.index', compact('expenses', 'filters', 'totals', 'categories', 'shops'));
     }
 
     public function create()
     {
         $nextReference = Expense::generateReference();
         $categories = $this->categories();
+        $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect([auth()->user()->shop]);
 
-        return view('expenses.create', compact('nextReference', 'categories'));
+        return view('expenses.create', compact('nextReference', 'categories', 'shops'));
     }
 
     public function store(Request $request)
@@ -88,18 +96,22 @@ class ExpenseController extends Controller
 
     public function show(Expense $expense)
     {
+        $this->authorizeShop($expense);
         return view('expenses.show', compact('expense'));
     }
 
     public function edit(Expense $expense)
     {
+        $this->authorizeShop($expense);
         $categories = $this->categories();
+        $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect([auth()->user()->shop]);
 
-        return view('expenses.edit', compact('expense', 'categories'));
+        return view('expenses.edit', compact('expense', 'categories', 'shops'));
     }
 
     public function update(Request $request, Expense $expense)
     {
+        $this->authorizeShop($expense);
         $validated = $this->validateExpense($request, $expense->id);
 
         if ($request->hasFile('document')) {
@@ -121,6 +133,7 @@ class ExpenseController extends Controller
 
     public function destroy(Expense $expense)
     {
+        $this->authorizeShop($expense);
         if ($expense->document) {
             Storage::disk('public')->delete($expense->document);
         }
@@ -146,6 +159,8 @@ class ExpenseController extends Controller
         ];
 
         $expenses = Expense::query()
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
+            ->when(auth()->user()->canManageAllShops() && $request->input('shop_id'), fn ($q) => $q->where('shop_id', $request->input('shop_id')))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
 
@@ -195,7 +210,8 @@ class ExpenseController extends Controller
 
     private function validateExpense(Request $request, ?int $expenseId = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
+            'shop_id' => 'nullable|exists:shops,id',
             'reference' => 'nullable|string|max:50|unique:expenses,reference,' . $expenseId,
             'category' => 'required|string|max:100',
             'amount' => 'required|numeric|min:0.01',
@@ -203,6 +219,15 @@ class ExpenseController extends Controller
             'note' => 'nullable|string|max:2000',
             'document' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx|max:5120',
         ]);
+
+        if (auth()->user()->canManageAllShops()) {
+            abort_unless(! empty($data['shop_id']), 422, 'Please select a shop.');
+        } else {
+            abort_unless(auth()->user()->shop_id, 403, 'No shop assigned to your user.');
+            $data['shop_id'] = auth()->user()->shop_id;
+        }
+
+        return $data;
     }
 
     private function categories(): array
@@ -225,6 +250,14 @@ class ExpenseController extends Controller
         app(CashLedger::class)->syncSource('expense', $expense->id, 'out', 'expense', (float) $expense->amount, [
             'date' => $expense->date?->toDateString() ?? now()->toDateString(),
             'note' => 'Expense: '.$expense->reference.' - '.$expense->category,
+            'shop_id' => $expense->shop_id,
         ]);
+    }
+
+    private function authorizeShop(Expense $expense): void
+    {
+        if (! auth()->user()->canManageAllShops()) {
+            abort_unless($expense->shop_id === auth()->user()->shop_id, 403);
+        }
     }
 }

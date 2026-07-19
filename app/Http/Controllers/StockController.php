@@ -141,8 +141,10 @@ class StockController extends Controller
     {
         return view('stocks.distribute', [
             'products' => Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']),
-            'shops' => Shop::where('is_active', true)->orderBy('name')->get(),
-            'distributions' => StockDistribution::with(['shop', 'items.product', 'receivedBy'])->latest()->get(),
+            'shops' => auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect([auth()->user()->shop]),
+            'distributions' => StockDistribution::with(['shop', 'items.product', 'receivedBy'])
+                ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
+                ->latest()->get(),
         ]);
     }
 
@@ -246,7 +248,7 @@ class StockController extends Controller
     public function storeDistribution(Request $request)
     {
         $validated = $request->validate([
-            'shop_id' => 'required|exists:shops,id',
+            'shop_id' => 'nullable|exists:shops,id',
             'distributor' => 'required|string|max:255',
             'carry_man' => 'required|string|max:255',
             'distribution_date' => 'required|date',
@@ -268,6 +270,13 @@ class StockController extends Controller
             'items.*.product_id' => 'product',
             'items.*.qty' => 'quantity',
         ]);
+
+        if (auth()->user()->canManageAllShops()) {
+            abort_unless(! empty($validated['shop_id']), 422, 'Please select a shop.');
+        } else {
+            abort_unless(auth()->user()->shop_id, 403, 'No shop assigned to your user.');
+            $validated['shop_id'] = auth()->user()->shop_id;
+        }
 
         DB::transaction(function () use ($validated) {
             $distribution = StockDistribution::create([
@@ -308,6 +317,7 @@ class StockController extends Controller
     {
         $distributions = StockDistribution::with(['shop', 'items.product'])
             ->where('status', 'pending')
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
             ->latest()
             ->get();
 
@@ -316,6 +326,7 @@ class StockController extends Controller
 
     public function receiveDistribution(Request $request, StockDistribution $distribution)
     {
+        abort_unless(auth()->user()->canManageAllShops() || $distribution->shop_id === auth()->user()->shop_id, 403);
         if ($distribution->status !== 'pending') {
             return redirect()->route('stocks.distributions.pending')->with('success', 'This stock distribution is already processed.');
         }
@@ -349,6 +360,7 @@ class StockController extends Controller
 
     public function cancelDistribution(Request $request, StockDistribution $distribution)
     {
+        abort_unless(auth()->user()->canManageAllShops() || $distribution->shop_id === auth()->user()->shop_id, 403);
         if ($distribution->status !== 'pending') {
             return redirect()->route('stocks.distributions.pending')->with('success', 'This stock distribution is already processed.');
         }

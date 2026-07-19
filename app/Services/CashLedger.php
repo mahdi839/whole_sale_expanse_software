@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CashTransaction;
+use App\Models\Shop;
 use Illuminate\Support\Carbon;
 
 class CashLedger
@@ -26,6 +27,7 @@ class CashLedger
                 'direction' => $direction,
                 'type' => $type,
                 'amount' => $amount,
+                'shop_id' => $attributes['shop_id'] ?? auth()->user()?->shop_id ?? Shop::orderBy('id')->value('id'),
                 'date' => $attributes['date'] ?? Carbon::today()->toDateString(),
                 'payment_method' => $attributes['payment_method'] ?? null,
                 'customer_id' => $attributes['customer_id'] ?? null,

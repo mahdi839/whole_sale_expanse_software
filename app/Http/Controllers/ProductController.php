@@ -25,9 +25,10 @@ class ProductController extends Controller
         }
 
         $products = $query->latest()->paginate(12)->withQueryString();
+        $suggestedProducts = Product::orderBy('product_name')->limit(100)->get(['product_name', 'sku', 'product_code']);
         $shops = Shop::orderBy('name')->get(['id', 'name', 'code']);
 
-        return view('products.index', compact('products', 'search', 'shops'));
+        return view('products.index', compact('products', 'search', 'shops', 'suggestedProducts'));
     }
 
     public function create()
@@ -38,6 +39,9 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate($this->rules(), $this->messages());
+        if (! auth()->user()->hasRole('Super Admin') && ! auth()->user()->is_admin) {
+            $validated['purchase_price'] = 0;
+        }
 
         $validated['product_code'] = $this->generatedProductCode($validated['product_code'] ?? null);
 
@@ -73,6 +77,9 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $validated = $request->validate($this->rules($product), $this->messages());
+        if (! auth()->user()->hasRole('Super Admin') && ! auth()->user()->is_admin) {
+            unset($validated['purchase_price']);
+        }
 
         if (($validated['product_code'] ?? null) !== $product->product_code) {
             $validated['product_code'] = $this->generatedProductCode($validated['product_code'] ?? null, $product->id);
@@ -157,7 +164,7 @@ class ProductController extends Controller
             'product_name' => 'required|string|max:255',
             'sku' => $skuRule,
             'product_code' => 'nullable|string|max:96',
-            'purchase_price' => 'required|numeric|min:0',
+            'purchase_price' => 'nullable|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:'.self::IMAGE_MAX_KILOBYTES,
             'stock_qty' => 'required|numeric|min:0',

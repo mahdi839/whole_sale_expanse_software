@@ -119,7 +119,7 @@ class SaleController extends Controller
         abort_unless(auth()->user()->canManageAllShops() || auth()->user()->shop_id, 403, 'No shop assigned to your user.');
 
         $nextReference = Sale::generateReference();
-        $customers     = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
+        $customers     = Customer::when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))->orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
         $products      = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
             ->orderBy('product_name')
             ->get(['id', 'product_name', 'sku', 'product_code', 'purchase_price', 'selling_price']);
@@ -152,6 +152,10 @@ class SaleController extends Controller
             );
 
             $shopId = $this->resolveShopId($validated);
+
+            if (! empty($validated['customer_id'])) {
+                abort_unless(Customer::whereKey($validated['customer_id'])->where('shop_id', $shopId)->exists(), 422, 'The selected customer belongs to another shop.');
+            }
 
             $sale = Sale::create([
                 'reference'      => $reference,
@@ -297,6 +301,10 @@ class SaleController extends Controller
 
             $shopId = $this->resolveShopId($validated, $sale);
 
+            if (! empty($validated['customer_id'])) {
+                abort_unless(Customer::whereKey($validated['customer_id'])->where('shop_id', $shopId)->exists(), 422, 'The selected customer belongs to another shop.');
+            }
+
             $sale->update([
                 'shop_id'        => $shopId,
                 'customer_id'    => $validated['customer_id'] ?? null,
@@ -414,7 +422,6 @@ class SaleController extends Controller
             : number_format($totalQty, 2);
         $customerTotalDue = $sale->customer ? (float) $sale->customer->due : null;
         $customerPreviousDue = $sale->customer ? $this->customerDueBeforeSale($sale) : null;
-
         return view('sales.invoice', compact('sale', 'totalQtyDisplay', 'customerTotalDue', 'customerPreviousDue'));
     }
 
@@ -547,6 +554,7 @@ class SaleController extends Controller
             'payment_method' => $sale->payment_method,
             'customer_id' => $sale->customer_id,
             'note' => 'Sale payment: '.$sale->reference,
+            'shop_id' => $sale->shop_id,
         ]);
     }
 

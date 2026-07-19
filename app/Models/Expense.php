@@ -8,6 +8,7 @@ class Expense extends Model
 {
     protected $fillable = [
         'reference',
+        'shop_id',
         'category',
         'sales_man_id',
         'amount',
@@ -32,5 +33,10 @@ class Expense extends Model
     public function salesMan()
     {
         return $this->belongsTo(SalesMan::class);
+    }
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class);
     }
 }

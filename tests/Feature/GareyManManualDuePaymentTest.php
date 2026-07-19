@@ -1,11 +1,13 @@
 <?php
 
 use App\Models\GareyMan;
+use App\Models\Shop;
 use App\Models\User;
 
 it('keeps the unpaid manual due after a partial garey man cash payment', function () {
     $this->withoutMiddleware(\Spatie\Permission\Middleware\PermissionMiddleware::class);
-    $user = User::factory()->create();
+    $shop = Shop::create(['name' => 'Main Shop', 'code' => 'MAIN']);
+    $user = User::factory()->create(['shop_id' => $shop->id]);
     $gareyMan = GareyMan::create(['name' => 'Test Garey Man']);
 
     $this->actingAs($user)
