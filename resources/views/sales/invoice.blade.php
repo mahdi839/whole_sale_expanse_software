@@ -443,9 +443,9 @@
             <div class="company">
                 <img class="inv-logo" src="{{ asset('inaya_creation_logo.jpeg') }}" alt="Inaya Creation Logo">
                 <div>
-                    <h1>Inaya Creation</h1>
-                    <p> Chistia Market,Near Gawsia Market, Dhaka-1205</p>
-                    <p>Phone: +880 01300665793</p>
+                    <h1>{{ $sale?->shop?->name?? "Inaya Creation" }}-{{ $sale?->shop?->code??"" }}</h1>
+                    <p>{{$sale?->shop?->Address?? ""}}</p>
+                    <p>{{$sale?->shop?->phone?? ""}}</p>
                 </div>
             </div>
             <div class="inv-meta">

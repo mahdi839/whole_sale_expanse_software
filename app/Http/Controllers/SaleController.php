@@ -422,7 +422,6 @@ class SaleController extends Controller
             : number_format($totalQty, 2);
         $customerTotalDue = $sale->customer ? (float) $sale->customer->due : null;
         $customerPreviousDue = $sale->customer ? $this->customerDueBeforeSale($sale) : null;
-
         return view('sales.invoice', compact('sale', 'totalQtyDisplay', 'customerTotalDue', 'customerPreviousDue'));
     }
 
