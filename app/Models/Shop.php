@@ -13,6 +13,7 @@ class Shop extends Model
         'name',
         'code',
         'phone',
+        'proprietor_number',
         'address',
         'is_active',
     ];

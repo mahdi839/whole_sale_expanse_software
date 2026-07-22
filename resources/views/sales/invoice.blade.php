@@ -444,8 +444,15 @@
                 <img class="inv-logo" src="{{ asset('inaya_creation_logo.jpeg') }}" alt="Inaya Creation Logo">
                 <div>
                     <h1>{{ $sale?->shop?->name?? "Inaya Creation" }}-{{ $sale?->shop?->code??"" }}</h1>
-                    <p>{{$sale?->shop?->Address?? ""}}</p>
-                    <p>{{$sale?->shop?->phone?? ""}}</p>
+                    @if ($sale?->shop?->address)
+                        <p>{{ $sale->shop->address }}</p>
+                    @endif
+                    @if ($sale?->shop?->phone)
+                        <p>Phone: {{ $sale->shop->phone }}</p>
+                    @endif
+                    @if ($sale?->shop?->proprietor_number)
+                        <p>Proprietor Number: {{ $sale->shop->proprietor_number }}</p>
+                    @endif
                 </div>
             </div>
             <div class="inv-meta">

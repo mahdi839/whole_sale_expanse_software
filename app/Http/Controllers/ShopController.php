@@ -149,6 +149,7 @@ class ShopController extends Controller
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:100|unique:shops,code,'.$shopId,
             'phone' => 'nullable|string|max:50',
+            'proprietor_number' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:1000',
             'is_active' => 'nullable|boolean',
         ]) + ['is_active' => $request->boolean('is_active')];

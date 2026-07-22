@@ -13,6 +13,10 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
             <input name="phone" value="{{ old('phone', $shop->phone) }}" class="w-full border-gray-300 rounded-lg">
         </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Proprietor Number</label>
+            <input name="proprietor_number" value="{{ old('proprietor_number', $shop->proprietor_number) }}" class="w-full border-gray-300 rounded-lg">
+        </div>
         <label class="flex items-center gap-2 mt-7">
             <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $shop->is_active ?? true))>
             <span class="text-sm">Active</span>
