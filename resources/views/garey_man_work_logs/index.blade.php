@@ -8,9 +8,12 @@
                     class="w-full h-10 px-3 text-sm bg-white border border-gray-200 rounded-lg">
                 <button class="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg">Search</button>
             </form>
+            <div class="flex gap-2">
+            @canany(['manage garey man work logs', 'view garey man work logs'])<a href="{{ route('garey-man-work-logs.export.pdf', array_filter(['search' => $search])) }}" class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg">PDF</a>@endcanany
             @canany(['manage garey man work logs', 'create garey man work logs'])
                 <a href="{{ route('garey-man-work-logs.create') }}" class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg">Add Work Log</a>
             @endcanany
+            </div>
         </div>
 
         @if(session('success'))

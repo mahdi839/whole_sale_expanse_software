@@ -50,4 +50,9 @@ class Shop extends Model
     {
         return $this->hasMany(Customer::class);
     }
+
+    public function cheques()
+    {
+        return $this->hasMany(Cheque::class);
+    }
 }

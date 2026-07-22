@@ -125,7 +125,7 @@ class StockController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'stock_qty'  => 'required|numeric|min:0',
+            'stock_qty' => 'required|numeric|min:0',
         ]);
 
         Stock::updateOrCreate(
@@ -134,7 +134,7 @@ class StockController extends Controller
         );
 
         return redirect()->route('stocks.index')
-                         ->with('success', 'Stock created successfully');
+            ->with('success', 'Stock created successfully');
     }
 
     public function distribute()
@@ -197,6 +197,7 @@ class StockController extends Controller
                 }
 
                 $stock->decrement('stock_qty', $qty);
+
                 return;
             }
 
@@ -210,18 +211,21 @@ class StockController extends Controller
     {
         $validated = $request->validate([
             'from_shop_id' => 'required|exists:shops,id|different:to_shop_id',
-            'to_shop_id' => 'required|exists:shops,id',
+            'destination_type' => 'nullable|in:shop,central',
+            'to_shop_id' => 'nullable|required_unless:destination_type,central|exists:shops,id',
             'product_id' => 'required|exists:products,id',
             'qty' => 'required|numeric|min:0.01',
         ], [], [
             'from_shop_id' => 'from shop',
-            'to_shop_id' => 'to shop',
+            'destination_type' => 'destination',
+            'to_shop_id' => 'destination shop',
             'product_id' => 'product',
             'qty' => 'quantity',
         ]);
 
         DB::transaction(function () use ($validated) {
             $qty = (float) $validated['qty'];
+            $destinationType = $validated['destination_type'] ?? 'shop';
             $fromStock = Stock::where('product_id', $validated['product_id'])
                 ->where('shop_id', $validated['from_shop_id'])
                 ->lockForUpdate()
@@ -234,7 +238,10 @@ class StockController extends Controller
             }
 
             $toStock = Stock::firstOrCreate(
-                ['product_id' => $validated['product_id'], 'shop_id' => $validated['to_shop_id']],
+                [
+                    'product_id' => $validated['product_id'],
+                    'shop_id' => $destinationType === 'central' ? null : $validated['to_shop_id'],
+                ],
                 ['stock_qty' => 0]
             );
 
@@ -397,6 +404,7 @@ class StockController extends Controller
     public function show(string $id)
     {
         $stock = Stock::findOrFail($id);
+
         return view('stocks.show', compact('stock'));
     }
 
@@ -420,16 +428,16 @@ class StockController extends Controller
 
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'stock_qty'  => 'required|numeric|min:0',
+            'stock_qty' => 'required|numeric|min:0',
         ]);
 
         $stock->update([
             'product_id' => $request->product_id,
-            'stock_qty'  => $request->stock_qty,
+            'stock_qty' => $request->stock_qty,
         ]);
 
         return redirect()->route('stocks.index')
-                         ->with('success', 'Stock updated successfully');
+            ->with('success', 'Stock updated successfully');
     }
 
     /**
@@ -441,6 +449,6 @@ class StockController extends Controller
         $stock->delete();
 
         return redirect()->route('stocks.index')
-                         ->with('success', 'Stock deleted successfully');
+            ->with('success', 'Stock deleted successfully');
     }
 }

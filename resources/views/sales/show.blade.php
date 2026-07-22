@@ -23,19 +23,19 @@
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
-                        <thead><tr class="border-b"><th class="text-left py-2">Product</th><th class="text-right w-24">Qty</th><th class="text-right w-32">Unit price</th><th class="text-right w-32">Total</th></tr></thead>
+                        <thead><tr class="border-b"><th class="text-left py-2">Product</th><th class="text-left py-2">Design Code</th><th class="text-right w-24">Qty</th><th class="text-right w-32">Unit price</th><th class="text-right w-32">Total</th></tr></thead>
                         <tbody>
                             @foreach($sale->items as $item)
-                                <tr class="border-b"><td class="py-2">{{ $item->product->product_name }}</td><td class="text-right">{{ number_format($item->qty, 2) }}</td><td class="text-right">৳{{ number_format($item->price_on_sale, 2) }}</td><td class="text-right">৳{{ number_format($item->line_total, 2) }}</td></tr>
+                                <tr class="border-b"><td class="py-2">{{ $item->product->product_name }}</td><td class="py-2 font-mono text-xs text-gray-600">{{ $item->product->sku ?: ($item->product->product_code ?: '-') }}</td><td class="text-right">{{ number_format($item->qty, 2) }}</td><td class="text-right">৳{{ number_format($item->price_on_sale, 2) }}</td><td class="text-right">৳{{ number_format($item->line_total, 2) }}</td></tr>
                             @endforeach
                         </tbody>
                         <tfoot>
-                            <tr><td colspan="3" class="text-right pt-3 font-medium">Subtotal</td><td class="text-right pt-3">৳{{ number_format($sale->items->sum('line_total'), 2) }}</td></tr>
-                            <tr><td colspan="3" class="text-right">Discount</td><td class="text-right text-red-600">- ৳{{ number_format($sale->discount, 2) }}</td></tr>
-                            <tr><td colspan="3" class="text-right">Add Money</td><td class="text-right text-indigo-600">+ ৳{{ number_format($sale->add_money, 2) }}</td></tr>
-                            <tr><td colspan="3" class="text-right font-bold">Grand Total</td><td class="text-right font-bold text-blue-600">৳{{ number_format($sale->grand_total, 2) }}</td></tr>
-                            <tr><td colspan="3" class="text-right text-green-600">Paid</td><td class="text-right text-green-600">৳{{ number_format($sale->paid, 2) }}</td></tr>
-                            <tr><td colspan="3" class="text-right text-red-600">Due</td><td class="text-right text-red-600">৳{{ number_format($sale->due, 2) }}</td></tr>
+                            <tr><td colspan="4" class="text-right pt-3 font-medium">Subtotal</td><td class="text-right pt-3">৳{{ number_format($sale->items->sum('line_total'), 2) }}</td></tr>
+                            <tr><td colspan="4" class="text-right">Discount</td><td class="text-right text-red-600">- ৳{{ number_format($sale->discount, 2) }}</td></tr>
+                            <tr><td colspan="4" class="text-right">Add Money</td><td class="text-right text-indigo-600">+ ৳{{ number_format($sale->add_money, 2) }}</td></tr>
+                            <tr><td colspan="4" class="text-right font-bold">Grand Total</td><td class="text-right font-bold text-blue-600">৳{{ number_format($sale->grand_total, 2) }}</td></tr>
+                            <tr><td colspan="4" class="text-right text-green-600">Paid</td><td class="text-right text-green-600">৳{{ number_format($sale->paid, 2) }}</td></tr>
+                            <tr><td colspan="4" class="text-right text-red-600">Due</td><td class="text-right text-red-600">৳{{ number_format($sale->due, 2) }}</td></tr>
                         </tfoot>
                     </table>
                 </div>

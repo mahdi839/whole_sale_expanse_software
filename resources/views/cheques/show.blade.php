@@ -6,6 +6,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div><span class="text-gray-400">Cheque No</span><div class="font-medium">{{ $cheque->cheque_no }}</div></div>
                 <div><span class="text-gray-400">Customer</span><div class="font-medium">{{ $cheque->customer?->full_name }}</div></div>
+                <div><span class="text-gray-400">Shop</span><div class="font-medium">{{ $cheque->shop?->name ?? '-' }}</div></div>
                 <div><span class="text-gray-400">Bank</span><div class="font-medium">{{ $cheque->bank }}</div></div>
                 <div><span class="text-gray-400">Amount</span><div class="font-medium">৳{{ number_format($cheque->amount, 2) }}</div></div>
                 <div><span class="text-gray-400">Issue Date</span><div class="font-medium">{{ $cheque->issue_date?->format('d M Y') }}</div></div>

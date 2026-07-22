@@ -6,7 +6,7 @@
 
         <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
             <form method="GET" action="{{ route('cheques.index') }}">
-                <div class="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-2.5 mb-3.5">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3.5">
                     <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Cheque no, customer, bank, note..."
                         class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                     <select name="status" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
@@ -14,6 +14,12 @@
                         <option value="pending" @selected(($filters['status'] ?? '') === 'pending')>Pending</option>
                         <option value="received" @selected(($filters['status'] ?? '') === 'received')>Received</option>
                     </select>
+                    @if(auth()->user()->canManageAllShops())
+                        <select name="shop_id" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                            <option value="">All shops</option>
+                            @foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(($filters['shop_id'] ?? '') == $shop->id)>{{ $shop->name }}</option>@endforeach
+                        </select>
+                    @endif
                 </div>
                 <div class="flex flex-col sm:flex-row gap-2">
                     <button class="h-10 px-4 bg-gray-800 text-white rounded-lg text-sm">Filter</button>
@@ -32,6 +38,7 @@
                         <tr class="border-b bg-gray-50">
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase">Cheque No</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase">Customer</th>
+                            @if(auth()->user()->canManageAllShops())<th class="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase">Shop</th>@endif
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase">Bank</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400 uppercase">Amount</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase">Issue</th>
@@ -50,6 +57,7 @@
                                     @endif
                                 </td>
                                 <td class="px-5 py-3">{{ $cheque->customer?->full_name }}</td>
+                                @if(auth()->user()->canManageAllShops())<td class="px-5 py-3">{{ $cheque->shop?->name ?? '-' }}</td>@endif
                                 <td class="px-5 py-3">{{ $cheque->bank }}</td>
                                 <td class="px-5 py-3 text-right font-semibold">৳{{ number_format($cheque->amount, 2) }}</td>
                                 <td class="px-5 py-3">{{ $cheque->issue_date?->format('d M Y') }}</td>
@@ -73,7 +81,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="px-5 py-16 text-center text-gray-400">No cheques found.</td></tr>
+                            <tr><td colspan="{{ auth()->user()->canManageAllShops() ? 9 : 8 }}" class="px-5 py-16 text-center text-gray-400">No cheques found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

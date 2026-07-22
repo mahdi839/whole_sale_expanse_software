@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CarryMan;
+use App\Support\WorkerProfilePdf;
 use Illuminate\Http\Request;
 
 class CarryManController extends Controller
@@ -28,7 +29,7 @@ class CarryManController extends Controller
 
     public function create()
     {
-        return view('carry_men.create', ['carryMan' => new CarryMan()]);
+        return view('carry_men.create', ['carryMan' => new CarryMan]);
     }
 
     public function store(Request $request)
@@ -66,6 +67,13 @@ class CarryManController extends Controller
         $carryMan->update($this->validated($request));
 
         return redirect()->route('carry-men.index')->with('success', 'Carry man profile updated successfully.');
+    }
+
+    public function exportPdf(CarryMan $carryMan)
+    {
+        $workLogs = $carryMan->workLogs()->latest('date')->latest()->get();
+
+        return WorkerProfilePdf::download($carryMan, 'Carry Man Profile and Work Logs', 'carry', $workLogs);
     }
 
     public function destroy(CarryMan $carryMan)

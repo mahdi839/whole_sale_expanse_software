@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Customer;
 use App\Models\CashTransaction;
+use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\ManualDue;
 use App\Models\Product;
+use App\Models\PurchaseItem;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SaleReturn;
@@ -26,20 +27,20 @@ class SaleController extends Controller
     {
         $today = now()->toDateString();
         $filters = [
-            'shop_id'        => $request->input('shop_id'),
+            'shop_id' => $request->input('shop_id'),
             'payment_status' => $request->input('payment_status'),
-            'status'         => $request->input('status'),
-            'search'         => $request->input('search'),
-            'date_from'      => $request->input('date_from', $today),
-            'date_to'        => $request->input('date_to', $today),
+            'status' => $request->input('status'),
+            'search' => $request->input('search'),
+            'date_from' => $request->input('date_from', $today),
+            'date_to' => $request->input('date_to', $today),
         ];
 
         $sales = Sale::query()
             ->with(['customer', 'items.product', 'shop'])
-            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('shop_id', auth()->user()->shop_id))
-            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn($q) => $q->where('shop_id', $filters['shop_id']))
-            ->when($filters['payment_status'], fn($q) => $q->where('payment_status', $filters['payment_status']))
-            ->when($filters['status'], fn($q) => $q->where('status', $filters['status']))
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn ($q) => $q->where('shop_id', $filters['shop_id']))
+            ->when($filters['payment_status'], fn ($q) => $q->where('payment_status', $filters['payment_status']))
+            ->when($filters['status'], fn ($q) => $q->where('status', $filters['status']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
                 $q->where(function ($sub) use ($s) {
@@ -48,21 +49,21 @@ class SaleController extends Controller
                         ->orWhere('bank', 'like', "%{$s}%")
                         ->orWhere('bank_details', 'like', "%{$s}%")
                         ->orWhere('bell_no', 'like', "%{$s}%")
-                        ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
-                        ->orWhereHas('items.product', fn($p) => $p->where('product_name', 'like', "%{$s}%"));
+                        ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', "%{$s}%"))
+                        ->orWhereHas('items.product', fn ($p) => $p->where('product_name', 'like', "%{$s}%"));
                 });
             })
-            ->when($filters['date_from'], fn($q) => $q->whereDate('created_at', '>=', $filters['date_from']))
-            ->when($filters['date_to'], fn($q) => $q->whereDate('created_at', '<=', $filters['date_to']))
+            ->when($filters['date_from'], fn ($q) => $q->whereDate('created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn ($q) => $q->whereDate('created_at', '<=', $filters['date_to']))
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
         $totalsQuery = Sale::query()
-            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('shop_id', auth()->user()->shop_id))
-            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn($q) => $q->where('shop_id', $filters['shop_id']))
-            ->when($filters['payment_status'], fn($q) => $q->where('payment_status', $filters['payment_status']))
-            ->when($filters['status'], fn($q) => $q->where('status', $filters['status']))
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn ($q) => $q->where('shop_id', $filters['shop_id']))
+            ->when($filters['payment_status'], fn ($q) => $q->where('payment_status', $filters['payment_status']))
+            ->when($filters['status'], fn ($q) => $q->where('status', $filters['status']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
                 $q->where(function ($sub) use ($s) {
@@ -71,12 +72,12 @@ class SaleController extends Controller
                         ->orWhere('bank', 'like', "%{$s}%")
                         ->orWhere('bank_details', 'like', "%{$s}%")
                         ->orWhere('bell_no', 'like', "%{$s}%")
-                        ->orWhereHas('customer', fn($c) => $c->where('full_name', 'like', "%{$s}%"))
-                        ->orWhereHas('items.product', fn($p) => $p->where('product_name', 'like', "%{$s}%"));
+                        ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', "%{$s}%"))
+                        ->orWhereHas('items.product', fn ($p) => $p->where('product_name', 'like', "%{$s}%"));
                 });
             })
-            ->when($filters['date_from'], fn($q) => $q->whereDate('created_at', '>=', $filters['date_from']))
-            ->when($filters['date_to'], fn($q) => $q->whereDate('created_at', '<=', $filters['date_to']));
+            ->when($filters['date_from'], fn ($q) => $q->whereDate('created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn ($q) => $q->whereDate('created_at', '<=', $filters['date_to']));
 
         $totals = $totalsQuery->selectRaw('
             count(*)         as total_sales,
@@ -89,22 +90,24 @@ class SaleController extends Controller
 
         $totals->total_sell_qty = (float) SaleItem::query()
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('sales.shop_id', auth()->user()->shop_id))
-            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn($q) => $q->where('sales.shop_id', $filters['shop_id']))
-            ->when($filters['payment_status'], fn($q) => $q->where('sales.payment_status', $filters['payment_status']))
-            ->when($filters['status'], fn($q) => $q->where('sales.status', $filters['status']))
-            ->when($filters['date_from'], fn($q) => $q->whereDate('sales.created_at', '>=', $filters['date_from']))
-            ->when($filters['date_to'], fn($q) => $q->whereDate('sales.created_at', '<=', $filters['date_to']))
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('sales.shop_id', auth()->user()->shop_id))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn ($q) => $q->where('sales.shop_id', $filters['shop_id']))
+            ->when($filters['payment_status'], fn ($q) => $q->where('sales.payment_status', $filters['payment_status']))
+            ->when($filters['status'], fn ($q) => $q->where('sales.status', $filters['status']))
+            ->when($filters['date_from'], fn ($q) => $q->whereDate('sales.created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn ($q) => $q->whereDate('sales.created_at', '<=', $filters['date_to']))
             ->sum('sale_items.qty');
 
         $totals->total_stock = (float) Stock::when(
             ! auth()->user()->canManageAllShops(),
-            fn($q) => $q->where('shop_id', auth()->user()->shop_id)
+            fn ($q) => $q->where('shop_id', auth()->user()->shop_id)
         )->sum('stock_qty');
 
         $totals->total_expense = (float) Expense::query()
-            ->when($filters['date_from'], fn($q) => $q->whereDate('date', '>=', $filters['date_from']))
-            ->when($filters['date_to'], fn($q) => $q->whereDate('date', '<=', $filters['date_to']))
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn ($q) => $q->where('shop_id', $filters['shop_id']))
+            ->when($filters['date_from'], fn ($q) => $q->whereDate('date', '>=', $filters['date_from']))
+            ->when($filters['date_to'], fn ($q) => $q->whereDate('date', '<=', $filters['date_to']))
             ->sum('amount');
 
         $shops = auth()->user()->canManageAllShops()
@@ -119,8 +122,8 @@ class SaleController extends Controller
         abort_unless(auth()->user()->canManageAllShops() || auth()->user()->shop_id, 403, 'No shop assigned to your user.');
 
         $nextReference = Sale::generateReference();
-        $customers     = Customer::when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))->orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
-        $products      = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
+        $customers = Customer::when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))->orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
+        $products = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
             ->orderBy('product_name')
             ->get(['id', 'product_name', 'sku', 'product_code', 'purchase_price', 'selling_price']);
         $returnableSales = $this->returnableSales();
@@ -137,9 +140,9 @@ class SaleController extends Controller
 
         DB::transaction(function () use ($request, $validated) {
 
-            $reference  = $validated['reference'] ?? Sale::generateReference();
+            $reference = $validated['reference'] ?? Sale::generateReference();
             $itemsInput = $request->input('items', []);
-            $itemsTotal = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
+            $itemsTotal = collect($itemsInput)->sum(fn ($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
             $addMoney = (float) ($validated['add_money'] ?? 0);
             $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0) + $addMoney;
             $returnAmount = $this->validatedReturnItems($request->input('returns', []))->sum('line_total');
@@ -158,48 +161,48 @@ class SaleController extends Controller
             }
 
             $sale = Sale::create([
-                'reference'      => $reference,
-                'shop_id'        => $shopId,
-                'user_id'        => auth()->id(),
-                'customer_id'    => $validated['customer_id'] ?? null,
-                'discount'       => $validated['discount'] ?? 0,
-                'add_money'      => $addMoney,
-                'grand_total'    => $grandTotal,
-                'paid'           => $paid,
-                'due'            => $due,
-                'return_amount'  => $returnAmount,
-                'cash_memo'      => $validated['cash_memo'] ?? null,
-                'bell_no'        => $validated['bell_no'] ?? null,
+                'reference' => $reference,
+                'shop_id' => $shopId,
+                'user_id' => auth()->id(),
+                'customer_id' => $validated['customer_id'] ?? null,
+                'discount' => $validated['discount'] ?? 0,
+                'add_money' => $addMoney,
+                'grand_total' => $grandTotal,
+                'paid' => $paid,
+                'due' => $due,
+                'return_amount' => $returnAmount,
+                'cash_memo' => $validated['cash_memo'] ?? null,
+                'bell_no' => $validated['bell_no'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
-                'bank'           => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank'] ?? null) : null,
-                'bank_details'   => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank_details'] ?? null) : null,
+                'bank' => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank'] ?? null) : null,
+                'bank_details' => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank_details'] ?? null) : null,
                 'payment_status' => $validated['payment_status'],
-                'status'         => 'success',
-                'note'           => $validated['note'] ?? null,
+                'status' => 'success',
+                'note' => $validated['note'] ?? null,
             ]);
 
             foreach ($itemsInput as $item) {
-                $product   = Product::findOrFail($item['product_id']);
-                $qty       = (float) $item['qty'];
-                $price     = (float) $item['price_on_sale'];
+                $product = Product::findOrFail($item['product_id']);
+                $qty = (float) $item['qty'];
+                $price = (float) $item['price_on_sale'];
                 $lineTotal = $qty * $price;
                 $purchaseItem = $this->resolvePurchaseItem($product->id, $item['purchase_item_id'] ?? null);
-               
-                $costPrice  = (float) ($product->purchase_price ?? 0);
-                $profit     = $price - $costPrice;
+
+                $costPrice = (float) ($product->purchase_price ?? 0);
+                $profit = $price - $costPrice;
                 $lineProfit = $profit * $qty;
 
                 SaleItem::create([
-                    'sale_id'       => $sale->id,
-                    'product_id'    => $product->id,
+                    'sale_id' => $sale->id,
+                    'product_id' => $product->id,
                     'purchase_item_id' => $purchaseItem?->id,
-                    'batch'         => $purchaseItem?->batch,
-                    'qty'           => $qty,
+                    'batch' => $purchaseItem?->batch,
+                    'qty' => $qty,
                     'price_on_sale' => $price,
-                    'cost_price'    => $costPrice,
-                    'profit'        => $profit,
-                    'line_total'    => $lineTotal,
-                    'line_profit'   => $lineProfit,
+                    'cost_price' => $costPrice,
+                    'profit' => $profit,
+                    'line_total' => $lineTotal,
+                    'line_profit' => $lineProfit,
                 ]);
 
                 $stock = Stock::firstOrCreate(
@@ -208,7 +211,7 @@ class SaleController extends Controller
                 );
                 if ((float) $stock->stock_qty < $qty) {
                     throw ValidationException::withMessages([
-                        'items' => 'Not enough stock in this shop for ' . $product->product_name . '.',
+                        'items' => 'Not enough stock in this shop for '.$product->product_name.'.',
                     ]);
                 }
                 $stock->decrement('stock_qty', $qty);
@@ -244,7 +247,7 @@ class SaleController extends Controller
         $this->authorizeSaleShop($sale);
         $sale->load('items.product.stocks', 'appliedReturns.items.product', 'appliedReturns.sale');
         $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
-        $products  = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
+        $products = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
             ->orderBy('product_name')
             ->get(['id', 'product_name', 'sku', 'product_code', 'purchase_price', 'selling_price']);
         $returnableSales = $this->returnableSales($sale);
@@ -287,7 +290,7 @@ class SaleController extends Controller
             $sale->items()->delete();
 
             $itemsInput = $request->input('items', []);
-            $itemsTotal = collect($itemsInput)->sum(fn($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
+            $itemsTotal = collect($itemsInput)->sum(fn ($i) => (float) $i['qty'] * (float) $i['price_on_sale']);
             $addMoney = (float) ($validated['add_money'] ?? 0);
             $grandTotal = $itemsTotal - (float) ($validated['discount'] ?? 0) + $addMoney;
             $returnAmount = $this->validatedReturnItems($request->input('returns', []))->sum('line_total');
@@ -306,44 +309,44 @@ class SaleController extends Controller
             }
 
             $sale->update([
-                'shop_id'        => $shopId,
-                'customer_id'    => $validated['customer_id'] ?? null,
-                'discount'       => $validated['discount'] ?? 0,
-                'add_money'      => $addMoney,
-                'grand_total'    => $grandTotal,
-                'paid'           => $paid,
-                'due'            => $due,
-                'return_amount'  => $returnAmount,
-                'cash_memo'      => $validated['cash_memo'] ?? null,
-                'bell_no'        => $validated['bell_no'] ?? null,
+                'shop_id' => $shopId,
+                'customer_id' => $validated['customer_id'] ?? null,
+                'discount' => $validated['discount'] ?? 0,
+                'add_money' => $addMoney,
+                'grand_total' => $grandTotal,
+                'paid' => $paid,
+                'due' => $due,
+                'return_amount' => $returnAmount,
+                'cash_memo' => $validated['cash_memo'] ?? null,
+                'bell_no' => $validated['bell_no'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
-                'bank'           => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank'] ?? null) : null,
-                'bank_details'   => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank_details'] ?? null) : null,
+                'bank' => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank'] ?? null) : null,
+                'bank_details' => ($validated['payment_method'] ?? null) === 'Bank' ? ($validated['bank_details'] ?? null) : null,
                 'payment_status' => $validated['payment_status'],
-                'note'           => $validated['note'] ?? null,
+                'note' => $validated['note'] ?? null,
             ]);
 
             foreach ($itemsInput as $item) {
                 $product = Product::findOrFail($item['product_id']);
-                $qty     = (float) $item['qty'];
-                $price   = (float) $item['price_on_sale'];
+                $qty = (float) $item['qty'];
+                $price = (float) $item['price_on_sale'];
 
                 $purchaseItem = $this->resolvePurchaseItem($product->id, $item['purchase_item_id'] ?? null);
-                $costPrice  = (float) ($product->purchase_price ?? 0);
-                $profit     = $price - $costPrice;
+                $costPrice = (float) ($product->purchase_price ?? 0);
+                $profit = $price - $costPrice;
                 $lineProfit = $profit * $qty;
 
                 SaleItem::create([
-                    'sale_id'       => $sale->id,
-                    'product_id'    => $product->id,
+                    'sale_id' => $sale->id,
+                    'product_id' => $product->id,
                     'purchase_item_id' => $purchaseItem?->id,
-                    'batch'         => $purchaseItem?->batch,
-                    'qty'           => $qty,
+                    'batch' => $purchaseItem?->batch,
+                    'qty' => $qty,
                     'price_on_sale' => $price,
-                    'cost_price'    => $costPrice,
-                    'profit'        => $profit,
-                    'line_total'    => $qty * $price,
-                    'line_profit'   => $lineProfit,
+                    'cost_price' => $costPrice,
+                    'profit' => $profit,
+                    'line_total' => $qty * $price,
+                    'line_profit' => $lineProfit,
                 ]);
                 $stock = Stock::firstOrCreate(
                     ['product_id' => $product->id, 'shop_id' => $shopId],
@@ -351,7 +354,7 @@ class SaleController extends Controller
                 );
                 if ((float) $stock->stock_qty < $qty) {
                     throw ValidationException::withMessages([
-                        'items' => 'Not enough stock in this shop for ' . $product->product_name . '.',
+                        'items' => 'Not enough stock in this shop for '.$product->product_name.'.',
                     ]);
                 }
                 $stock->decrement('stock_qty', $qty);
@@ -416,26 +419,27 @@ class SaleController extends Controller
     {
         $this->authorizeSaleShop($sale);
         $sale->load(['customer', 'items.product', 'shop', 'appliedReturns.items.product', 'appliedReturns.sale']);
-        $totalQty = $sale->items->sum(fn($item) => (float) $item->qty);
+        $totalQty = $sale->items->sum(fn ($item) => (float) $item->qty);
         $totalQtyDisplay = floor($totalQty) == $totalQty
             ? number_format($totalQty, 0)
             : number_format($totalQty, 2);
         $customerTotalDue = $sale->customer ? (float) $sale->customer->due : null;
         $customerPreviousDue = $sale->customer ? $this->customerDueBeforeSale($sale) : null;
+
         return view('sales.invoice', compact('sale', 'totalQtyDisplay', 'customerTotalDue', 'customerPreviousDue'));
     }
 
     public function exportCsv(Request $request)
     {
-        $fileName = 'sales-' . now()->format('Y-m-d-H-i-s') . (request('format') === 'pdf' ? '.pdf' : '.csv');
+        $fileName = 'sales-'.now()->format('Y-m-d-H-i-s').(request('format') === 'pdf' ? '.pdf' : '.csv');
 
         $sales = Sale::with(['customer', 'items.product', 'shop'])
-            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('shop_id', auth()->user()->shop_id))
-            ->when(auth()->user()->canManageAllShops() && $request->shop_id, fn($q) => $q->where('shop_id', $request->shop_id))
-            ->when($request->payment_status, fn($q) => $q->where('payment_status', $request->payment_status))
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->when($request->date_from, fn($q) => $q->whereDate('created_at', '>=', $request->date_from))
-            ->when($request->date_to, fn($q) => $q->whereDate('created_at', '<=', $request->date_to))
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id))
+            ->when(auth()->user()->canManageAllShops() && $request->shop_id, fn ($q) => $q->where('shop_id', $request->shop_id))
+            ->when($request->payment_status, fn ($q) => $q->where('payment_status', $request->payment_status))
+            ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->when($request->date_from, fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
+            ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->latest()->get();
 
         $headers = [
@@ -458,14 +462,14 @@ class SaleController extends Controller
 
         $rows = $sales->map(function ($sale) {
             $productsSummary = $sale->items->map(
-                fn($i) => $i->product->product_name . ' x' . $i->qty . ' @' . $i->price_on_sale
+                fn ($i) => $i->product->product_name.' x'.$i->qty.' @'.$i->price_on_sale
             )->implode(' | ');
 
             return [
                 $sale->reference,
                 $sale->customer?->full_name,
                 $productsSummary,
-                $sale->items->sum(fn($item) => (float) $item->qty),
+                $sale->items->sum(fn ($item) => (float) $item->qty),
                 $sale->grand_total,
                 $sale->discount,
                 $sale->add_money,
@@ -487,9 +491,9 @@ class SaleController extends Controller
                     $qty = (float) $item->qty;
 
                     return ($item->product?->product_name ?? 'Product #'.$item->product_id)
-                        . ' | Qty: ' . rtrim(rtrim(number_format($qty, 2), '0'), '.')
-                        . ' | Unit: ' . number_format($unitPrice, 2)
-                        . ' | Line: ' . number_format($qty * $unitPrice, 2);
+                        .' | Qty: '.rtrim(rtrim(number_format($qty, 2), '0'), '.')
+                        .' | Unit: '.number_format($unitPrice, 2)
+                        .' | Line: '.number_format($qty * $unitPrice, 2);
                 })->implode("\n");
 
                 return [
@@ -498,10 +502,10 @@ class SaleController extends Controller
                     $sale->customer?->full_name,
                     $products,
                     number_format((float) $sale->return_amount, 2),
-                    'Status: ' . ucfirst((string) $sale->payment_status)
-                        . "\nPaid: " . number_format((float) $sale->paid, 2)
-                        . "\nDue: " . number_format((float) $sale->due, 2)
-                        . "\nGrand: " . number_format((float) $sale->grand_total, 2),
+                    'Status: '.ucfirst((string) $sale->payment_status)
+                        ."\nPaid: ".number_format((float) $sale->paid, 2)
+                        ."\nDue: ".number_format((float) $sale->due, 2)
+                        ."\nGrand: ".number_format((float) $sale->grand_total, 2),
                 ];
             })->values();
 
@@ -510,7 +514,7 @@ class SaleController extends Controller
 
             return Response::make(SimplePdf::table('Inaya Creation - All Sales', $pdfHeaders, $pdfRows, $pdfWidths), 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+                'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
             ]);
         }
 
@@ -525,8 +529,8 @@ class SaleController extends Controller
         };
 
         return Response::stream($callback, 200, [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
     }
 
@@ -535,10 +539,10 @@ class SaleController extends Controller
     private function resolvePaymentAmounts(string $status, float $grandTotal, float $paidInput): array
     {
         return match ($status) {
-            'paid'    => [$grandTotal, 0],
-            'due'     => [0, $grandTotal],
+            'paid' => [$grandTotal, 0],
+            'due' => [0, $grandTotal],
             'partial' => [min($paidInput, $grandTotal), max(0, $grandTotal - $paidInput)],
-            default   => [0, $grandTotal],
+            default => [0, $grandTotal],
         };
     }
 
@@ -546,6 +550,7 @@ class SaleController extends Controller
     {
         if (strtolower((string) $sale->payment_method) !== 'cash' || (float) $sale->paid <= 0) {
             app(CashLedger::class)->deleteSource('sale', $sale->id);
+
             return;
         }
 
@@ -599,18 +604,18 @@ class SaleController extends Controller
         return max(0, (float) ($saleTotals->total_sale ?? 0) + $manualDue - $returnTotal - (float) ($saleTotals->total_paid ?? 0) - $cashPaid);
     }
 
-    private function resolvePurchaseItem(int $productId, ?int $purchaseItemId): ?\App\Models\PurchaseItem
+    private function resolvePurchaseItem(int $productId, ?int $purchaseItemId): ?PurchaseItem
     {
         if ($purchaseItemId) {
-            return \App\Models\PurchaseItem::where('product_id', $productId)->find($purchaseItemId);
+            return PurchaseItem::where('product_id', $productId)->find($purchaseItemId);
         }
 
-        return \App\Models\PurchaseItem::where('product_id', $productId)->latest('id')->first();
+        return PurchaseItem::where('product_id', $productId)->latest('id')->first();
     }
 
     private function getBatchAvailableQty(int $purchaseItemId): float
     {
-        $purchaseItem = \App\Models\PurchaseItem::find($purchaseItemId);
+        $purchaseItem = PurchaseItem::find($purchaseItemId);
         if (! $purchaseItem) {
             return 0;
         }
@@ -639,17 +644,17 @@ class SaleController extends Controller
     {
         return Sale::query()
             ->with(['customer', 'items.product', 'items.returnItems.saleReturn'])
-            ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->where('shop_id', auth()->user()->shop_id))
-            ->when($currentSale, fn($q) => $q->whereKeyNot($currentSale->id))
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id))
+            ->when($currentSale, fn ($q) => $q->whereKeyNot($currentSale->id))
             ->latest()
             ->limit(250)
             ->get()
             ->map(function (Sale $sale) use ($currentSale) {
                 $items = $sale->items->map(function (SaleItem $item) use ($currentSale) {
                     $returnedQty = $item->returnItems
-                        ->filter(fn($returnItem) => $returnItem->saleReturn?->return_status === 'approved'
+                        ->filter(fn ($returnItem) => $returnItem->saleReturn?->return_status === 'approved'
                             && $returnItem->saleReturn?->applied_sale_id !== $currentSale?->id)
-                        ->sum(fn($returnItem) => (float) $returnItem->qty);
+                        ->sum(fn ($returnItem) => (float) $returnItem->qty);
 
                     $availableQty = max(0, (float) $item->qty - (float) $returnedQty);
 
@@ -663,7 +668,7 @@ class SaleController extends Controller
                         'available_qty' => $availableQty,
                         'price_on_sale' => (float) $item->price_on_sale,
                     ];
-                })->filter(fn($item) => $item['available_qty'] > 0)->values();
+                })->filter(fn ($item) => $item['available_qty'] > 0)->values();
 
                 return [
                     'id' => $sale->id,
@@ -674,14 +679,14 @@ class SaleController extends Controller
                     'items' => $items,
                 ];
             })
-            ->filter(fn($sale) => $sale['items']->isNotEmpty())
+            ->filter(fn ($sale) => $sale['items']->isNotEmpty())
             ->values();
     }
 
     private function validatedReturnItems(array $returns)
     {
         return collect($returns)
-            ->filter(fn($item) => ! empty($item['sale_id']) && ! empty($item['sale_item_id']) && ! empty($item['product_id']))
+            ->filter(fn ($item) => ! empty($item['sale_id']) && ! empty($item['sale_item_id']) && ! empty($item['product_id']))
             ->map(function ($item) {
                 $sale = Sale::with('items.returnItems.saleReturn')->findOrFail($item['sale_id']);
                 $this->authorizeSaleShop($sale);
@@ -701,13 +706,13 @@ class SaleController extends Controller
                 }
 
                 $returnedQty = $saleItem->returnItems
-                    ->filter(fn($returnItem) => $returnItem->saleReturn?->return_status === 'approved')
-                    ->sum(fn($returnItem) => (float) $returnItem->qty);
+                    ->filter(fn ($returnItem) => $returnItem->saleReturn?->return_status === 'approved')
+                    ->sum(fn ($returnItem) => (float) $returnItem->qty);
                 $availableQty = max(0, (float) $saleItem->qty - (float) $returnedQty);
 
                 if ($qty > $availableQty) {
                     throw ValidationException::withMessages([
-                        'returns' => 'Return quantity is higher than available quantity for ' . ($saleItem->product?->product_name ?? 'selected product') . '.',
+                        'returns' => 'Return quantity is higher than available quantity for '.($saleItem->product?->product_name ?? 'selected product').'.',
                     ]);
                 }
 
@@ -729,7 +734,7 @@ class SaleController extends Controller
     {
         $items = $this->validatedReturnItems($returns);
 
-        $items->groupBy(fn($item) => $item['sale']->id)->each(function ($group) use ($sale) {
+        $items->groupBy(fn ($item) => $item['sale']->id)->each(function ($group) use ($sale) {
             $originalSale = $group->first()['sale'];
             $subtotal = $group->sum('line_total');
 
@@ -751,7 +756,7 @@ class SaleController extends Controller
                 'return_status' => 'approved',
                 'payment_method' => $sale->payment_method,
                 'cash_memo' => $sale->cash_memo,
-                'note' =>  $sale->note,
+                'note' => $sale->note,
             ]);
 
             foreach ($group as $item) {
@@ -839,34 +844,34 @@ class SaleController extends Controller
     private function validateSale(Request $request, ?int $saleId = null): array
     {
         return $request->validate([
-            'reference'              => 'nullable|string|max:50|unique:sales,reference,' . $saleId,
-            'shop_id'                => 'nullable|exists:shops,id',
-            'customer_id'            => 'nullable|exists:customers,id',
-            'discount'               => 'nullable|numeric|min:0',
-            'add_money'              => 'nullable|numeric|min:0',
-            'cash_memo'              => 'nullable|string|max:100',
-            'bell_no'                => 'nullable|string|max:100',
-           'payment_method' => [
+            'reference' => 'nullable|string|max:50|unique:sales,reference,'.$saleId,
+            'shop_id' => 'nullable|exists:shops,id',
+            'customer_id' => 'nullable|exists:customers,id',
+            'discount' => 'nullable|numeric|min:0',
+            'add_money' => 'nullable|numeric|min:0',
+            'cash_memo' => 'nullable|string|max:100',
+            'bell_no' => 'nullable|string|max:100',
+            'payment_method' => [
                 'nullable',
                 'required_if:payment_status,paid,partial',
                 'string',
                 'max:100',
-             ],
-            'bank'                   => 'nullable|string|max:100',
-            'bank_details'           => 'nullable|string|max:255',
-            'payment_status'         => 'required|in:due,paid,partial',
-            'paid'                   => 'nullable|numeric|min:0',
-            'note'                   => 'nullable|string|max:2000',
-            'items'                  => 'required|array|min:1',
-            'items.*.product_id'     => 'required|exists:products,id',
+            ],
+            'bank' => 'nullable|string|max:100',
+            'bank_details' => 'nullable|string|max:255',
+            'payment_status' => 'required|in:due,paid,partial',
+            'paid' => 'nullable|numeric|min:0',
+            'note' => 'nullable|string|max:2000',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
             'items.*.purchase_item_id' => 'nullable|exists:purchase_items,id',
-            'items.*.qty'            => 'required|numeric|min:0.01',
-            'items.*.price_on_sale'  => 'required|numeric|min:0',
-            'returns'                  => 'nullable|array',
-            'returns.*.sale_id'        => 'required_with:returns|exists:sales,id',
-            'returns.*.sale_item_id'   => 'required_with:returns|exists:sale_items,id',
-            'returns.*.product_id'     => 'required_with:returns|exists:products,id',
-            'returns.*.qty'            => 'required_with:returns|numeric|min:0.01',
+            'items.*.qty' => 'required|numeric|min:0.01',
+            'items.*.price_on_sale' => 'required|numeric|min:0',
+            'returns' => 'nullable|array',
+            'returns.*.sale_id' => 'required_with:returns|exists:sales,id',
+            'returns.*.sale_item_id' => 'required_with:returns|exists:sale_items,id',
+            'returns.*.product_id' => 'required_with:returns|exists:products,id',
+            'returns.*.qty' => 'required_with:returns|numeric|min:0.01',
         ]);
     }
 

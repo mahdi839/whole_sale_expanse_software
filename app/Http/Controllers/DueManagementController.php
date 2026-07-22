@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Customer;
 use App\Models\CarryMan;
 use App\Models\ComputerMan;
+use App\Models\Customer;
 use App\Models\GareyMan;
 use App\Models\ManualDue;
 use App\Models\Purchase;
@@ -29,6 +29,7 @@ class DueManagementController extends Controller
         $filters = $this->filters(request());
 
         $rows = Customer::query()
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('customers.shop_id', auth()->user()->shop_id ?: -1))
             ->addSelect([
                 'latest_due_sale_at' => Sale::select('created_at')
                     ->whereColumn('customer_id', 'customers.id')
@@ -117,6 +118,7 @@ class DueManagementController extends Controller
         $filters = $this->filters(request());
 
         $rows = Sale::with('customer')
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
             ->where('due', '>', 0)
             ->when($filters['date'], fn ($q) => $q->whereDate('created_at', $filters['date']))
             ->when($filters['search'], function ($query) use ($filters) {
@@ -157,7 +159,7 @@ class DueManagementController extends Controller
                         ->orWhere('bill_no', 'like', "%{$search}%")
                         ->orWhere('seller_store_name', 'like', "%{$search}%")
                         ->orWhere('purchased_by', 'like', "%{$search}%")
-                    ->orWhereHas('supplier', function ($supplier) use ($search) {
+                        ->orWhereHas('supplier', function ($supplier) use ($search) {
                             $supplier->where('name', 'like', "%{$search}%")
                                 ->orWhere('phone', 'like', "%{$search}%")
                                 ->orWhere('address', 'like', "%{$search}%")
@@ -176,7 +178,7 @@ class DueManagementController extends Controller
     {
         $filters = $this->filters(request());
 
-        $manualDues = ManualDue::with(['customer', 'supplier', 'tailor', 'carryMan', 'computerMan', 'gareyMan'])
+        $manualDues = $this->manualDueQuery()
             ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
             ->when($filters['search'], function ($query) use ($filters) {
                 $search = $filters['search'];
@@ -215,7 +217,7 @@ class DueManagementController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone', 'due']);
+        $customers = $this->customerOptions();
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'due']);
         $tailors = Tailor::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
         $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
@@ -238,6 +240,7 @@ class DueManagementController extends Controller
     {
         $filters = $this->filters(request());
         $rows = Customer::query()
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('customers.shop_id', auth()->user()->shop_id ?: -1))
             ->where('due', '>', 0)
             ->whereExists(function ($query) use ($filters) {
                 $query->selectRaw(1)
@@ -311,6 +314,7 @@ class DueManagementController extends Controller
     {
         $filters = $this->filters(request());
         $rows = Sale::with('customer')
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
             ->where('due', '>', 0)
             ->when($filters['date'], fn ($q) => $q->whereDate('created_at', $filters['date']))
             ->when($filters['search'], fn ($q) => $q->where(function ($sub) use ($filters) {
@@ -372,7 +376,7 @@ class DueManagementController extends Controller
     public function exportManual()
     {
         $filters = $this->filters(request());
-        $rows = ManualDue::with(['customer', 'supplier', 'tailor', 'carryMan', 'computerMan', 'gareyMan'])
+        $rows = $this->manualDueQuery()
             ->when($filters['date'], fn ($q) => $q->whereDate('date', $filters['date']))
             ->when($filters['search'], fn ($q) => $q->where(function ($sub) use ($filters) {
                 $search = $filters['search'];
@@ -419,7 +423,8 @@ class DueManagementController extends Controller
 
     public function edit(ManualDue $manualDue)
     {
-        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'phone', 'due']);
+        $this->authorizeManualDue($manualDue);
+        $customers = $this->customerOptions();
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'due']);
         $tailors = Tailor::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
         $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone', 'total_due']);
@@ -431,6 +436,7 @@ class DueManagementController extends Controller
 
     public function update(Request $request, ManualDue $manualDue)
     {
+        $this->authorizeManualDue($manualDue);
         $data = $this->validated($request);
 
         DB::transaction(function () use ($manualDue, $data) {
@@ -444,6 +450,7 @@ class DueManagementController extends Controller
 
     public function destroy(ManualDue $manualDue)
     {
+        $this->authorizeManualDue($manualDue);
         DB::transaction(function () use ($manualDue) {
             $this->applyManualDue($manualDue, -1);
             $workerField = match ($manualDue->party_type) {
@@ -491,6 +498,13 @@ class DueManagementController extends Controller
         $selectedField = $partyFields[$data['party_type']];
         $request->validate([$selectedField => 'required']);
 
+        if ($data['party_type'] === 'customer' && ! auth()->user()->canManageAllShops()) {
+            abort_unless(
+                Customer::whereKey($data['customer_id'])->where('shop_id', auth()->user()->shop_id ?: -1)->exists(),
+                403
+            );
+        }
+
         foreach ($partyFields as $field) {
             if ($field !== $selectedField) {
                 $data[$field] = null;
@@ -506,6 +520,32 @@ class DueManagementController extends Controller
             'search' => $request->input('search'),
             'date' => $request->input('date'),
         ];
+    }
+
+    private function customerOptions()
+    {
+        return Customer::query()
+            ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
+            ->orderBy('full_name')
+            ->get(['id', 'full_name', 'phone', 'due']);
+    }
+
+    private function manualDueQuery()
+    {
+        return ManualDue::with(['customer', 'supplier', 'tailor', 'carryMan', 'computerMan', 'gareyMan'])
+            ->when(! auth()->user()->canManageAllShops(), function ($query) {
+                $query->where(function ($scope) {
+                    $scope->where('party_type', '!=', 'customer')
+                        ->orWhereHas('customer', fn ($customer) => $customer->where('shop_id', auth()->user()->shop_id ?: -1));
+                });
+            });
+    }
+
+    private function authorizeManualDue(ManualDue $manualDue): void
+    {
+        if (! auth()->user()->canManageAllShops() && $manualDue->party_type === 'customer') {
+            abort_unless($manualDue->customer?->shop_id === auth()->user()->shop_id, 403);
+        }
     }
 
     private function applyManualDue(ManualDue $due, int $multiplier): void

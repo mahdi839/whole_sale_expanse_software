@@ -4,6 +4,7 @@
     <div class="space-y-4">
         <div class="flex items-center justify-between gap-3">
             <a href="{{ route($routeBase.'.index') }}" class="px-4 py-2 text-sm bg-white border border-gray-200 text-gray-700 rounded-lg">Back</a>
+            <a href="{{ route($routeBase.'.export.pdf', $worker) }}" class="px-4 py-2 text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg">PDF Profile & Work Logs</a>
         </div>
 
         <div class="bg-white border border-gray-200 rounded-xl p-5">

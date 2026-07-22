@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\GareyMan;
+use App\Support\WorkerProfilePdf;
 use Illuminate\Http\Request;
 
 class GareyManController extends Controller
@@ -28,7 +29,7 @@ class GareyManController extends Controller
 
     public function create()
     {
-        return view('garey_men.create', ['gareyMan' => new GareyMan()]);
+        return view('garey_men.create', ['gareyMan' => new GareyMan]);
     }
 
     public function store(Request $request)
@@ -66,6 +67,13 @@ class GareyManController extends Controller
         $gareyMan->update($this->validated($request));
 
         return redirect()->route('garey-men.index')->with('success', 'Garey man profile updated successfully.');
+    }
+
+    public function exportPdf(GareyMan $gareyMan)
+    {
+        $workLogs = $gareyMan->workLogs()->latest('date')->latest()->get();
+
+        return WorkerProfilePdf::download($gareyMan, 'Garey Man Profile and Work Logs', 'garey', $workLogs);
     }
 
     public function destroy(GareyMan $gareyMan)

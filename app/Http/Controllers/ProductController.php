@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Shop;
+use App\Support\SimplePdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -34,6 +36,47 @@ class ProductController extends Controller
     public function create()
     {
         return view('products.create');
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $search = $request->input('search');
+        $products = Product::with(['stock', 'stocks.shop'])
+            ->when($search, fn ($query) => $query->where(function ($match) use ($search) {
+                $match->where('product_name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('product_code', 'like', "%{$search}%");
+            }))
+            ->orderBy('product_name')
+            ->get();
+
+        $shops = Shop::query()
+            ->when(! auth()->user()->canManageAllShops(), fn ($query) => $query->whereKey(auth()->user()->shop_id ?: -1))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+        $headers = array_merge(['Product Name', 'Design Code', 'Sale Price'], $shops->pluck('name')->all(), ['Stock', 'Central Stock']);
+        $rows = $products->map(function (Product $product) use ($shops) {
+            $central = (float) ($product->stock?->stock_qty ?? 0);
+            $shopValues = $shops->map(fn (Shop $shop) => (float) ($product->stocks->firstWhere('shop_id', $shop->id)?->stock_qty ?? 0));
+
+            return array_merge([
+                $product->product_name,
+                $product->sku ?: ($product->product_code ?: '-'),
+                number_format((float) $product->selling_price, 2),
+            ], $shopValues->all(), [
+                $central + (float) $shopValues->sum(),
+                $central,
+            ]);
+        });
+
+        $fileName = 'products-'.now()->format('Y-m-d-H-i-s').'.pdf';
+
+        return Response::make(SimplePdf::table('Inaya Creation - Products', $headers, $rows, null, [
+            'logo_path' => public_path('inaya_creation_logo.jpeg'),
+        ]), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
     }
 
     public function store(Request $request)

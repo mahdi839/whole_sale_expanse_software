@@ -66,7 +66,7 @@
 
             <form method="POST" action="{{ route('stocks.transfers.store') }}" class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
                 @csrf
-                <h2 class="text-sm font-semibold text-gray-800">Transfer Shop to Shop</h2>
+                <h2 class="text-sm font-semibold text-gray-800">Transfer Shop Stock</h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
@@ -80,8 +80,16 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">To Shop</label>
-                        <select name="to_shop_id" class="w-full border-gray-300 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">To Location</label>
+                        <select name="destination_type" id="transfer-destination-type" class="w-full border-gray-300 rounded-lg">
+                            <option value="central" @selected(old('destination_type') === 'central')>Central Stock</option>
+                            <option value="shop" @selected(old('destination_type', 'shop') === 'shop')>Another Shop</option>
+                        </select>
+                    </div>
+
+                    <div id="transfer-shop-wrap">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Destination Shop</label>
+                        <select name="to_shop_id" id="transfer-shop-id" class="w-full border-gray-300 rounded-lg">
                             <option value="">Select shop</option>
                             @foreach($shops as $shop)
                                 <option value="{{ $shop->id }}" @selected(old('to_shop_id') == $shop->id)>{{ $shop->name }}{{ $shop->code ? ' ('.$shop->code.')' : '' }}</option>
@@ -156,6 +164,22 @@
 
                 locationType?.addEventListener('change', syncShopField);
                 syncShopField();
+
+                const destinationType = document.getElementById('transfer-destination-type');
+                const destinationShopWrap = document.getElementById('transfer-shop-wrap');
+                const destinationShop = document.getElementById('transfer-shop-id');
+
+                function syncDestinationShop() {
+                    const isShop = destinationType?.value === 'shop';
+                    destinationShopWrap?.classList.toggle('hidden', !isShop);
+                    if (destinationShop) {
+                        destinationShop.disabled = !isShop;
+                        if (!isShop) destinationShop.value = '';
+                    }
+                }
+
+                destinationType?.addEventListener('change', syncDestinationShop);
+                syncDestinationShop();
             });
         </script>
     @endpush

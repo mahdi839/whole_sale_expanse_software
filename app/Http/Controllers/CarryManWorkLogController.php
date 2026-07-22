@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\CarryMan;
 use App\Models\CarryManWorkLog;
+use App\Support\SimplePdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 
 class CarryManWorkLogController extends Controller
@@ -34,6 +36,31 @@ class CarryManWorkLogController extends Controller
         $carryMen = CarryMan::orderBy('name')->get(['id', 'name', 'phone']);
 
         return view('carry_man_work_logs.create', compact('workLog', 'carryMen'));
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $search = $request->input('search');
+        $logs = CarryManWorkLog::with('carryMan')
+            ->when($search, fn ($query) => $query->where(function ($match) use ($search) {
+                $match->where('memo_no', 'like', "%{$search}%")
+                    ->orWhere('marka', 'like', "%{$search}%")
+                    ->orWhereHas('carryMan', fn ($worker) => $worker->where('name', 'like', "%{$search}%"));
+            }))->latest('date')->latest()->get();
+
+        return $this->workLogPdf('Carry Man Work Logs', ['Date', 'Memo No', 'Carry Man', 'Marka', 'Bale Qty', 'KG', 'Received KG', 'Balance KG', 'Rate/KG', 'Total'], $logs->map(fn ($log) => [
+            optional($log->date)->format('Y-m-d'), $log->memo_no ?: '-', $log->carryMan?->name ?? '-', $log->marka ?: '-',
+            $log->bale_qty, $log->total_unit_kg, $log->received_qty, (float) $log->total_unit_kg - (float) $log->received_qty,
+            $log->rate_per_kg, $log->total_rate,
+        ]), 'carry-man-work-logs');
+    }
+
+    private function workLogPdf(string $title, array $headers, $rows, string $fileName)
+    {
+        return Response::make(SimplePdf::table('Inaya Creation - '.$title, $headers, $rows, null, ['logo_path' => public_path('inaya_creation_logo.jpeg')]), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'-'.now()->format('Y-m-d-H-i-s').'.pdf"',
+        ]);
     }
 
     public function store(Request $request)

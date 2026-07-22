@@ -205,6 +205,48 @@ class ClothSewingController extends Controller
         ]);
     }
 
+    public function exportPdf(Request $request)
+    {
+        $search = $request->input('search');
+        $logs = ClothSewing::with(['tailor', 'product'])
+            ->when($search, fn ($query) => $query->where(function ($match) use ($search) {
+                $match->whereHas('tailor', fn ($tailor) => $tailor->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('product', fn ($product) => $product
+                        ->where('product_name', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%")
+                        ->orWhere('product_code', 'like', "%{$search}%"));
+            }))
+            ->latest('date')
+            ->latest()
+            ->get();
+        $rows = $logs->map(fn ($log) => [
+            optional($log->date)->format('Y-m-d'),
+            $log->tailor?->name ?? '-',
+            $log->product?->product_name ?? '-',
+            $log->product?->sku ?: ($log->product?->product_code ?: '-'),
+            $log->item_qty,
+            $log->per_piece_rate,
+            $log->total_rate,
+        ]);
+
+        return Response::make(SimplePdf::table(
+            'Inaya Creation - Cloth Sewing',
+            ['Date', 'Tailor', 'Product', 'Design Code', 'Qty', 'Rate/Piece', 'Total'],
+            $rows,
+            null,
+            [
+                'logo_path' => public_path('inaya_creation_logo.jpeg'),
+                'summary' => [
+                    ['label' => 'Total Quantity', 'value' => number_format((float) $logs->sum('item_qty'), 2)],
+                    ['label' => 'Total Amount', 'value' => number_format((float) $logs->sum('total_rate'), 2)],
+                ],
+            ]
+        ), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="cloth-sewing-'.now()->format('Y-m-d-H-i-s').'.pdf"',
+        ]);
+    }
+
     private function validatedRows(Request $request): array
     {
         $data = $request->validate([

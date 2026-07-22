@@ -69,6 +69,7 @@ class SupplierController extends Controller
     public function create()
     {
         $nextCode = Supplier::generateCode();
+
         return view('suppliers.create', compact('nextCode'));
     }
 
@@ -106,11 +107,14 @@ class SupplierController extends Controller
             ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
             ->where('purchases.supplier_id', $supplier->id)
             ->sum('purchase_items.qty');
-        $headers = ['Date & Time', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due','Note'];
+        $headers = ['Date & Time', 'Type', 'Reference', 'Product Name', 'Store Name', 'Bill No', 'Amount', 'Qty', 'Paid', 'Due', 'Note'];
         $rows = $logs->map(fn ($log) => [
             optional($log['display_at'] ?? $log['date'])->format('Y-m-d h:i A'),
             $log['type'],
             $log['reference'],
+            $log['products'],
+            $log['store_name'],
+            $log['bill_no'],
             $log['amount'],
             $log['qty'],
             $log['paid'],
@@ -180,17 +184,17 @@ class SupplierController extends Controller
     private function validateSupplier(Request $request): array
     {
         $data = $request->validate([
-            'name'           => 'required|string|max:255',
-            'phone'          => 'nullable|string|max:20',
-            'address'        => 'nullable|string|max:500',
-            'currency'       => 'nullable|in:BDT,INR,USD',
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
+            'currency' => 'nullable|in:BDT,INR,USD',
             'total_purchase' => 'nullable|numeric|min:0',
-            'total_paid'     => 'nullable|numeric|min:0',
+            'total_paid' => 'nullable|numeric|min:0',
         ]);
 
         $data['total_purchase'] = $data['total_purchase'] ?? 0;
-        $data['total_paid']     = $data['total_paid']     ?? 0;
-        $data['currency']       = $data['currency']       ?? 'BDT';
+        $data['total_paid'] = $data['total_paid'] ?? 0;
+        $data['currency'] = $data['currency'] ?? 'BDT';
 
         return $data;
     }
@@ -208,10 +212,12 @@ class SupplierController extends Controller
                 'paid' => (float) $purchase->paid_amount,
                 'due' => (float) $purchase->due_amount,
                 'products' => $purchase->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', '),
+                'store_name' => $purchase->seller_store_name,
+                'bill_no' => $purchase->bill_no,
                 'note' => $purchase->note,
                 'url' => route('purchases.edit', $purchase),
             ]))
-            ->merge($supplier->purchaseReturns()->with('items.product')->get()->map(function ($return) {
+            ->merge($supplier->purchaseReturns()->with(['items.product', 'purchase'])->get()->map(function ($return) {
                 $products = $return->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', ');
 
                 return [
@@ -224,6 +230,8 @@ class SupplierController extends Controller
                     'paid' => $return->return_type === 'refund' ? -1 * (float) $return->return_amount : 0,
                     'due' => 0,
                     'products' => $products,
+                    'store_name' => $return->purchase?->seller_store_name,
+                    'bill_no' => $return->bill_no ?: $return->purchase?->bill_no,
                     'note' => ucfirst($return->return_type).' / '.ucfirst($return->return_status).($return->note ? ' - '.$return->note : ''),
                     'url' => route('purchase-returns.show', $return),
                 ];
@@ -238,8 +246,10 @@ class SupplierController extends Controller
                     : -1 * (float) ($cash->supplier_amount ?? $cash->amount),
                 'qty' => null,
                 'paid' => (float) ($cash->supplier_amount ?? $cash->amount),
-                'due' => "-",
+                'due' => '-',
                 'products' => '',
+                'store_name' => '',
+                'bill_no' => '',
                 'note' => $cash->note,
                 'url' => route('cash-transactions.index', ['search' => $cash->reference]),
             ]))
@@ -253,6 +263,8 @@ class SupplierController extends Controller
                 'paid' => 0,
                 'due' => (float) $due->amount,
                 'products' => '',
+                'store_name' => '',
+                'bill_no' => '',
                 'note' => $due->note,
                 'url' => route('dues.manual'),
             ]))
@@ -275,9 +287,9 @@ class SupplierController extends Controller
                     ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
                     ->whereColumn('purchases.supplier_id', 'suppliers.id'),
             ])
-            ->when($search, fn($q) => $q
-                ->where('name',  'like', "%{$search}%")
-                ->orWhere('code',  'like', "%{$search}%")
+            ->when($search, fn ($q) => $q
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('code', 'like', "%{$search}%")
                 ->orWhere('phone', 'like', "%{$search}%")
                 ->orWhere('address', 'like', "%{$search}%")
             );

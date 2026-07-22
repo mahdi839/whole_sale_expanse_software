@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ComputerMan;
+use App\Support\WorkerProfilePdf;
 use Illuminate\Http\Request;
 
 class ComputerManController extends Controller
@@ -27,7 +28,7 @@ class ComputerManController extends Controller
 
     public function create()
     {
-        return view('computer_men.create', ['computerMan' => new ComputerMan()]);
+        return view('computer_men.create', ['computerMan' => new ComputerMan]);
     }
 
     public function store(Request $request)
@@ -66,6 +67,13 @@ class ComputerManController extends Controller
         $computerMan->update($this->validated($request));
 
         return redirect()->route('computer-men.index')->with('success', 'Computer man profile updated successfully.');
+    }
+
+    public function exportPdf(ComputerMan $computerMan)
+    {
+        $workLogs = $computerMan->workLogs()->with('product')->latest('date')->latest()->get();
+
+        return WorkerProfilePdf::download($computerMan, 'Computer Man Profile and Work Logs', 'computer', $workLogs);
     }
 
     public function destroy(ComputerMan $computerMan)

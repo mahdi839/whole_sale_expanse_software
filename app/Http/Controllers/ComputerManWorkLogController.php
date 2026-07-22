@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\ComputerMan;
 use App\Models\ComputerManWorkLog;
 use App\Models\Product;
+use App\Support\SimplePdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 
 class ComputerManWorkLogController extends Controller
 {
@@ -38,6 +40,28 @@ class ComputerManWorkLogController extends Controller
         $products = Product::orderBy('product_name')->get(['id', 'product_name', 'sku', 'product_code']);
 
         return view('computer_man_work_logs.create', compact('workLog', 'computerMen', 'products'));
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $search = $request->input('search');
+        $logs = ComputerManWorkLog::with(['computerMan', 'product'])
+            ->when($search, fn ($query) => $query->where(function ($match) use ($search) {
+                $match->where('memo_no', 'like', "%{$search}%")
+                    ->orWhereHas('computerMan', fn ($worker) => $worker->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('product', fn ($product) => $product->where('product_name', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"));
+            }))->latest('date')->latest()->get();
+        $rows = $logs->map(fn ($log) => [
+            optional($log->date)->format('Y-m-d'), $log->memo_no ?: '-', $log->computerMan?->name ?? '-',
+            $log->product?->product_name ?? '-', $log->product?->sku ?: ($log->product?->product_code ?: '-'),
+            $log->computer_design_qty, $log->received_qty, (float) $log->computer_design_qty - (float) $log->received_qty,
+            $log->rate_per_piece, $log->total_rate,
+        ]);
+
+        return Response::make(SimplePdf::table('Inaya Creation - Computer Man Work Logs', ['Date', 'Memo No', 'Computer Man', 'Product', 'Design Code', 'Design Qty', 'Received Qty', 'Balance', 'Rate/Piece', 'Total'], $rows, null, ['logo_path' => public_path('inaya_creation_logo.jpeg')]), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="computer-man-work-logs-'.now()->format('Y-m-d-H-i-s').'.pdf"',
+        ]);
     }
 
     public function store(Request $request)

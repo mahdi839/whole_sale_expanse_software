@@ -23,12 +23,12 @@ class CustomerController extends Controller
     {
         $search = $request->input('search');
         $shopId = auth()->user()->canManageAllShops() ? $request->input('shop_id') : auth()->user()->shop_id;
- 
+
         $customers = $this->customerIndexQuery($search, $shopId)
             ->latest()
             ->paginate(15)
             ->withQueryString();
- 
+
         $summary = [
             'total_sale' => (float) Customer::when($shopId, fn ($q) => $q->where('shop_id', $shopId))->sum('total_sale'),
             'total_paid' => (float) Customer::when($shopId, fn ($q) => $q->where('shop_id', $shopId))->sum('total_paid'),
@@ -40,6 +40,7 @@ class CustomerController extends Controller
                 ->sum('sale_items.qty'),
         ];
         $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect();
+
         return view('customers.index', compact('customers', 'search', 'summary', 'shops', 'shopId'));
     }
 
@@ -66,7 +67,7 @@ class CustomerController extends Controller
 
         return $this->streamPdf(
             'customers-'.now()->format('Y-m-d-H-i-s').'.pdf',
-            $related_shop?->name??"Inaya Creation",
+            $related_shop?->name ?? 'Inaya Creation',
             $headers,
             $rows
         );
@@ -105,7 +106,7 @@ class CustomerController extends Controller
                 ])
         );
     }
- 
+
     // -------------------------------------------------------
     // CREATE
     // -------------------------------------------------------
@@ -113,9 +114,10 @@ class CustomerController extends Controller
     {
         $nextCode = Customer::generateCode();
         $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect([auth()->user()->shop]);
+
         return view('customers.create', compact('nextCode', 'shops'));
     }
- 
+
     // -------------------------------------------------------
     // STORE
     // -------------------------------------------------------
@@ -123,45 +125,46 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'shop_id' => 'nullable|exists:shops,id',
-            'full_name'  => 'required|string|max:255',
-            'phone'      => 'nullable|string|max:20',
+            'full_name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
             'alternative_phone' => 'nullable|string|max:20',
-            'address'    => 'nullable|string|max:1000',
-            'image'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'address' => 'nullable|string|max:1000',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'total_sale' => 'nullable|numeric|min:0',
             'total_paid' => 'nullable|numeric|min:0',
         ]);
         $validated['shop_id'] = $this->resolveShopId($validated);
- 
+
         $validated['total_sale'] = $validated['total_sale'] ?? 0;
         $validated['total_paid'] = $validated['total_paid'] ?? 0;
-        $validated['due']        = max(0, $validated['total_sale'] - $validated['total_paid']);
+        $validated['due'] = max(0, $validated['total_sale'] - $validated['total_paid']);
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('customers', 'public');
         }
- 
+
         $customer = Customer::create($validated);
-   // If request came from AJAX / fetch / modal
+        // If request came from AJAX / fetch / modal
         if ($request->expectsJson()) {
             return response()->json([
-                'id'         => $customer->id,
-                'code'       => $customer->code,
-                'full_name'  => $customer->full_name,
-                'phone'      => $customer->phone,
+                'id' => $customer->id,
+                'code' => $customer->code,
+                'full_name' => $customer->full_name,
+                'phone' => $customer->phone,
                 'alternative_phone' => $customer->alternative_phone,
-                'address'    => $customer->address,
-                'image'      => $customer->image,
+                'address' => $customer->address,
+                'image' => $customer->image,
                 'total_sale' => $customer->total_sale,
                 'total_paid' => $customer->total_paid,
-                'due'        => $customer->due,
-                'message'    => 'Customer created successfully.',
+                'due' => $customer->due,
+                'message' => 'Customer created successfully.',
             ], 201);
         }
+
         return redirect()->route('customers.index')
             ->with('success', 'Customer created successfully.');
     }
- 
+
     // -------------------------------------------------------
     // SHOW
     // -------------------------------------------------------
@@ -169,6 +172,7 @@ class CustomerController extends Controller
     {
         $this->authorizeShop($customer);
         [$logs, $totalQty] = $this->customerLogs($customer);
+
         return view('customers.show', compact('customer', 'logs', 'totalQty'));
     }
 
@@ -176,7 +180,7 @@ class CustomerController extends Controller
     {
         $this->authorizeShop($customer);
         [$logs, $totalQty] = $this->customerLogs($customer);
-        $headers = ['Date & Time', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due','Note'];
+        $headers = ['Date & Time', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Note'];
 
         if (request('format') === 'pdf') {
             $rows = $logs->map(fn ($log) => [
@@ -190,11 +194,16 @@ class CustomerController extends Controller
                 $log['note'],
             ]);
 
+            $returns = $customer->saleReturns()->with('items')->get();
+            $totalReturnQty = $returns->sum(fn ($return) => $return->items->sum(fn ($item) => (float) $item->qty));
+            $totalReturnAmount = $returns->sum(fn ($return) => (float) $return->return_amount);
             $summary = [
-                ['label' => 'Total Paid', 'value' => $customer->total_paid],
-                ['label' => 'Total Due', 'value' => $customer->due],
-                ['label' => 'Total Qty', 'value' => $totalQty],
-                ['label' => 'Total Sale', 'value' =>  $customer->total_sale],
+                ['label' => 'Total Amount', 'value' => number_format((float) $customer->total_sale, 2)],
+                ['label' => 'Total Quantity', 'value' => number_format($totalQty, 2)],
+                ['label' => 'Total Return Quantity', 'value' => number_format($totalReturnQty, 2)],
+                ['label' => 'Total Return Amount', 'value' => number_format($totalReturnAmount, 2)],
+                ['label' => 'Paid', 'value' => number_format((float) $customer->total_paid, 2)],
+                ['label' => 'Due', 'value' => number_format((float) $customer->due, 2)],
             ];
 
             return $this->streamCustomerTransactionsPdf(
@@ -210,7 +219,7 @@ class CustomerController extends Controller
 
         return $this->streamLogsCsv($fileName, $logs, $headers);
     }
- 
+
     // -------------------------------------------------------
     // EDIT
     // -------------------------------------------------------
@@ -218,9 +227,10 @@ class CustomerController extends Controller
     {
         $this->authorizeShop($customer);
         $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect([auth()->user()->shop]);
+
         return view('customers.edit', compact('customer', 'shops'));
     }
- 
+
     // -------------------------------------------------------
     // UPDATE
     // -------------------------------------------------------
@@ -229,11 +239,11 @@ class CustomerController extends Controller
         $this->authorizeShop($customer);
         $validated = $request->validate([
             'shop_id' => 'nullable|exists:shops,id',
-            'full_name'  => 'required|string|max:255',
-            'phone'      => 'nullable|string|max:20',
+            'full_name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
             'alternative_phone' => 'nullable|string|max:20',
-            'address'    => 'nullable|string|max:1000',
-            'image'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'address' => 'nullable|string|max:1000',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'total_sale' => 'nullable|numeric|min:0',
             'total_paid' => 'nullable|numeric|min:0',
         ]);
@@ -245,7 +255,7 @@ class CustomerController extends Controller
             }
             $validated['image'] = $request->file('image')->store('customers', 'public');
         }
- 
+
         $totalSale = $request->has('total_sale')
             ? ($validated['total_sale'] ?? 0)
             : $customer->total_sale;
@@ -256,17 +266,17 @@ class CustomerController extends Controller
         if ($request->hasAny(['total_sale', 'total_paid'])) {
             $validated['total_sale'] = $totalSale;
             $validated['total_paid'] = $totalPaid;
-            $validated['due']        = max(0, $totalSale - $totalPaid);
+            $validated['due'] = max(0, $totalSale - $totalPaid);
         } else {
             unset($validated['total_sale'], $validated['total_paid']);
         }
- 
+
         $customer->update($validated);
- 
+
         return redirect()->route('customers.index')
             ->with('success', 'Customer updated successfully.');
     }
- 
+
     // -------------------------------------------------------
     // DESTROY
     // -------------------------------------------------------
@@ -278,7 +288,7 @@ class CustomerController extends Controller
         }
 
         $customer->delete();
- 
+
         return redirect()->route('customers.index')
             ->with('success', 'Customer deleted successfully.');
     }
@@ -301,7 +311,7 @@ class CustomerController extends Controller
                     'type' => 'Sale',
                     'reference' => $sale->reference,
                     'amount' => $sale->grand_total,
-                    'qty' => $sale->items->sum(fn ($item) =>  $item->qty),
+                    'qty' => $sale->items->sum(fn ($item) => $item->qty),
                     'paid' => $sale->paid,
                     'due' => $sale->due,
                     'products' => $products,
@@ -323,7 +333,7 @@ class CustomerController extends Controller
                     'type' => 'Sale Return'.($return->return_type ? ' - '.ucfirst($return->return_type) : ''),
                     'reference' => $return->reference,
                     'amount' => $affectsCustomerBalance ? -1 * $return->return_amount : 0,
-                    'qty' => $return->items->sum(fn ($item) =>  $item->qty),
+                    'qty' => $return->items->sum(fn ($item) => $item->qty),
                     'paid' => 0,
                     'due' => 0,
                     'products' => $products,
@@ -339,7 +349,7 @@ class CustomerController extends Controller
                 'amount' => $cash->direction === 'in' ? $cash->amount : -1 * $cash->amount,
                 'qty' => null,
                 'paid' => $cash->amount,
-                'due' => "-",
+                'due' => '-',
                 'products' => '',
                 'note' => $cash->note,
                 'url' => route('cash-transactions.index', ['search' => $cash->reference]),
@@ -397,10 +407,12 @@ class CustomerController extends Controller
         if (auth()->user()->canManageAllShops()) {
             $shopId = $validated['shop_id'] ?? $customer?->shop_id;
             abort_unless($shopId, 422, 'Please select a shop.');
+
             return (int) $shopId;
         }
 
         abort_unless(auth()->user()->shop_id, 403, 'No shop assigned to your user.');
+
         return (int) auth()->user()->shop_id;
     }
 
@@ -497,28 +509,28 @@ class CustomerController extends Controller
             ? '<img src="'.e(str_replace('\\', '/', $logoPath)).'" class="logo" alt="Logo">'
             : '';
 
-      $summaryHtml = '';
+        $summaryHtml = '';
 
-if (! empty($summary)) {
-    $summaryHtml .= '<table class="summary-table"><tr>';
+        if (! empty($summary)) {
+            $summaryHtml .= '<table class="summary-table"><tr>';
 
-    foreach ($summary as $item) {
-        $value = $item['value'] ?? '';
+            foreach ($summary as $item) {
+                $value = $item['value'] ?? '';
 
-        $formattedValue = is_numeric($value)
-            ? number_format((float) $value, 2)
-            : (string) $value;
+                $formattedValue = is_numeric($value)
+                    ? number_format((float) $value, 2)
+                    : (string) $value;
 
-        $summaryHtml .= '
+                $summaryHtml .= '
             <td class="summary-cell">
                 <div class="summary-label">'.e((string) ($item['label'] ?? '')).'</div>
                 <div class="summary-value">'.e($formattedValue).'</div>
             </td>
         ';
-    }
+            }
 
-    $summaryHtml .= '</tr></table>';
-}
+            $summaryHtml .= '</tr></table>';
+        }
 
         $headerHtml = collect($headers)->map(fn ($header) => '<th>'.e($header).'</th>')->implode('');
         $bodyHtml = collect($rows)->map(function ($row) {

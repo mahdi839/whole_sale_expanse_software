@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\GareyMan;
 use App\Models\GareyManWorkLog;
+use App\Support\SimplePdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 
 class GareyManWorkLogController extends Controller
 {
@@ -32,6 +34,25 @@ class GareyManWorkLogController extends Controller
         $gareyMen = GareyMan::orderBy('name')->get(['id', 'name', 'phone']);
 
         return view('garey_man_work_logs.create', compact('workLog', 'gareyMen'));
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $search = $request->input('search');
+        $logs = GareyManWorkLog::with('gareyMan')
+            ->when($search, fn ($query) => $query->where(function ($match) use ($search) {
+                $match->where('memo_no', 'like', "%{$search}%")
+                    ->orWhereHas('gareyMan', fn ($worker) => $worker->where('name', 'like', "%{$search}%"));
+            }))->latest('date')->latest()->get();
+        $rows = $logs->map(fn ($log) => [
+            optional($log->date)->format('Y-m-d'), $log->memo_no ?: '-', $log->gareyMan?->name ?? '-', $log->qty,
+            $log->received_qty, (float) $log->qty - (float) $log->received_qty, $log->unit, $log->rate_per_goj, $log->total_rate,
+        ]);
+
+        return Response::make(SimplePdf::table('Inaya Creation - Garey Man Work Logs', ['Date', 'Memo No', 'Garey Man', 'Qty', 'Received Qty', 'Balance', 'Unit', 'Rate/Goj', 'Total'], $rows, null, ['logo_path' => public_path('inaya_creation_logo.jpeg')]), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="garey-man-work-logs-'.now()->format('Y-m-d-H-i-s').'.pdf"',
+        ]);
     }
 
     public function store(Request $request)

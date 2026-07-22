@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Shop;
 use App\Models\User;
+use App\Support\SimplePdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 
 class ShopController extends Controller
 {
@@ -20,7 +22,7 @@ class ShopController extends Controller
 
     public function create()
     {
-        return view('shops.create', ['shop' => new Shop()]);
+        return view('shops.create', ['shop' => new Shop]);
     }
 
     public function store(Request $request)
@@ -60,6 +62,46 @@ class ShopController extends Controller
     public function edit(Shop $shop)
     {
         return view('shops.edit', compact('shop'));
+    }
+
+    public function exportPdf(Request $request, Shop $shop)
+    {
+        $search = $request->input('search');
+        $stocks = $shop->stocks()
+            ->with('product')
+            ->when($search, fn ($query) => $query->whereHas('product', fn ($product) => $product
+                ->where('product_name', 'like', "%{$search}%")
+                ->orWhere('sku', 'like', "%{$search}%")
+                ->orWhere('product_code', 'like', "%{$search}%")))
+            ->get()
+            ->sortBy(fn ($stock) => $stock->product?->product_name)
+            ->values();
+        $rows = $stocks->map(fn ($stock) => [
+            $stock->product?->product_name ?? '-',
+            $stock->product?->sku ?: ($stock->product?->product_code ?: '-'),
+            number_format((float) ($stock->product?->selling_price ?? 0), 2),
+            (float) $stock->stock_qty,
+            number_format((float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0), 2),
+        ]);
+        $stockQty = (float) $stocks->sum('stock_qty');
+        $stockValue = $stocks->sum(fn ($stock) => (float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0));
+
+        return Response::make(SimplePdf::table(
+            'Inaya Creation - '.$shop->name.' Stock',
+            ['Product Name', 'Design Code', 'Sale Price', 'Available Stock', 'Stock Value'],
+            $rows,
+            null,
+            [
+                'logo_path' => public_path('inaya_creation_logo.jpeg'),
+                'summary' => [
+                    ['label' => 'Available Stock', 'value' => number_format($stockQty, 2)],
+                    ['label' => 'Stock Value', 'value' => number_format($stockValue, 2)],
+                ],
+            ]
+        ), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="shop-'.$shop->id.'-stock-'.now()->format('Y-m-d-H-i-s').'.pdf"',
+        ]);
     }
 
     public function update(Request $request, Shop $shop)
@@ -105,7 +147,7 @@ class ShopController extends Controller
     {
         return $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:100|unique:shops,code,' . $shopId,
+            'code' => 'required|string|max:100|unique:shops,code,'.$shopId,
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:1000',
             'is_active' => 'nullable|boolean',

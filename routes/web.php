@@ -1,11 +1,10 @@
 <?php
 
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\CarryManController;
+use App\Http\Controllers\CarryManWorkLogController;
 use App\Http\Controllers\CashTransactionController;
 use App\Http\Controllers\ChequeController;
 use App\Http\Controllers\ClothSewingController;
-use App\Http\Controllers\CarryManController;
-use App\Http\Controllers\CarryManWorkLogController;
 use App\Http\Controllers\ComputerManController;
 use App\Http\Controllers\ComputerManWorkLogController;
 use App\Http\Controllers\CustomerController;
@@ -15,17 +14,17 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\GareyManController;
 use App\Http\Controllers\GareyManWorkLogController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\PurchaseReturnController;
 use App\Http\Controllers\ReceivedClothController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\SaleController;
-use App\Http\Controllers\SaleReturnController;
 use App\Http\Controllers\SalaryAdvanceController;
 use App\Http\Controllers\SalaryController;
+use App\Http\Controllers\SaleController;
+use App\Http\Controllers\SaleReturnController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
@@ -39,7 +38,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     $crudResource = function (string $uri, string $controller, string $permissionBase, array $options = []) {
         $parameters = $options['parameters'] ?? [];
@@ -69,6 +68,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     };
 
     $crudResource('/products', ProductController::class, 'products', ['except' => ['show']]);
+    Route::get('/products-export/pdf', [ProductController::class, 'exportPdf'])->name('products.export.pdf')->middleware('permission:manage products|view products');
     Route::get('/products/{product}/barcode', [ProductController::class, 'barcode'])->name('products.barcode')->middleware('permission:manage products|view products');
     Route::get('/customers/suggestions', [CustomerController::class, 'suggestions'])->name('customers.suggestions')->middleware('permission:manage customers|view customers');
     Route::get('/customers/export/pdf', [CustomerController::class, 'exportIndexPdf'])->name('customers.export.pdf')->middleware('permission:manage customers|view customers');
@@ -81,9 +81,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cloth-sewings/tailors/{tailor}/receive', [ClothSewingController::class, 'saveReceived'])->name('cloth-sewings.tailors.receive.save')->middleware('permission:manage cloth sewings|edit cloth sewings|create received cloths');
     Route::get('/cloth-sewings/tailors/{tailor}/logs', [ClothSewingController::class, 'logs'])->name('cloth-sewings.tailors.logs')->middleware('permission:manage cloth sewings|view cloth sewings');
     Route::get('/cloth-sewings/tailors/{tailor}/logs/export', [ClothSewingController::class, 'exportLogs'])->name('cloth-sewings.tailors.logs.export')->middleware('permission:manage cloth sewings|view cloth sewings');
+    Route::get('/cloth-sewings/export/pdf', [ClothSewingController::class, 'exportPdf'])->name('cloth-sewings.export.pdf')->middleware('permission:manage cloth sewings|view cloth sewings');
     $crudResource('/cloth-sewings', ClothSewingController::class, 'cloth sewings', ['parameters' => ['cloth-sewings' => 'clothSewing'], 'except' => ['show']]);
     Route::resource('/tailors', TailorController::class)->only(['create', 'store'])
         ->middleware('permission:manage cloth sewings|create cloth sewings');
+    Route::get('/tailors/{tailor}/export/pdf', [TailorController::class, 'exportPdf'])->name('tailors.export.pdf')->middleware('permission:manage cloth sewings|view cloth sewings');
     Route::resource('/tailors', TailorController::class)->only(['index', 'show'])
         ->whereNumber('tailor')
         ->middleware('permission:manage cloth sewings|view cloth sewings');
@@ -94,19 +96,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereNumber('tailor')
         ->middleware('permission:manage cloth sewings|delete cloth sewings');
     $crudResource('/received-cloths', ReceivedClothController::class, 'received cloths', ['parameters' => ['received-cloths' => 'receivedCloth'], 'except' => ['show']]);
+    Route::get('/carry-men/{carryMan}/export/pdf', [CarryManController::class, 'exportPdf'])->name('carry-men.export.pdf')->middleware('permission:manage carry men|view carry men');
     $crudResource('/carry-men', CarryManController::class, 'carry men');
     Route::post('/carry-man-work-logs/{carryManWorkLog}/receive', [CarryManWorkLogController::class, 'receive'])->name('carry-man-work-logs.receive')->middleware('permission:manage carry man work logs|edit carry man work logs');
+    Route::get('/carry-man-work-logs/export/pdf', [CarryManWorkLogController::class, 'exportPdf'])->name('carry-man-work-logs.export.pdf')->middleware('permission:manage carry man work logs|view carry man work logs');
     $crudResource('/carry-man-work-logs', CarryManWorkLogController::class, 'carry man work logs', ['except' => ['show']]);
+    Route::get('/computer-men/{computerMan}/export/pdf', [ComputerManController::class, 'exportPdf'])->name('computer-men.export.pdf')->middleware('permission:manage computer men|view computer men');
     $crudResource('/computer-men', ComputerManController::class, 'computer men');
     Route::post('/computer-man-work-logs/{computerManWorkLog}/receive', [ComputerManWorkLogController::class, 'receive'])->name('computer-man-work-logs.receive')->middleware('permission:manage computer man work logs|edit computer man work logs');
+    Route::get('/computer-man-work-logs/export/pdf', [ComputerManWorkLogController::class, 'exportPdf'])->name('computer-man-work-logs.export.pdf')->middleware('permission:manage computer man work logs|view computer man work logs');
     $crudResource('/computer-man-work-logs', ComputerManWorkLogController::class, 'computer man work logs', ['except' => ['show']]);
+    Route::get('/garey-men/{gareyMan}/export/pdf', [GareyManController::class, 'exportPdf'])->name('garey-men.export.pdf')->middleware('permission:manage garey men|view garey men');
     $crudResource('/garey-men', GareyManController::class, 'garey men');
     Route::post('/garey-man-work-logs/{gareyManWorkLog}/receive', [GareyManWorkLogController::class, 'receive'])->name('garey-man-work-logs.receive')->middleware('permission:manage garey man work logs|edit garey man work logs');
+    Route::get('/garey-man-work-logs/export/pdf', [GareyManWorkLogController::class, 'exportPdf'])->name('garey-man-work-logs.export.pdf')->middleware('permission:manage garey man work logs|view garey man work logs');
     $crudResource('/garey-man-work-logs', GareyManWorkLogController::class, 'garey man work logs', ['except' => ['show']]);
     $crudResource('/users', UserController::class, 'users', ['except' => ['show']]);
     $crudResource('/roles', RoleController::class, 'roles', ['except' => ['show']]);
     $crudResource('/permissions', PermissionController::class, 'permissions', ['except' => ['show']]);
     $crudResource('/shops', ShopController::class, 'shops');
+    Route::get('/shops/{shop}/export/pdf', [ShopController::class, 'exportPdf'])->name('shops.export.pdf')->middleware('permission:manage shops|view shops');
     Route::get('/shops/{shop}/executives', [ShopController::class, 'executives'])->name('shops.executives')->middleware('permission:manage shops|edit shops');
     Route::post('/shops/{shop}/executives', [ShopController::class, 'syncExecutives'])->name('shops.executives.sync')->middleware('permission:manage shops|edit shops');
 

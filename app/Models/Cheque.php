@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Cheque extends Model
 {
     protected $fillable = [
+        'shop_id',
         'cheque_no',
         'customer_id',
         'bank',
@@ -27,5 +28,10 @@ class Cheque extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class);
     }
 }

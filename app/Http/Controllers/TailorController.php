@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tailor;
+use App\Support\WorkerProfilePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -24,12 +25,13 @@ class TailorController extends Controller
             ->latest()
             ->paginate(15)
             ->withQueryString();
+
         return view('tailors.index', compact('tailors', 'search'));
     }
 
     public function create()
     {
-        return view('tailors.create', ['tailor' => new Tailor()]);
+        return view('tailors.create', ['tailor' => new Tailor]);
     }
 
     public function store(Request $request)
@@ -60,6 +62,13 @@ class TailorController extends Controller
     public function edit(Tailor $tailor)
     {
         return view('tailors.edit', compact('tailor'));
+    }
+
+    public function exportPdf(Tailor $tailor)
+    {
+        $workLogs = $tailor->clothSewings()->with('product')->latest('date')->latest()->get();
+
+        return WorkerProfilePdf::download($tailor, 'Tailor Details and Cloth Sewing', 'tailor', $workLogs);
     }
 
     public function update(Request $request, Tailor $tailor)

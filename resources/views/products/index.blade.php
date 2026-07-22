@@ -27,6 +27,10 @@
                 </div>
 
                 <div class="flex items-center gap-2">
+                    <a href="{{ route('products.export.pdf', array_filter(['search' => $search])) }}"
+                        class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition">
+                        PDF
+                    </a>
                     <button type="submit"
                         class="flex-1 sm:flex-none px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition">
                         Search

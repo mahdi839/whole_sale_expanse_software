@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cheque;
 use App\Models\Customer;
+use App\Models\Shop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -15,9 +16,12 @@ class ChequeController extends Controller
         $filters = [
             'search' => $request->input('search'),
             'status' => $request->input('status'),
+            'shop_id' => $request->input('shop_id'),
         ];
 
-        $cheques = Cheque::with('customer')
+        $cheques = Cheque::with(['customer', 'shop'])
+            ->when(! auth()->user()->canManageAllShops(), fn ($query) => $query->where('shop_id', auth()->user()->shop_id ?: -1))
+            ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn ($query) => $query->where('shop_id', $filters['shop_id']))
             ->when($filters['status'], fn ($query) => $query->where('status', $filters['status']))
             ->when($filters['search'], function ($query) use ($filters) {
                 $search = $filters['search'];
@@ -33,7 +37,9 @@ class ChequeController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('cheques.index', compact('cheques', 'filters'));
+        $shops = auth()->user()->canManageAllShops() ? Shop::where('is_active', true)->orderBy('name')->get() : collect();
+
+        return view('cheques.index', compact('cheques', 'filters', 'shops'));
     }
 
     public function create()
@@ -41,6 +47,7 @@ class ChequeController extends Controller
         return view('cheques.create', [
             'cheque' => new Cheque(['issue_date' => now()->toDateString(), 'status' => 'pending']),
             'customers' => $this->customers(),
+            'shops' => $this->shops(),
         ]);
     }
 
@@ -53,21 +60,26 @@ class ChequeController extends Controller
 
     public function show(Cheque $cheque)
     {
-        $cheque->load('customer');
+        $this->authorizeShop($cheque);
+        $cheque->load(['customer', 'shop']);
 
         return view('cheques.show', compact('cheque'));
     }
 
     public function edit(Cheque $cheque)
     {
+        $this->authorizeShop($cheque);
+
         return view('cheques.edit', [
             'cheque' => $cheque,
             'customers' => $this->customers(),
+            'shops' => $this->shops(),
         ]);
     }
 
     public function update(Request $request, Cheque $cheque)
     {
+        $this->authorizeShop($cheque);
         $data = $this->validated($request, $cheque);
 
         $oldDocument = $cheque->documents;
@@ -83,6 +95,7 @@ class ChequeController extends Controller
 
     public function destroy(Cheque $cheque)
     {
+        $this->authorizeShop($cheque);
         if ($cheque->documents) {
             Storage::disk('public')->delete($cheque->documents);
         }
@@ -95,6 +108,7 @@ class ChequeController extends Controller
     private function validated(Request $request, ?Cheque $cheque = null): array
     {
         $data = $request->validate([
+            'shop_id' => 'nullable|exists:shops,id',
             'cheque_no' => ['required', 'string', 'max:255', Rule::unique('cheques', 'cheque_no')->ignore($cheque?->id)],
             'customer_id' => 'required|exists:customers,id',
             'bank' => 'required|string|max:255',
@@ -105,6 +119,13 @@ class ChequeController extends Controller
             'documents' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
             'note' => 'nullable|string|max:2000',
         ]);
+
+        $data['shop_id'] = $this->resolveShopId($data, $cheque);
+        abort_unless(
+            Customer::whereKey($data['customer_id'])->where('shop_id', $data['shop_id'])->exists(),
+            422,
+            'The selected customer belongs to another shop.'
+        );
 
         if ($request->hasFile('documents')) {
             $data['documents'] = $request->file('documents')->store('cheques', 'public');
@@ -117,6 +138,37 @@ class ChequeController extends Controller
 
     private function customers()
     {
-        return Customer::orderBy('full_name')->get(['id', 'full_name', 'phone']);
+        return Customer::query()
+            ->when(! auth()->user()->canManageAllShops(), fn ($query) => $query->where('shop_id', auth()->user()->shop_id ?: -1))
+            ->orderBy('full_name')
+            ->get(['id', 'shop_id', 'full_name', 'phone']);
+    }
+
+    private function shops()
+    {
+        return auth()->user()->canManageAllShops()
+            ? Shop::where('is_active', true)->orderBy('name')->get()
+            : collect([auth()->user()->shop])->filter();
+    }
+
+    private function resolveShopId(array $data, ?Cheque $cheque = null): int
+    {
+        if (auth()->user()->canManageAllShops()) {
+            $shopId = $data['shop_id'] ?? $cheque?->shop_id;
+            abort_unless($shopId, 422, 'Please select a shop.');
+
+            return (int) $shopId;
+        }
+
+        abort_unless(auth()->user()->shop_id, 403, 'No shop assigned to your user.');
+
+        return (int) auth()->user()->shop_id;
+    }
+
+    private function authorizeShop(Cheque $cheque): void
+    {
+        if (! auth()->user()->canManageAllShops()) {
+            abort_unless($cheque->shop_id === auth()->user()->shop_id, 403);
+        }
     }
 }

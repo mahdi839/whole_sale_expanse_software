@@ -27,6 +27,7 @@
                         placeholder="Search product name or SKU"
                         class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg w-full sm:w-72">
                     <button class="h-10 px-4 bg-gray-800 text-white rounded-lg text-sm">Search</button>
+                    <a href="{{ route('shops.export.pdf', [$shop, 'search' => $search]) }}" class="h-10 px-4 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm inline-flex items-center justify-center">PDF</a>
                     @if($search)
                         <a href="{{ route('shops.show', $shop) }}" class="h-10 px-4 bg-cyan-600 text-white rounded-lg text-sm inline-flex items-center justify-center">Reset</a>
                     @endif
