@@ -19,6 +19,8 @@ class Sale extends Model
         'grand_total',
         'paid',
         'due',
+        'customer_balance_before_sale',
+        'customer_due_after_sale',
         'return_amount',
         'cash_memo',
         'bell_no',
@@ -31,11 +33,13 @@ class Sale extends Model
     ];
 
     protected $casts = [
-        'discount'    => 'decimal:2',
-        'add_money'   => 'decimal:2',
+        'discount' => 'decimal:2',
+        'add_money' => 'decimal:2',
         'grand_total' => 'decimal:2',
-        'paid'        => 'decimal:2',
-        'due'         => 'decimal:2',
+        'paid' => 'decimal:2',
+        'due' => 'decimal:2',
+        'customer_balance_before_sale' => 'decimal:2',
+        'customer_due_after_sale' => 'decimal:2',
         'return_amount' => 'decimal:2',
     ];
 
@@ -74,6 +78,6 @@ class Sale extends Model
         $last = static::orderByDesc('id')->value('reference');
         $next = $last ? ((int) preg_replace('/\D/', '', $last)) + 1 : 1;
 
-        return 'SALE-' . str_pad($next, 6, '0', STR_PAD_LEFT);
+        return 'SALE-'.str_pad($next, 6, '0', STR_PAD_LEFT);
     }
 }

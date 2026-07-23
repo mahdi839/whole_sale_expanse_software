@@ -155,9 +155,17 @@ class SaleController extends Controller
             );
 
             $shopId = $this->resolveShopId($validated);
+            $customer = null;
+            $customerBalanceBeforeSale = null;
 
             if (! empty($validated['customer_id'])) {
-                abort_unless(Customer::whereKey($validated['customer_id'])->where('shop_id', $shopId)->exists(), 422, 'The selected customer belongs to another shop.');
+                $customer = Customer::whereKey($validated['customer_id'])
+                    ->where('shop_id', $shopId)
+                    ->lockForUpdate()
+                    ->first();
+
+                abort_unless($customer, 422, 'The selected customer belongs to another shop.');
+                $customerBalanceBeforeSale = (float) $customer->total_sale - (float) $customer->total_paid;
             }
 
             $sale = Sale::create([
@@ -170,6 +178,7 @@ class SaleController extends Controller
                 'grand_total' => $grandTotal,
                 'paid' => $paid,
                 'due' => $due,
+                'customer_balance_before_sale' => $customerBalanceBeforeSale,
                 'return_amount' => $returnAmount,
                 'cash_memo' => $validated['cash_memo'] ?? null,
                 'bell_no' => $validated['bell_no'] ?? null,
@@ -217,16 +226,20 @@ class SaleController extends Controller
                 $stock->decrement('stock_qty', $qty);
             }
 
-            if ($sale->customer_id) {
-                $customer = Customer::find($sale->customer_id);
-                if ($customer) {
-                    $customer->increment('total_sale', $grandTotal);
-                    $customer->increment('total_paid', $paid);
-                    $customer->recalculateDue();
-                }
+            if ($customer) {
+                $customer->increment('total_sale', $grandTotal);
+                $customer->increment('total_paid', $paid);
+                $customer->recalculateDue();
             }
 
             $this->createAppliedSaleReturns($sale, $request->input('returns', []));
+
+            if ($customer) {
+                $sale->update([
+                    'customer_due_after_sale' => (float) $customer->fresh()->due,
+                ]);
+            }
+
             $this->syncCashPayment($sale->fresh());
         });
 
@@ -264,6 +277,8 @@ class SaleController extends Controller
         $this->authorizeSaleShop($sale);
 
         DB::transaction(function () use ($request, $sale, $validated) {
+            $originalCustomerId = $sale->customer_id ? (int) $sale->customer_id : null;
+            $customerBalanceBeforeSale = $sale->customer_balance_before_sale;
 
             // Reverse old stock
             foreach ($sale->items as $oldItem) {
@@ -326,6 +341,25 @@ class SaleController extends Controller
                 'note' => $validated['note'] ?? null,
             ]);
 
+            if ($sale->customer_id) {
+                if (
+                    is_null($customerBalanceBeforeSale)
+                    || $originalCustomerId !== (int) $sale->customer_id
+                ) {
+                    $customerBalanceBeforeSale = $this->customerBalanceBeforeSale($sale->fresh());
+                }
+
+                $sale->update([
+                    'customer_balance_before_sale' => $customerBalanceBeforeSale,
+                ]);
+            } else {
+                $customerBalanceBeforeSale = null;
+                $sale->update([
+                    'customer_balance_before_sale' => null,
+                    'customer_due_after_sale' => null,
+                ]);
+            }
+
             foreach ($itemsInput as $item) {
                 $product = Product::findOrFail($item['product_id']);
                 $qty = (float) $item['qty'];
@@ -370,6 +404,19 @@ class SaleController extends Controller
             }
 
             $this->createAppliedSaleReturns($sale, $request->input('returns', []));
+
+            if (! is_null($customerBalanceBeforeSale)) {
+                $sale->update([
+                    'customer_due_after_sale' => max(
+                        0,
+                        (float) $customerBalanceBeforeSale
+                            + $grandTotal
+                            - $returnAmount
+                            - $paid
+                    ),
+                ]);
+            }
+
             $this->syncCashPayment($sale->fresh());
         });
 
@@ -423,8 +470,27 @@ class SaleController extends Controller
         $totalQtyDisplay = floor($totalQty) == $totalQty
             ? number_format($totalQty, 0)
             : number_format($totalQty, 2);
-        $customerTotalDue = $sale->customer ? (float) $sale->customer->due : null;
-        $customerPreviousDue = $sale->customer ? $this->customerDueBeforeSale($sale) : null;
+        $customerPreviousDue = null;
+        $customerTotalDue = null;
+
+        if ($sale->customer) {
+            $balanceBeforeSale = $sale->customer_balance_before_sale;
+
+            if (is_null($balanceBeforeSale)) {
+                $balanceBeforeSale = $this->customerBalanceBeforeSale($sale);
+            }
+
+            $customerPreviousDue = max(0, (float) $balanceBeforeSale);
+            $customerTotalDue = ! is_null($sale->customer_due_after_sale)
+                ? (float) $sale->customer_due_after_sale
+                : max(
+                    0,
+                    (float) $balanceBeforeSale
+                        + (float) $sale->grand_total
+                        - (float) $sale->return_amount
+                        - (float) $sale->paid
+                );
+        }
 
         return view('sales.invoice', compact('sale', 'totalQtyDisplay', 'customerTotalDue', 'customerPreviousDue'));
     }
@@ -563,7 +629,7 @@ class SaleController extends Controller
         ]);
     }
 
-    private function customerDueBeforeSale(Sale $sale): float
+    private function customerBalanceBeforeSale(Sale $sale): float
     {
         if (! $sale->customer_id) {
             return 0;
@@ -598,10 +664,15 @@ class SaleController extends Controller
         $manualDue = (float) ManualDue::query()
             ->where('party_type', 'customer')
             ->where('customer_id', $sale->customer_id)
-            ->whereDate('date', '<', $sale->created_at->toDateString())
-            ->sum('amount');
+            ->where('created_at', '<', $sale->created_at)
+            ->selectRaw('COALESCE(SUM(CASE WHEN adjustment_type = "subtract" THEN -amount ELSE amount END), 0) as amount')
+            ->value('amount');
 
-        return max(0, (float) ($saleTotals->total_sale ?? 0) + $manualDue - $returnTotal - (float) ($saleTotals->total_paid ?? 0) - $cashPaid);
+        return (float) ($saleTotals->total_sale ?? 0)
+            + $manualDue
+            - $returnTotal
+            - (float) ($saleTotals->total_paid ?? 0)
+            - $cashPaid;
     }
 
     private function resolvePurchaseItem(int $productId, ?int $purchaseItemId): ?PurchaseItem

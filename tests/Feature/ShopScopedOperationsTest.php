@@ -191,6 +191,110 @@ it('shows the shop address and proprietor number on sale invoices', function () 
         ->assertSee('Proprietor Number: PROP-123');
 });
 
+it('keeps invoice due snapshots correct after later customer activity', function () {
+    $shop = Shop::create(['name' => 'Inaya Creation', 'code' => 'INAYA']);
+    $user = User::factory()->create(['shop_id' => $shop->id]);
+    $customer = Customer::create(['shop_id' => $shop->id, 'full_name' => 'Snapshot Customer']);
+    $product = Product::create(['product_name' => 'Dress', 'sku' => 'D-1', 'selling_price' => 50]);
+    Stock::create(['product_id' => $product->id, 'shop_id' => $shop->id, 'stock_qty' => 5]);
+
+    $this->actingAs($user)->post(route('dues.store'), [
+        'party_type' => 'customer',
+        'adjustment_type' => 'add',
+        'customer_id' => $customer->id,
+        'amount' => 100,
+        'date' => now()->toDateString(),
+    ])->assertRedirect(route('dues.manual'));
+
+    $this->actingAs($user)->post(route('cash-transactions.store'), [
+        'direction' => 'in',
+        'type' => 'collection',
+        'amount' => 40,
+        'date' => now()->toDateString(),
+        'customer_id' => $customer->id,
+        'cash_entry_type' => 'customer',
+    ])->assertRedirect(route('cash-transactions.index'));
+
+    $this->actingAs($user)->post(route('dues.store'), [
+        'party_type' => 'customer',
+        'adjustment_type' => 'add',
+        'customer_id' => $customer->id,
+        'amount' => 30,
+        'date' => now()->toDateString(),
+    ])->assertRedirect(route('dues.manual'));
+
+    $this->actingAs($user)->post(route('sales.store'), [
+        'reference' => 'SALE-SNAPSHOT',
+        'customer_id' => $customer->id,
+        'payment_status' => 'due',
+        'items' => [[
+            'product_id' => $product->id,
+            'qty' => 1,
+            'price_on_sale' => 50,
+        ]],
+    ])->assertRedirect(route('sales.index'));
+
+    $sale = Sale::where('reference', 'SALE-SNAPSHOT')->firstOrFail();
+
+    expect((float) $sale->customer_balance_before_sale)->toBe(90.0)
+        ->and((float) $sale->customer_due_after_sale)->toBe(140.0)
+        ->and((float) $customer->fresh()->due)->toBe(140.0);
+
+    $this->actingAs($user)->post(route('cash-transactions.store'), [
+        'direction' => 'in',
+        'type' => 'collection',
+        'amount' => 25,
+        'date' => now()->toDateString(),
+        'customer_id' => $customer->id,
+        'cash_entry_type' => 'customer',
+    ])->assertRedirect(route('cash-transactions.index'));
+
+    $this->actingAs($user)->post(route('dues.store'), [
+        'party_type' => 'customer',
+        'adjustment_type' => 'add',
+        'customer_id' => $customer->id,
+        'amount' => 10,
+        'date' => now()->toDateString(),
+    ])->assertRedirect(route('dues.manual'));
+
+    expect((float) $customer->fresh()->due)->toBe(125.0);
+
+    $this->actingAs($user)->get(route('sales.invoice', $sale))
+        ->assertOk()
+        ->assertSeeInOrder([
+            'Previous Due',
+            '90',
+            'Customer Total Due',
+            '140',
+        ]);
+
+    $this->actingAs($user)->put(route('sales.update', $sale), [
+        'reference' => 'SALE-SNAPSHOT',
+        'customer_id' => $customer->id,
+        'payment_status' => 'due',
+        'items' => [[
+            'product_id' => $product->id,
+            'qty' => 1,
+            'price_on_sale' => 70,
+        ]],
+    ])->assertRedirect(route('sales.index'));
+
+    $sale->refresh();
+
+    expect((float) $sale->customer_balance_before_sale)->toBe(90.0)
+        ->and((float) $sale->customer_due_after_sale)->toBe(160.0)
+        ->and((float) $customer->fresh()->due)->toBe(145.0);
+
+    $this->actingAs($user)->get(route('sales.invoice', $sale))
+        ->assertOk()
+        ->assertSeeInOrder([
+            'Previous Due',
+            '90',
+            'Customer Total Due',
+            '160',
+        ]);
+});
+
 it('downloads tailor and worker profile and work log pdf reports', function () {
     $shop = Shop::create(['name' => 'Inaya Creation', 'code' => 'INAYA']);
     $user = User::factory()->create(['shop_id' => $shop->id]);
