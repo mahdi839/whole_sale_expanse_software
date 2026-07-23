@@ -98,7 +98,7 @@
         /* ---- Sticker card ---- */
         .sticker {
             width: 39mm;
-            height: 20mm;
+            height: 22mm;
             box-sizing: border-box;
             overflow: hidden;
             border: .15mm solid #000;
