@@ -180,16 +180,22 @@
             white-space: nowrap;
         }
 
-        .barcode-wrap {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-end;
-            flex: 1 1 auto;
-            min-height: 0;
-            padding-top: 2px;
-            padding-bottom: 2px;
-        }
+       .sticker-brand,
+.sticker-product,
+.sticker-meta {
+    font-family: Arial, Helvetica, "Liberation Sans", sans-serif;
+}
+
+.barcode-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1 1 auto;
+    min-height: 8.5mm; /* reserve space so text rows can never crowd it out */
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
 
         .barcode-svg {
             display: block;
