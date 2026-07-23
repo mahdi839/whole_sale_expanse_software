@@ -202,11 +202,12 @@
             width: 35mm;
             height: 7.5mm;
             overflow: visible;
+            padding-bottom: 2px;
         }
 
         .barcode-text {
             flex: 0 0 auto;
-            margin-top: .2mm;
+            margin-top: .5mm;
             font: 6pt/1 monospace;
             letter-spacing: .3mm;
             white-space: nowrap;
