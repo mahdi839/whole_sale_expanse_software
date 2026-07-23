@@ -146,6 +146,26 @@ it('downloads the requested inventory pdf reports', function () {
         ->assertHeader('Content-Type', 'application/pdf');
 });
 
+it('renders compact paginated barcode stickers without the logo', function () {
+    $shop = Shop::create(['name' => 'Inaya Creation', 'code' => 'INAYA']);
+    $user = User::factory()->create(['shop_id' => $shop->id]);
+    $product = Product::create([
+        'product_name' => 'Compact Dress',
+        'sku' => 'CD-1',
+        'product_code' => '100001',
+        'selling_price' => 100,
+    ]);
+
+    $this->actingAs($user)->get(route('products.barcode', $product))
+        ->assertOk()
+        ->assertSee('Compact Dress')
+        ->assertDontSee('brand-logo')
+        ->assertDontSee('Inaya creation logo')
+        ->assertSee('grid-template-columns: repeat(5, 39mm)', false)
+        ->assertSee('const labelsPerPage = 65;', false)
+        ->assertSee('margin: 5mm;', false);
+});
+
 it('downloads customer and supplier transaction pdf reports with the extended data', function () {
     $shop = Shop::create(['name' => 'Inaya Creation', 'code' => 'INAYA']);
     $user = User::factory()->create(['shop_id' => $shop->id]);

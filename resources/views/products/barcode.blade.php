@@ -72,171 +72,140 @@
         }
         .label-sheet {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+            flex-direction: column;
+            gap: 12px;
             align-items: flex-start;
         }
+        .sticker-page {
+            display: grid;
+            grid-template-columns: repeat(5, 39mm);
+            gap: 1mm;
+            align-content: start;
+        }
+
+        /* ---- Sticker card ---- */
         .sticker {
-            width: auto;
-            min-height: 140px;
-            border: 1.5px solid #b98725;
-            border-radius: 10px;
-            background: #fffdf8;
-            padding: 6px;
-            color: #050505;
+            width: 39mm;
+            height: 20mm;
+            box-sizing: border-box;
+            overflow: hidden;
+            border: .15mm solid #000;
+            background: #fff;
+            padding: .55mm 1.1mm;
+            color: #000;
             break-inside: avoid;
             page-break-inside: avoid;
-            position: relative;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
+            display: flex;
+            flex-direction: column;
         }
-        .sticker::before {
-            content: "";
-            position: absolute;
-            inset: 4px;
-            border: 1px solid #c99b3c;
-            border-radius: 7px;
-            pointer-events: none;
+        .sticker-brand {
+            flex: 0 0 auto;
+            font: 700 5.5pt/1 Arial, sans-serif;
+            letter-spacing: .3mm;
+            text-transform: uppercase;
+            text-align: center;
+            color: #111;
+            padding-bottom: .3mm;
+            margin-bottom: .35mm;
+            border-bottom: .15mm solid #000;
         }
-        .sticker-head {
-            display: grid;
-            grid-template-columns: 36px 1fr;
-            gap: 6px;
-            align-items: center;
-            margin-bottom: 5px;
-            position: relative;
-            z-index: 1;
+        .sticker-product {
+            flex: 0 0 auto;
+            font: 700 7.5pt/1.15 Arial, sans-serif;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: .3mm;
         }
-        .brand-logo {
-            width: 34px;
-            height: 34px;
-            object-fit: contain;
-            border-radius: 999px;
-            border: 1px solid #b98725;
-            background: #ffffff;
-            padding: 1px;
-            display: block;
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
+        .sticker-meta {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 1mm;
+            font: 400 6.5pt/1.1 Arial, sans-serif;
+            margin-bottom: .3mm;
         }
-        .brand-title {
-            font-family: Georgia, serif;
-            font-size: 14px;
-            line-height: 1;
-            font-weight: 600;
+        .meta-design {
+            flex: 1 1 auto;
+            min-width: 0;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #333;
+        }
+        .meta-price {
+            flex: 0 0 auto;
+            font-weight: 700;
+            font-size: 7.5pt;
             white-space: nowrap;
         }
-        .info-table {
-            display: grid;
-            grid-template-columns: 80px 1fr;
-            border: 1px solid #c99b3c;
-            border-radius: 6px;
-            overflow: hidden;
-            position: relative;
-            z-index: 1;
-        }
-        .info-label,
-        .info-value {
-            min-height: 20px;
-            display: flex;
-            align-items: center;
-            border-bottom: 1px solid #c99b3c;
-        }
-        .info-label:nth-last-child(2),
-        .info-value:last-child { border-bottom: 0; }
-        .info-label {
-            background:rgb(12, 12, 88);
-            color: #d5a642;
-            padding: 3px 6px;
-            font: 700 7px Arial, sans-serif;
-            letter-spacing: 1px;
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
-        }
-        .info-value {
-            padding: 3px 6px;
-            font: 800 10px Arial, sans-serif;
-            overflow-wrap: anywhere;
-        }
-        .info-value.product-name {
-            font-size: 10px;
-            line-height: 1.05;
-        }
         .barcode-wrap {
-            text-align: center;
-            position: relative;
-            z-index: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-top: 5px;
+            justify-content: flex-end;
+            flex: 1 1 auto;
+            min-height: 0;
         }
         .barcode-svg {
             display: block;
-            width: 140px;
-            height: 30px;
-            max-width: 100%;
-            margin: 0 auto;
+            width: 35mm;
+            height: 7.5mm;
             overflow: visible;
         }
         .barcode-text {
-            margin-top: 1px;
-            font: 8px monospace;
-            letter-spacing: 2px;
+            flex: 0 0 auto;
+            margin-top: .2mm;
+            font: 6pt/1 monospace;
+            letter-spacing: .3mm;
+            white-space: nowrap;
         }
+
         @media print {
-            @page { size: A4; margin: 0; }
+            @page {
+                size: A4 portrait;
+                margin: 5mm;
+            }
+            html,
             body {
                 background: #fff !important;
-                padding: 4mm;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             body * { visibility: hidden; }
             #printArea, #printArea * { visibility: visible; }
             #printArea {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                overflow: visible !important;
             }
             .barcode-controls,
             .barcode-actions,
             nav,
             header { display: none !important; }
             .label-sheet {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 2mm;
+                display: block;
             }
-            .sticker {
-                width: calc((100% - 6mm) / 4);
-                min-height: 32mm;
-                box-sizing: border-box;
-                box-shadow: none;
-                print-color-adjust: exact;
-                -webkit-print-color-adjust: exact;
+            .sticker-page {
+                display: grid;
+                grid-template-columns: repeat(5, 39mm);
+                gap: 1mm;
+                break-after: page;
+                page-break-after: always;
             }
-            .brand-title { font-size: 11px; }
-            .brand-logo {
-                width: 34px;
-                height: 34px;
-                border-width: 1px;
-                padding: 1px;
+            .sticker-page:last-child {
+                break-after: auto;
+                page-break-after: auto;
             }
-            .sticker-head { grid-template-columns: 36px 1fr; gap: 5px; }
-            .info-table { grid-template-columns: 62px 1fr; }
-            .info-label {
-                font-size: 5.5px;
-                padding: 2px 4px;
-                background: rgb(18, 18, 75) !important;
-                color: #d5a642 !important;
-                print-color-adjust: exact;
-                -webkit-print-color-adjust: exact;
-            }
-            .info-value { font-size: 9px; min-height: 18px; padding: 2px 6px; }
-            .info-value.product-name { font-size: 9px; }
-            .barcode-svg { width: 120px; }
-            .barcode-text { font-size: 7px; letter-spacing: 1.5px; }
         }
     </style>
 
@@ -292,7 +261,6 @@
         code: @json($product->product_code ?: $product->sku),
         name: @json($product->product_name),
         price: @json((float) $product->selling_price),
-        logo: @json('/inaya_creation_logo.jpeg'),
     };
 
     const patterns = [
@@ -311,35 +279,41 @@
 
     const qtyInput = document.getElementById('labelQty');
     const labelSheet = document.getElementById('labelSheet');
+    const labelsPerPage = 65;
 
     function renderLabels() {
         const qty = Math.max(1, Math.min(300, parseInt(qtyInput.value, 10) || 1));
         qtyInput.value = qty;
         labelSheet.innerHTML = '';
+        let stickerPage = null;
 
         for (let i = 0; i < qty; i++) {
-            labelSheet.insertAdjacentHTML('beforeend', labelHtml());
+            if (i % labelsPerPage === 0) {
+                labelSheet.insertAdjacentHTML('beforeend', '<div class="sticker-page"></div>');
+                stickerPage = labelSheet.lastElementChild;
+            }
+
+            stickerPage.insertAdjacentHTML('beforeend', labelHtml());
         }
 
-        document.querySelectorAll('.barcode-svg').forEach(svg => {
+        labelSheet.querySelectorAll('.barcode-svg').forEach(svg => {
             drawCode128(svg, product.code || product.design || '0000');
         });
+    }
+
+    function formatPrice(value) {
+        const num = Number(value) || 0;
+        return num % 1 === 0 ? num.toFixed(0) : num.toFixed(2);
     }
 
     function labelHtml() {
         return `
             <section class="sticker">
-                <div class="sticker-head">
-                    <img class="brand-logo" src="${escapeAttr(product.logo)}" alt="Inaya creation logo" loading="eager" decoding="sync">
-                    <div>
-                        <div class="brand-title">Inaya creation</div>
-                    </div>
-                </div>
-                <div class="info-table">
-                    <div class="info-label">DESIGN CODE.</div>
-                    <div class="info-value">${escapeHtml(product.design || '-')}</div>
-                    <div class="info-label">PRODUCT NAME</div>
-                    <div class="info-value product-name">${escapeHtml(product.name || '-')}</div>
+                <div class="sticker-brand">Inaya Creation</div>
+                <div class="sticker-product">${escapeHtml(product.name || '-')}</div>
+                <div class="sticker-meta">
+                    <span class="meta-design">${escapeHtml(product.design || '-')}</span>
+                    <span class="meta-price">${'\u09F3'}${formatPrice(product.price)}</span>
                 </div>
                 <div class="barcode-wrap">
                     <svg class="barcode-svg" role="img" aria-label="Barcode"></svg>
@@ -395,34 +369,8 @@
         }[char]));
     }
 
-    function escapeAttr(value) {
-        return escapeHtml(value);
-    }
-
-    async function waitForStickerImages() {
-        const images = Array.from(document.querySelectorAll('#printArea img'));
-        await Promise.all(images.map(image => {
-            if (image.complete && image.naturalWidth > 0) {
-                return Promise.resolve();
-            }
-
-            if (typeof image.decode === 'function') {
-                return image.decode().catch(() => new Promise(resolve => {
-                    image.addEventListener('load', resolve, { once: true });
-                    image.addEventListener('error', resolve, { once: true });
-                }));
-            }
-
-            return new Promise(resolve => {
-                image.addEventListener('load', resolve, { once: true });
-                image.addEventListener('error', resolve, { once: true });
-            });
-        }));
-    }
-
-    async function printStickers() {
+    function printStickers() {
         renderLabels();
-        await waitForStickerImages();
         setTimeout(() => window.print(), 100);
     }
 
