@@ -136,11 +136,12 @@
         .sticker-meta {
             flex: 0 0 auto;
             display: flex;
-            align-items: baseline;
-            justify-content: space-between;
+            align-items: center;
+            justify-content: center;
             gap: 1.5mm;
             font: 400 6.5pt/1.1 Arial, sans-serif;
-            margin-bottom: 0;
+            margin-bottom: 1px;
+            padding-left: 10px;
         }
 
         .meta-label {
@@ -154,7 +155,7 @@
         .meta-value {
             flex: 1 1 auto;
             min-width: 0;
-            text-align: right;
+            text-align: center;
             font-weight: 700;
             font-size: 6.5pt;
             white-space: nowrap;
@@ -186,6 +187,8 @@
             justify-content: flex-end;
             flex: 1 1 auto;
             min-height: 0;
+            padding-top: 2px;
+            padding-bottom: 2px;
         }
 
         .barcode-svg {
