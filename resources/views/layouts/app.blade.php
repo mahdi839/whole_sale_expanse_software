@@ -494,57 +494,23 @@
                     Dashboard
                 </x-sidebar-link>
 
-                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Access Control</p>
-
-                @canany([
-                    'manage users',
-                    'view users',
-                    'manage roles',
-                    'view roles',
-                    'manage permissions',
-                    'view
-                    permissions',
-                    ])
-                    <x-sidebar-dropdown label="Access Control" :active="request()->routeIs('users.*') ||
-                        request()->routeIs('roles.*') ||
-                        request()->routeIs('permissions.*')">
+                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Sales Management</p>
+                @canany(['manage sales', 'view sales', 'manage sale returns', 'view sale returns'])
+                    <x-sidebar-dropdown label="Sales Management" :active="request()->routeIs('sales.*')">
                         <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="1.75">
-                                <path d="M12 12a5 5 0 100-10 5 5 0 000 10z" />
-                                <path d="M3 22a9 9 0 0118 0" />
-                                <path d="M17 11l2 2 4-4" />
+                                <path
+                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg></x-slot>
-                        @canany(['manage users', 'view users'])
-                            <x-sidebar-sub-link :href="route('users.index')">Users</x-sidebar-sub-link>
+                        @canany(['manage sales', 'view sales'])
+                            <x-sidebar-sub-link :href="route('sales.index')">Sales Orders</x-sidebar-sub-link>
                         @endcanany
-                        @canany(['manage roles', 'view roles'])
-                            <x-sidebar-sub-link :href="route('roles.index')">Roles</x-sidebar-sub-link>
-                        @endcanany
-                        @canany(['manage permissions', 'view permissions'])
-                            <x-sidebar-sub-link :href="route('permissions.index')">Permissions</x-sidebar-sub-link>
+                        @canany(['manage sale returns', 'view sale returns'])
+                            <x-sidebar-sub-link :href="route('sale-returns.index')">Return Sales</x-sidebar-sub-link>
                         @endcanany
                     </x-sidebar-dropdown>
                 @endcanany
 
-                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Customers & Suppliers</p>
-
-                @canany(['manage customers', 'view customers', 'manage suppliers', 'view suppliers'])
-                    <x-sidebar-dropdown label="People" :active="request()->routeIs('customers.*') || request()->routeIs('suppliers.*')">
-                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.75">
-                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                                <circle cx="9" cy="7" r="4" />
-                                <path d="M23 21v-2a4 4 0 00-3-3.87" />
-                                <path d="M16 3.13a4 4 0 010 7.75" />
-                            </svg></x-slot>
-                        @canany(['manage customers', 'view customers'])
-                            <x-sidebar-sub-link :href="route('customers.index')">Customers</x-sidebar-sub-link>
-                        @endcanany
-                        @canany(['manage suppliers', 'view suppliers'])
-                            <x-sidebar-sub-link :href="route('suppliers.index')">Suppliers</x-sidebar-sub-link>
-                        @endcanany
-                    </x-sidebar-dropdown>
-                @endcanany
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Products & Inventory</p>
                 @canany(['manage products', 'view products'])
                     <x-sidebar-dropdown label="Products" :active="request()->routeIs('products.*')">
@@ -555,6 +521,7 @@
                         <x-sidebar-sub-link :href="route('products.index')">All Products</x-sidebar-sub-link>
                     </x-sidebar-dropdown>
                 @endcanany
+
                 @canany([
                     'manage shops',
                     'view shops',
@@ -587,116 +554,26 @@
                     </x-sidebar-dropdown>
                 @endcanany
 
-                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Purchasing</p>
+                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Customers & Suppliers</p>
 
-                @canany(['manage purchases', 'view purchases', 'manage purchase returns', 'view purchase returns'])
-                    <x-sidebar-dropdown label="Purchase Management" :active="request()->routeIs('purchases.*') || request()->routeIs('purchase-returns.*')">
+                @canany(['manage customers', 'view customers', 'manage suppliers', 'view suppliers'])
+                    <x-sidebar-dropdown label="People" :active="request()->routeIs('customers.*') || request()->routeIs('suppliers.*')">
                         <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="1.75">
-                                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-                                <line x1="3" y1="6" x2="21" y2="6" />
-                                <path d="M16 10a4 4 0 01-8 0" />
+                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                                <path d="M16 3.13a4 4 0 010 7.75" />
                             </svg></x-slot>
-                        @canany(['manage purchases', 'view purchases'])
-                            <x-sidebar-sub-link :href="route('purchases.index')">Purchase List</x-sidebar-sub-link>
+                        @canany(['manage customers', 'view customers'])
+                            <x-sidebar-sub-link :href="route('customers.index')">Customers</x-sidebar-sub-link>
                         @endcanany
-                        @canany(['manage purchase returns', 'view purchase returns'])
-                            <x-sidebar-sub-link :href="route('purchase-returns.index')">Return Purchase</x-sidebar-sub-link>
-                        @endcanany
-                    </x-sidebar-dropdown>
-                @endcanany
-                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Sales Management</p>
-                @canany(['manage sales', 'view sales', 'manage sale returns', 'view sale returns'])
-                    <x-sidebar-dropdown label="Sales Management" :active="request()->routeIs('sales.*')">
-                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.75">
-                                <path
-                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg></x-slot>
-                        @canany(['manage sales', 'view sales'])
-                            <x-sidebar-sub-link :href="route('sales.index')">Sales Orders</x-sidebar-sub-link>
-                        @endcanany
-                        @canany(['manage sale returns', 'view sale returns'])
-                            <x-sidebar-sub-link :href="route('sale-returns.index')">Return Sales</x-sidebar-sub-link>
+                        @canany(['manage suppliers', 'view suppliers'])
+                            <x-sidebar-sub-link :href="route('suppliers.index')">Suppliers</x-sidebar-sub-link>
                         @endcanany
                     </x-sidebar-dropdown>
                 @endcanany
 
-                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Cloth Management</p>
-
-                @canany(['manage cloth sewings', 'view cloth sewings'])
-                    <x-sidebar-dropdown label="Cloth Management" :active="request()->routeIs('cloth-sewings.*') || request()->routeIs('tailors.*')">
-                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.75">
-                                <path d="M4 7h16" />
-                                <path d="M6 7v11a2 2 0 002 2h8a2 2 0 002-2V7" />
-                                <path d="M9 7V4h6v3" />
-                                <path d="M9 12h6" />
-                                <path d="M9 16h4" />
-                            </svg></x-slot>
-                        @canany(['manage cloth sewings', 'view cloth sewings'])
-                            <x-sidebar-sub-link :href="route('cloth-sewings.index')">Cloth Sewing</x-sidebar-sub-link>
-                        @endcanany
-                        @canany(['manage cloth sewings', 'view cloth sewings'])
-                            <x-sidebar-sub-link :href="route('tailors.index')">Tailors</x-sidebar-sub-link>
-                        @endcanany
-                    </x-sidebar-dropdown>
-                @endcanany
-
-                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Worker Management</p>
-
-                @canany(['manage carry men', 'view carry men', 'manage carry man work logs', 'view carry man work logs'])
-                    <x-sidebar-dropdown label="Carry Man" :active="request()->routeIs('carry-men.*') || request()->routeIs('carry-man-work-logs.*')">
-                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.75">
-                                <path d="M3 7h13v10H3z" />
-                                <path d="M16 10h3l2 3v4h-5z" />
-                                <circle cx="7" cy="18" r="2" />
-                                <circle cx="18" cy="18" r="2" />
-                            </svg></x-slot>
-                        @canany(['manage carry men', 'view carry men'])
-                            <x-sidebar-sub-link :href="route('carry-men.index')" :active="request()->routeIs('carry-men.*')">Profiles</x-sidebar-sub-link>
-                        @endcanany
-                        @canany(['manage carry man work logs', 'view carry man work logs'])
-                            <x-sidebar-sub-link :href="route('carry-man-work-logs.index')" :active="request()->routeIs('carry-man-work-logs.*')">Work Logs</x-sidebar-sub-link>
-                        @endcanany
-                    </x-sidebar-dropdown>
-                @endcanany
-
-                @canany(['manage computer men', 'view computer men', 'manage computer man work logs', 'view computer man work logs'])
-                    <x-sidebar-dropdown label="Computer Man" :active="request()->routeIs('computer-men.*') || request()->routeIs('computer-man-work-logs.*')">
-                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.75">
-                                <rect x="3" y="4" width="18" height="12" rx="2" />
-                                <path d="M8 20h8" />
-                                <path d="M12 16v4" />
-                            </svg></x-slot>
-                        @canany(['manage computer men', 'view computer men'])
-                            <x-sidebar-sub-link :href="route('computer-men.index')" :active="request()->routeIs('computer-men.*')">Profiles</x-sidebar-sub-link>
-                        @endcanany
-                        @canany(['manage computer man work logs', 'view computer man work logs'])
-                            <x-sidebar-sub-link :href="route('computer-man-work-logs.index')" :active="request()->routeIs('computer-man-work-logs.*')">Work Logs</x-sidebar-sub-link>
-                        @endcanany
-                    </x-sidebar-dropdown>
-                @endcanany
-
-                @canany(['manage garey men', 'view garey men', 'manage garey man work logs', 'view garey man work logs'])
-                    <x-sidebar-dropdown label="Garey Man" :active="request()->routeIs('garey-men.*') || request()->routeIs('garey-man-work-logs.*')">
-                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.75">
-                                <path d="M4 19V7a2 2 0 012-2h12a2 2 0 012 2v12" />
-                                <path d="M4 11h16" />
-                                <path d="M8 15h8" />
-                                <path d="M7 19h10" />
-                            </svg></x-slot>
-                        @canany(['manage garey men', 'view garey men'])
-                            <x-sidebar-sub-link :href="route('garey-men.index')" :active="request()->routeIs('garey-men.*')">Profiles</x-sidebar-sub-link>
-                        @endcanany
-                        @canany(['manage garey man work logs', 'view garey man work logs'])
-                            <x-sidebar-sub-link :href="route('garey-man-work-logs.index')" :active="request()->routeIs('garey-man-work-logs.*')">Work Logs</x-sidebar-sub-link>
-                        @endcanany
-                    </x-sidebar-dropdown>
-                @endcanany
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Accounts</p>
 
                 {{-- accounts --}}
@@ -727,6 +604,123 @@
                         @endcanany
                     </x-sidebar-dropdown>
                 @endcanany
+
+                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Purchasing</p>
+
+                @canany(['manage purchases', 'view purchases', 'manage purchase returns', 'view purchase returns'])
+                    <x-sidebar-dropdown label="Purchase Management" :active="request()->routeIs('purchases.*') || request()->routeIs('purchase-returns.*')">
+                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.75">
+                                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                                <line x1="3" y1="6" x2="21" y2="6" />
+                                <path d="M16 10a4 4 0 01-8 0" />
+                            </svg></x-slot>
+                        @canany(['manage purchases', 'view purchases'])
+                            <x-sidebar-sub-link :href="route('purchases.index')">Purchase List</x-sidebar-sub-link>
+                        @endcanany
+                        @canany(['manage purchase returns', 'view purchase returns'])
+                            <x-sidebar-sub-link :href="route('purchase-returns.index')">Return Purchase</x-sidebar-sub-link>
+                        @endcanany
+                    </x-sidebar-dropdown>
+                @endcanany
+
+
+
+                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Cloth Management</p>
+
+                @canany(['manage cloth sewings', 'view cloth sewings'])
+                    <x-sidebar-dropdown label="Cloth Management" :active="request()->routeIs('cloth-sewings.*') || request()->routeIs('tailors.*')">
+                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.75">
+                                <path d="M4 7h16" />
+                                <path d="M6 7v11a2 2 0 002 2h8a2 2 0 002-2V7" />
+                                <path d="M9 7V4h6v3" />
+                                <path d="M9 12h6" />
+                                <path d="M9 16h4" />
+                            </svg></x-slot>
+                        @canany(['manage cloth sewings', 'view cloth sewings'])
+                            <x-sidebar-sub-link :href="route('cloth-sewings.index')">Cloth Sewing</x-sidebar-sub-link>
+                        @endcanany
+                        @canany(['manage cloth sewings', 'view cloth sewings'])
+                            <x-sidebar-sub-link :href="route('tailors.index')">Tailors</x-sidebar-sub-link>
+                        @endcanany
+                    </x-sidebar-dropdown>
+                @endcanany
+
+                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Worker Management</p>
+
+                @canany([
+                    'manage carry men',
+                    'view carry men',
+                    'manage carry man work logs',
+                    'view carry man work
+                    logs',
+                    ])
+                    <x-sidebar-dropdown label="Carry Man" :active="request()->routeIs('carry-men.*') || request()->routeIs('carry-man-work-logs.*')">
+                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.75">
+                                <path d="M3 7h13v10H3z" />
+                                <path d="M16 10h3l2 3v4h-5z" />
+                                <circle cx="7" cy="18" r="2" />
+                                <circle cx="18" cy="18" r="2" />
+                            </svg></x-slot>
+                        @canany(['manage carry men', 'view carry men'])
+                            <x-sidebar-sub-link :href="route('carry-men.index')" :active="request()->routeIs('carry-men.*')">Profiles</x-sidebar-sub-link>
+                        @endcanany
+                        @canany(['manage carry man work logs', 'view carry man work logs'])
+                            <x-sidebar-sub-link :href="route('carry-man-work-logs.index')" :active="request()->routeIs('carry-man-work-logs.*')">Work Logs</x-sidebar-sub-link>
+                        @endcanany
+                    </x-sidebar-dropdown>
+                @endcanany
+
+                @canany([
+                    'manage computer men',
+                    'view computer men',
+                    'manage computer man work logs',
+                    'view computer man
+                    work logs',
+                    ])
+                    <x-sidebar-dropdown label="Computer Man" :active="request()->routeIs('computer-men.*') || request()->routeIs('computer-man-work-logs.*')">
+                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.75">
+                                <rect x="3" y="4" width="18" height="12" rx="2" />
+                                <path d="M8 20h8" />
+                                <path d="M12 16v4" />
+                            </svg></x-slot>
+                        @canany(['manage computer men', 'view computer men'])
+                            <x-sidebar-sub-link :href="route('computer-men.index')" :active="request()->routeIs('computer-men.*')">Profiles</x-sidebar-sub-link>
+                        @endcanany
+                        @canany(['manage computer man work logs', 'view computer man work logs'])
+                            <x-sidebar-sub-link :href="route('computer-man-work-logs.index')" :active="request()->routeIs('computer-man-work-logs.*')">Work Logs</x-sidebar-sub-link>
+                        @endcanany
+                    </x-sidebar-dropdown>
+                @endcanany
+
+                @canany([
+                    'manage garey men',
+                    'view garey men',
+                    'manage garey man work logs',
+                    'view garey man work
+                    logs',
+                    ])
+                    <x-sidebar-dropdown label="Garey Man" :active="request()->routeIs('garey-men.*') || request()->routeIs('garey-man-work-logs.*')">
+                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.75">
+                                <path d="M4 19V7a2 2 0 012-2h12a2 2 0 012 2v12" />
+                                <path d="M4 11h16" />
+                                <path d="M8 15h8" />
+                                <path d="M7 19h10" />
+                            </svg></x-slot>
+                        @canany(['manage garey men', 'view garey men'])
+                            <x-sidebar-sub-link :href="route('garey-men.index')" :active="request()->routeIs('garey-men.*')">Profiles</x-sidebar-sub-link>
+                        @endcanany
+                        @canany(['manage garey man work logs', 'view garey man work logs'])
+                            <x-sidebar-sub-link :href="route('garey-man-work-logs.index')" :active="request()->routeIs('garey-man-work-logs.*')">Work Logs</x-sidebar-sub-link>
+                        @endcanany
+                    </x-sidebar-dropdown>
+                @endcanany
+
+
                 {{-- salary management --}}
                 @canany(['manage employees', 'view employees', 'manage salaries', 'view salaries', 'create salaries',
                     'manage salary advances', 'view salary advances', 'create salary advances'])
@@ -752,6 +746,7 @@
                         @endcanany
                     </x-sidebar-dropdown>
                 @endcanany
+
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Dues</p>
                 @canany(['manage dues', 'view dues'])
                     <x-sidebar-dropdown label="Due Management" :active="request()->routeIs('dues.*')">
@@ -780,6 +775,38 @@
                         </svg></x-slot>
                     Reports
                 </x-sidebar-link>
+
+                <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Access Control</p>
+
+                @canany([
+                    'manage users',
+                    'view users',
+                    'manage roles',
+                    'view roles',
+                    'manage permissions',
+                    'view
+                    permissions',
+                    ])
+                    <x-sidebar-dropdown label="Access Control" :active="request()->routeIs('users.*') ||
+                        request()->routeIs('roles.*') ||
+                        request()->routeIs('permissions.*')">
+                        <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.75">
+                                <path d="M12 12a5 5 0 100-10 5 5 0 000 10z" />
+                                <path d="M3 22a9 9 0 0118 0" />
+                                <path d="M17 11l2 2 4-4" />
+                            </svg></x-slot>
+                        @canany(['manage users', 'view users'])
+                            <x-sidebar-sub-link :href="route('users.index')">Users</x-sidebar-sub-link>
+                        @endcanany
+                        @canany(['manage roles', 'view roles'])
+                            <x-sidebar-sub-link :href="route('roles.index')">Roles</x-sidebar-sub-link>
+                        @endcanany
+                        @canany(['manage permissions', 'view permissions'])
+                            <x-sidebar-sub-link :href="route('permissions.index')">Permissions</x-sidebar-sub-link>
+                        @endcanany
+                    </x-sidebar-dropdown>
+                @endcanany
 
                 <x-sidebar-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
                     <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
