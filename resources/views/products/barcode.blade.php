@@ -262,6 +262,8 @@
                 display: grid;
                 grid-template-columns: repeat(5, 39mm);
                 gap: 1mm;
+                break-inside: avoid;
+                page-break-inside: avoid;
                 break-after: page;
                 page-break-after: always;
             }
@@ -345,7 +347,8 @@
 
             const qtyInput = document.getElementById('labelQty');
             const labelSheet = document.getElementById('labelSheet');
-            const labelsPerPage = 65;
+            // A4 at 5 mm margins fits 12 rows of 22 mm stickers with 1 mm gaps.
+            const labelsPerPage = 60;
 
             function renderLabels() {
                 const qty = Math.max(1, Math.min(300, parseInt(qtyInput.value, 10) || 1));
