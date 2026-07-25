@@ -33,7 +33,8 @@
 
         /* ---- Header ---- */
         .inv-header {
-            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%) !important;
+            background-color: #1e3a5f !important;
+            background-image: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%) !important;
             color: #fff;
             padding: 28px 32px 24px;
             display: flex;
@@ -41,6 +42,8 @@
             align-items: flex-start;
             gap: 20px;
             flex-wrap: wrap;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
 
         .inv-header .company {
@@ -360,21 +363,9 @@
             }
 
             .inv-header {
-                background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%) !important;
                 color: #fff !important;
-                border-bottom: 3px solid #0b2239;
-            }
-
-            .inv-header .company p,
-            .inv-header .inv-meta .label,
-            .inv-header .inv-meta .date {
-                color: #eaf2fb !important;
-                opacity: 1 !important;
-            }
-
-            .inv-header .company h1,
-            .inv-header .inv-meta .ref {
-                color: #fff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
             .inv-body {
