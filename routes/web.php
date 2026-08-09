@@ -41,7 +41,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::post('/admin/database-backup', DatabaseBackupController::class)
+    Route::get('/admin/database-backup', DatabaseBackupController::class)
         ->middleware(['admin', 'throttle:2,1'])
         ->name('admin.database-backup');
 

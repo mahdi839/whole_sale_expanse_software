@@ -5,7 +5,7 @@ use App\Services\MySqlDatabaseBackup;
 use Carbon\Carbon;
 
 test('guests cannot download a database backup', function () {
-    $this->post(route('admin.database-backup'))
+    $this->get(route('admin.database-backup'))
         ->assertRedirect(route('login'));
 });
 
@@ -13,7 +13,7 @@ test('non admin users cannot download a database backup', function () {
     $user = User::factory()->create(['is_admin' => false]);
 
     $this->actingAs($user)
-        ->post(route('admin.database-backup'))
+        ->get(route('admin.database-backup'))
         ->assertRedirect(route('login'))
         ->assertSessionHasErrors('email');
 
@@ -35,7 +35,7 @@ test('admins can download a generated database backup', function () {
 
     try {
         $this->actingAs($user)
-            ->post(route('admin.database-backup'))
+            ->get(route('admin.database-backup'))
             ->assertOk()
             ->assertDownload('inaya-creation-database-2026-08-09_14-30-15.sql')
             ->assertHeader('Content-Type', 'application/sql');
@@ -48,11 +48,11 @@ test('admins can download a generated database backup', function () {
     }
 });
 
-test('database backup endpoint does not accept get requests', function () {
+test('database backup endpoint does not accept post requests', function () {
     $user = User::factory()->create(['is_admin' => true]);
 
     $this->actingAs($user)
-        ->get('/admin/database-backup')
+        ->post('/admin/database-backup')
         ->assertMethodNotAllowed();
 });
 
