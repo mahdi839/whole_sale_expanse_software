@@ -822,6 +822,26 @@
 
             {{-- User footer --}}
             <div class="sidebar-footer">
+                @if(Auth::user()->canManageAllShops())
+                    <form method="POST" action="{{ route('admin.database-backup') }}" class="mb-2"
+                        onsubmit="return confirm('Download a complete database backup? This file contains sensitive business and user data.')">
+                        @csrf
+                        <button type="submit"
+                            class="flex items-center w-full gap-2.5 px-2.5 py-2 overflow-hidden text-sm text-white transition-colors rounded-lg bg-white/10 hover:bg-white/20"
+                            title="Download database backup">
+                            <span class="flex items-center justify-center w-4 h-4 shrink-0">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                                    <path d="M12 3v12m0 0 4-4m-4 4-4-4" />
+                                    <path d="M5 21h14" />
+                                </svg>
+                            </span>
+                            <span :class="drawerOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 xl:opacity-100 xl:w-auto'"
+                                class="overflow-hidden whitespace-nowrap transition-all duration-200 text-[13px]">
+                                Download Backup
+                            </span>
+                        </button>
+                    </form>
+                @endif
                 <div class="sidebar-user-card">
                     <div class="sidebar-avatar">
                         {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}

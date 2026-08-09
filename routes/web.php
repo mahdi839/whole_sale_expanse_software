@@ -9,6 +9,7 @@ use App\Http\Controllers\ComputerManController;
 use App\Http\Controllers\ComputerManWorkLogController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\DueManagementController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExpenseController;
@@ -39,6 +40,10 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::post('/admin/database-backup', DatabaseBackupController::class)
+        ->middleware(['admin', 'throttle:2,1'])
+        ->name('admin.database-backup');
 
     $crudResource = function (string $uri, string $controller, string $permissionBase, array $options = []) {
         $parameters = $options['parameters'] ?? [];
