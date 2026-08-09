@@ -141,12 +141,14 @@
             @forelse($sales as $sale)
                 @php
                     $phone = $sale->customer?->phone ? preg_replace('/[^0-9]/', '', $sale->customer->phone) : null;
+                    $customerTotalDue = (float) ($sale->customer?->due ?? $sale->due);
                     $waMessage = urlencode(
                         'Hello ' . ($sale->customer?->full_name ?? 'Customer') .
                         ', your invoice ' . $sale->reference .
                         '. Total: ৳' . number_format($sale->grand_total, 2) .
                         ', Paid: ৳' . number_format($sale->paid, 2) .
-                        ', Due: ৳' . number_format($sale->due, 2)
+                        ', Due: ৳' . number_format($sale->due, 2) .
+                        ', Your Total Due: ৳' . number_format($customerTotalDue, 2)
                     );
                 @endphp
 
@@ -367,12 +369,14 @@
                         @forelse($sales as $sale)
                             @php
                                 $phone = $sale->customer?->phone ? preg_replace('/[^0-9]/', '', $sale->customer->phone) : null;
+                                $customerTotalDue = (float) ($sale->customer?->due ?? $sale->due);
                                 $waMessage = urlencode(
                                     'Hello ' . ($sale->customer?->full_name ?? 'Customer') .
                                     ', your invoice ' . $sale->reference .
-                                    '. Total: ' . number_format($sale->grand_total, 2) .
-                                    ', Paid: ' . number_format($sale->paid, 2) .
-                                    ', Due: ' . number_format($sale->due, 2)
+                                    '. Total: ৳' . number_format($sale->grand_total, 2) .
+                                    ', Paid: ৳' . number_format($sale->paid, 2) .
+                                    ', Due: ৳' . number_format($sale->due, 2) .
+                                    ', Your Total Due: ৳' . number_format($customerTotalDue, 2)
                                 );
                             @endphp
 
