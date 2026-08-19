@@ -496,7 +496,7 @@
 
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Sales Management</p>
                 @canany(['manage sales', 'view sales', 'manage sale returns', 'view sale returns'])
-                    <x-sidebar-dropdown label="Sales Management" :active="request()->routeIs('sales.*')">
+                    <x-sidebar-dropdown label="Sales Management" :active="request()->routeIs('sales.*') || request()->routeIs('sales-reports.*')">
                         <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="1.75">
                                 <path
@@ -504,6 +504,7 @@
                             </svg></x-slot>
                         @canany(['manage sales', 'view sales'])
                             <x-sidebar-sub-link :href="route('sales.index')">Sales Orders</x-sidebar-sub-link>
+                            <x-sidebar-sub-link :href="route('sales-reports.index')" :active="request()->routeIs('sales-reports.*')">Product Sales Report</x-sidebar-sub-link>
                         @endcanany
                         @canany(['manage sale returns', 'view sale returns'])
                             <x-sidebar-sub-link :href="route('sale-returns.index')">Return Sales</x-sidebar-sub-link>

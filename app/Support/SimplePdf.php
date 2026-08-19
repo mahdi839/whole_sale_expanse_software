@@ -56,6 +56,15 @@ class SimplePdf
     private const FOOTER_BG  = '0.953 0.965 0.984';   // #F3F6FB
     private const RED_FG     = '0.753 0.129 0.129';   // negative numbers
 
+    private const TONES = [
+        'emerald' => ['bg' => '0.925 0.980 0.953', 'fg' => '0.016 0.588 0.412', 'accent' => '0.063 0.725 0.506'],
+        'indigo'  => ['bg' => '0.933 0.937 0.988', 'fg' => '0.263 0.329 0.894', 'accent' => '0.388 0.400 0.945'],
+        'rose'    => ['bg' => '1.000 0.941 0.945', 'fg' => '0.882 0.110 0.278', 'accent' => '0.957 0.247 0.369'],
+        'violet'  => ['bg' => '0.961 0.941 1.000', 'fg' => '0.482 0.227 0.902', 'accent' => '0.545 0.361 0.965'],
+        'amber'   => ['bg' => '1.000 0.969 0.886', 'fg' => '0.706 0.333 0.039', 'accent' => '0.961 0.620 0.043'],
+        'sky'     => ['bg' => '0.941 0.973 1.000', 'fg' => '0.012 0.518 0.780', 'accent' => '0.055 0.639 0.929'],
+    ];
+
     // ── Internal state ────────────────────────────────────────────────────────
     private string $pdfHeader = "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n";
 
@@ -68,6 +77,7 @@ class SimplePdf
     private array  $colAlign  = [];   // 'L' | 'R' per column index
     private float  $tableW    = 0.0;
     private string $docTitle  = '';
+    private string $subtitle  = '';
     private array  $summary   = [];
     private ?string $logoPath = null;
 
@@ -111,6 +121,7 @@ class SimplePdf
     {
         $this->docTitle  = $title;
         $this->headers   = $headers;
+        $this->subtitle  = (string) ($options['subtitle'] ?? '');
         $this->summary   = $options['summary'] ?? [];
         $this->logoPath  = isset($options['logo_path']) && is_file($options['logo_path']) ? $options['logo_path'] : null;
         $rowArr          = is_array($rows) ? $rows : iterator_to_array($rows);
@@ -136,6 +147,7 @@ class SimplePdf
     private function runTables(string $title, array $sections, array $options): string
     {
         $this->docTitle = $title;
+        $this->subtitle = (string) ($options['subtitle'] ?? '');
         $this->summary = $options['summary'] ?? [];
         $this->logoPath = isset($options['logo_path']) && is_file($options['logo_path']) ? $options['logo_path'] : null;
 
@@ -239,10 +251,13 @@ class SimplePdf
         $titleY = $py + $h - 26;
         $this->em("BT /F2 " . self::FS_TITLE . " Tf " . self::HDR_FG . " rg {$titleX} {$titleY} Td (" . $this->esc($this->docTitle) . ") Tj ET\n");
 
-        // Generated date
+        // Generated date + optional period subtitle
         $subY = $py + 10;
-        $sub  = $this->esc('Generated: ' . date('d M Y   H:i'));
-        $this->em("BT /F1 " . self::FS_SUBTITLE . " Tf " . self::SUB_FG . " rg {$titleX} {$subY} Td ({$sub}) Tj ET\n");
+        $sub  = 'Generated: ' . date('d M Y   H:i');
+        if ($this->subtitle !== '') {
+            $sub .= '   |   ' . $this->subtitle;
+        }
+        $this->em("BT /F1 " . self::FS_SUBTITLE . " Tf " . self::SUB_FG . " rg {$titleX} {$subY} Td (" . $this->esc($sub) . ") Tj ET\n");
     }
 
     private function drawSummary(): void
@@ -257,7 +272,7 @@ class SimplePdf
         $x = self::ML;
         $w = self::PW - self::ML - self::MR;
         $cardW = ($w - ($gap * ($cols - 1))) / $cols;
-        $cardH = 34.0;
+        $cardH = 38.0;
         $y = $this->curY;
 
         foreach ($items as $i => $item) {
@@ -268,11 +283,17 @@ class SimplePdf
             $cpy = self::PH - $cy - $cardH;
             $label = (string) ($item['label'] ?? '');
             $value = (string) ($item['value'] ?? '');
+            $tone = self::TONES[$item['tone'] ?? ''] ?? [
+                'bg' => self::ROW_EVEN,
+                'fg' => self::BODY_FG,
+                'accent' => self::ACCENT,
+            ];
 
-            $this->em(self::ROW_EVEN . " rg {$cx} {$cpy} {$cardW} {$cardH} re f\n");
+            $this->em($tone['bg'] . " rg {$cx} {$cpy} {$cardW} {$cardH} re f\n");
+            $this->em($tone['accent'] . " rg {$cx} {$cpy} 4 {$cardH} re f\n");
             $this->em("q 0.5 w " . self::BORDER . " RG {$cx} {$cpy} {$cardW} {$cardH} re S Q\n");
-            $this->em("BT /F1 7 Tf " . self::MUTED_FG . " rg " . ($cx + 8) . " " . ($cpy + 20) . " Td (" . $this->esc(strtoupper($label)) . ") Tj ET\n");
-            $this->em("BT /F2 10 Tf " . self::BODY_FG . " rg " . ($cx + 8) . " " . ($cpy + 8) . " Td (" . $this->esc($value) . ") Tj ET\n");
+            $this->em("BT /F1 7 Tf " . self::MUTED_FG . " rg " . ($cx + 12) . " " . ($cpy + 23) . " Td (" . $this->esc(strtoupper($label)) . ") Tj ET\n");
+            $this->em("BT /F2 11 Tf " . $tone['fg'] . " rg " . ($cx + 12) . " " . ($cpy + 8) . " Td (" . $this->esc($value) . ") Tj ET\n");
         }
 
         $rows = (int) ceil(count($items) / $cols);
