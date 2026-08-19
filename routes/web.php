@@ -148,9 +148,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice')->middleware('permission:manage sales|view sales');
     $crudResource('sales', SaleController::class, 'sales');
 
-    Route::get('sales-reports', [SalesReportController::class, 'index'])->name('sales-reports.index')->middleware('permission:manage sales|view sales');
-    Route::get('sales-reports/export/csv', [SalesReportController::class, 'exportCsv'])->name('sales-reports.export.csv')->middleware('permission:manage sales|view sales');
-    Route::get('sales-reports/export/pdf', [SalesReportController::class, 'exportPdf'])->name('sales-reports.export.pdf')->middleware('permission:manage sales|view sales');
+    Route::get('sales-reports', [SalesReportController::class, 'index'])->name('sales-reports.index')->middleware('permission:view sales reports');
+    Route::get('sales-reports/export/csv', [SalesReportController::class, 'exportCsv'])->name('sales-reports.export.csv')->middleware('permission:view sales reports');
+    Route::get('sales-reports/export/pdf', [SalesReportController::class, 'exportPdf'])->name('sales-reports.export.pdf')->middleware('permission:view sales reports');
 
     $crudResource('sale-returns', SaleReturnController::class, 'sale returns');
     Route::post('sale-returns/{saleReturn}/approve', [SaleReturnController::class, 'approve'])->name('sale-returns.approve')->middleware('permission:manage sale returns|approve sale returns');

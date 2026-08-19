@@ -80,6 +80,30 @@ it('scopes the product sales report to the executive shop', function () {
         ->assertDontSee('Shop B Dress');
 });
 
+it('blocks the product sales report without the view sales reports permission', function () {
+    $this->withMiddleware(PermissionMiddleware::class);
+
+    $shop = Shop::create(['name' => 'Inaya Creation', 'code' => 'INAYA']);
+    $user = User::factory()->create(['shop_id' => $shop->id]);
+
+    $this->actingAs($user)
+        ->get(route('sales-reports.index'))
+        ->assertForbidden();
+});
+
+it('allows the product sales report with the view sales reports permission', function () {
+    $this->withMiddleware(PermissionMiddleware::class);
+
+    $shop = Shop::create(['name' => 'Inaya Creation', 'code' => 'INAYA']);
+    $user = User::factory()->create(['shop_id' => $shop->id]);
+    $user->givePermissionTo('view sales reports');
+
+    $this->actingAs($user)
+        ->get(route('sales-reports.index', ['range' => 'all']))
+        ->assertOk()
+        ->assertSee('Product Sales Report');
+});
+
 it('downloads csv and pdf product sales reports', function () {
     $shop = Shop::create(['name' => 'Inaya Creation', 'code' => 'INAYA']);
     $user = User::factory()->create(['shop_id' => $shop->id, 'is_admin' => true]);

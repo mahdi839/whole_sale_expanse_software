@@ -109,6 +109,7 @@ class RolePermissionSeeder extends Seeder
         'create sales',
         'edit sales',
         'delete sales',
+        'view sales reports',
         'view sale returns',
         'create sale returns',
         'edit sale returns',

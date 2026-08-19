@@ -26,6 +26,7 @@
         'Sales' => [
             'Sales' => ['manage sales', 'view sales', 'create sales', 'edit sales', 'delete sales'],
             'Sale Returns' => ['manage sale returns', 'view sale returns', 'create sale returns', 'edit sale returns', 'delete sale returns', 'approve sale returns'],
+            'Sales Reports' => ['view sales reports'],
         ],
         'Accounts' => [
             'Expenses' => ['manage expenses', 'view expenses', 'create expenses', 'edit expenses', 'delete expenses'],
@@ -50,6 +51,10 @@
         'receive' => 'Receive',
     ];
 
+    $permissionNameLabels = [
+        'view sales reports' => 'View Report',
+    ];
+
     $groupedPermissionNames = collect($permissionGroups)->flatMap(fn ($section) => collect($section)->flatten())->all();
     $ungroupedPermissions = $permissions->filter(fn ($permission) => ! in_array($permission->name, $groupedPermissionNames, true));
 @endphp
@@ -72,7 +77,7 @@
                                 @foreach($visiblePermissions as $permissionName)
                                     @php
                                         $action = str($permissionName)->before(' ')->toString();
-                                        $label = $permissionLabels[$action] ?? str($permissionName)->headline();
+                                        $label = $permissionNameLabels[$permissionName] ?? $permissionLabels[$action] ?? str($permissionName)->headline();
                                     @endphp
                                     <label class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg text-sm">
                                         <input type="checkbox" name="permissions[]" value="{{ $permissionName }}" @checked(in_array($permissionName, old('permissions', $selectedPermissionNames)))>
