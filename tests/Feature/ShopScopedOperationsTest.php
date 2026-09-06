@@ -186,13 +186,14 @@ it('downloads customer and supplier transaction pdf reports with the extended da
         ->assertHeader('Content-Type', 'application/pdf');
 });
 
-it('shows the shop address and proprietor number on sale invoices', function () {
+it('shows the shop address, proprietor number and show room number on sale invoices', function () {
     $shop = Shop::create([
         'name' => 'Inaya Creation',
         'code' => 'INAYA',
         'address' => 'House 10, Dhaka',
         'phone' => '01700000000',
         'proprietor_number' => 'PROP-123',
+        'show_room_number' => 'SR-12',
     ]);
     $user = User::factory()->create(['shop_id' => $shop->id]);
     $product = Product::create(['product_name' => 'Dress', 'sku' => 'D-1', 'selling_price' => 100]);
@@ -208,7 +209,8 @@ it('shows the shop address and proprietor number on sale invoices', function () 
     $this->actingAs($user)->get(route('sales.invoice', $sale))
         ->assertOk()
         ->assertSee('House 10, Dhaka')
-        ->assertSee('Proprietor Number: PROP-123');
+        ->assertSee('Proprietor Number: PROP-123')
+        ->assertSee('Show Room Number: SR-12');
 });
 
 it('keeps invoice due snapshots correct after later customer activity', function () {

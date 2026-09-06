@@ -5,6 +5,9 @@
         <div class="bg-white border border-gray-200 rounded-xl p-5">
             <p class="text-sm text-gray-500">{{ $shop->address ?: 'No address' }}</p>
             <p class="text-sm text-gray-500 mt-1">{{ $shop->phone ?: 'No phone' }}</p>
+            @if($shop->show_room_number)
+                <p class="text-sm text-gray-500 mt-1">Show Room Number: {{ $shop->show_room_number }}</p>
+            @endif
             <div class="grid grid-cols-2 gap-3 mt-4">
                 <div class="bg-gray-50 rounded-lg p-3">
                     <p class="text-xs text-gray-400">Stock Qty</p>

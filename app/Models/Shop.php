@@ -14,6 +14,7 @@ class Shop extends Model
         'code',
         'phone',
         'proprietor_number',
+        'show_room_number',
         'address',
         'is_active',
     ];

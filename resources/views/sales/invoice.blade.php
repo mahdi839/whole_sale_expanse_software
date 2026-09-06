@@ -444,6 +444,9 @@
                     @if ($sale?->shop?->proprietor_number)
                         <p>Proprietor Number: {{ $sale->shop->proprietor_number }}</p>
                     @endif
+                    @if ($sale?->shop?->show_room_number)
+                        <p>Show Room Number: {{ $sale->shop->show_room_number }}</p>
+                    @endif
                 </div>
             </div>
             <div class="inv-meta">
