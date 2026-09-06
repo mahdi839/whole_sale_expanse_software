@@ -300,7 +300,8 @@ class SupplierController extends Controller
     private function supplierPdfRow(array $log): array
     {
         $details = implode("\n", [
-            'Type: '.($log['type'] ?: '-').'  Ref: '.($log['reference'] ?: '-'),
+            'Type: '.($log['type'] ?: '-'),
+            'Ref: '.($log['reference'] ?: '-'),
             'Bill: '.(filled($log['bill_no'] ?? null) ? $log['bill_no'] : '-'),
         ]);
 
