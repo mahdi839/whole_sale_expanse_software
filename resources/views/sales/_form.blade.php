@@ -667,7 +667,7 @@
                     <option value="">Walk-in / No customer</option>
                     @foreach ($customers as $customer)
                         <option value="{{ $customer->id }}" @selected(old('customer_id', $sale?->customer_id) == $customer->id)>
-                            {{ $customer->full_name }}{{ $customer->phone ? ' (' . $customer->phone . ')' : '' }}
+                            {{ $customer->displayLabel() }}
                         </option>
                     @endforeach
                 </select>
@@ -1244,7 +1244,7 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
         if (!res.ok) throw new Error(data.message || 'Error saving customer');
 
         const sel = document.getElementById('customer_id');
-        const label = data.full_name + (data.phone ? ` (${data.phone})` : '');
+        const label = data.display_label || (data.full_name + (data.address ? ` - ${data.address}` : ''));
         if (sel.tomselect) {
             sel.tomselect.addOption({ value: data.id, text: label });
             sel.tomselect.setValue(data.id);

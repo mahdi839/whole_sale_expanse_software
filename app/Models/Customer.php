@@ -65,6 +65,14 @@ class Customer extends Model
         $this->saveQuietly();
     }
 
+    public function displayLabel(): string
+    {
+        $name = trim((string) $this->full_name);
+        $address = trim((string) $this->address);
+
+        return $address !== '' ? $name.' - '.$address : $name;
+    }
+
     public function sales()
     {
         return $this->hasMany(Sale::class);

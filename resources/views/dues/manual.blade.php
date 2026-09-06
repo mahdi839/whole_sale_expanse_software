@@ -39,7 +39,7 @@
                         <select name="customer_id" id="customer-select" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                             <option value="">Select customer</option>
                             @foreach($customers as $customer)
-                                <option value="{{ $customer->id }}" data-due="{{ $customer->due ?? 0 }}" @selected(old('customer_id') == $customer->id)>{{ $customer->full_name }}{{ $customer->phone ? ' - '.$customer->phone : '' }}</option>
+                                <option value="{{ $customer->id }}" data-due="{{ $customer->due ?? 0 }}" @selected(old('customer_id') == $customer->id)>{{ $customer->displayLabel() }}</option>
                             @endforeach
                         </select>
                         <button type="button" @click="customerOpen = true" class="h-10 w-10 shrink-0 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">+</button>
@@ -220,7 +220,7 @@
         const customer = await postQuick(this, '{{ route('customers.store') }}');
         if (!customer) return;
         const select = document.getElementById('customer-select');
-        const option = new Option(customer.full_name + (customer.phone ? ' - ' + customer.phone : ''), customer.id, true, true);
+        const option = new Option(customer.display_label || (customer.full_name + (customer.address ? ' - ' + customer.address : '')), customer.id, true, true);
         option.dataset.due = '0';
         select.add(option);
         updatePresentDue('customer-select', 'customer-present-due');

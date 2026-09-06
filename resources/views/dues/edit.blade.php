@@ -33,7 +33,7 @@
                 <select name="customer_id" class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                     <option value="">Select customer</option>
                     @foreach($customers as $customer)
-                        <option value="{{ $customer->id }}" @selected(old('customer_id', $manualDue->customer_id) == $customer->id)>{{ $customer->full_name }} - Due: {{ number_format($customer->due ?? 0, 2) }}</option>
+                        <option value="{{ $customer->id }}" @selected(old('customer_id', $manualDue->customer_id) == $customer->id)>{{ $customer->displayLabel() }} - Due: {{ number_format($customer->due ?? 0, 2) }}</option>
                     @endforeach
                 </select>
             </div>

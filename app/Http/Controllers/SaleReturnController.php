@@ -62,7 +62,7 @@ class SaleReturnController extends Controller
     public function create(Request $request)
     {
         $nextReference = SaleReturn::generateReference();
-        $customers     = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
+        $customers     = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone', 'address']);
         $products      = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
 
         $sale = null;
@@ -143,7 +143,7 @@ class SaleReturnController extends Controller
         $this->authorizeReturnShop($saleReturn);
         $saleReturn->load(['items.product', 'items.saleItem', 'sale.items.product']);
 
-        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
+        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone', 'address']);
         $products  = Product::with('stock')->orderBy('product_name')->get(['id', 'product_name', 'sku']);
 
         return view('sale_returns.edit', compact('saleReturn', 'customers', 'products'));

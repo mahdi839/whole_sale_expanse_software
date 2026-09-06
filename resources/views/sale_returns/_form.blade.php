@@ -66,6 +66,8 @@
             'name' => $c->full_name,
             'code' => $c->code,
             'phone' => $c->phone,
+            'address' => $c->address,
+            'label' => $c->displayLabel(),
         ];
     })->values();
 
@@ -123,7 +125,7 @@
                                 <option value="{{ $s->id }}" {{ (string) $selectedSaleId === (string) $s->id ? 'selected' : '' }}>
                                     {{ $s->reference }}
                                     @if($s->customer)
-                                        — {{ $s->customer->full_name }}
+                                        — {{ $s->customer->displayLabel() }}
                                     @endif
                                 </option>
                             @endforeach
@@ -144,7 +146,7 @@
                             @foreach($customers as $customer)
                                 <option value="{{ $customer->id }}"
                                     {{ (string) old('customer_id', $saleReturn?->customer_id ?? $prefillSale?->customer_id) === (string) $customer->id ? 'selected' : '' }}>
-                                    {{ $customer->full_name }}{{ $customer->phone ? ' · '.$customer->phone : '' }}
+                                    {{ $customer->displayLabel() }}
                                 </option>
                             @endforeach
                         </select>

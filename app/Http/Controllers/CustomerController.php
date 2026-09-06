@@ -97,11 +97,13 @@ class CustomerController extends Controller
         return response()->json(
             $query->orderBy('full_name')
                 ->limit(8)
-                ->get(['id', 'code', 'full_name', 'phone'])
+                ->get(['id', 'code', 'full_name', 'phone', 'address'])
                 ->map(fn (Customer $customer) => [
                     'name' => $customer->full_name,
                     'code' => $customer->code,
                     'phone' => $customer->phone,
+                    'address' => $customer->address,
+                    'label' => $customer->displayLabel(),
                     'url' => route('customers.show', $customer),
                 ])
         );
@@ -153,6 +155,7 @@ class CustomerController extends Controller
                 'phone' => $customer->phone,
                 'alternative_phone' => $customer->alternative_phone,
                 'address' => $customer->address,
+                'display_label' => $customer->displayLabel(),
                 'image' => $customer->image,
                 'total_sale' => $customer->total_sale,
                 'total_paid' => $customer->total_paid,

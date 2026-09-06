@@ -527,7 +527,7 @@ class DueManagementController extends Controller
         return Customer::query()
             ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
             ->orderBy('full_name')
-            ->get(['id', 'full_name', 'phone', 'due']);
+            ->get(['id', 'full_name', 'phone', 'address', 'due']);
     }
 
     private function manualDueQuery()

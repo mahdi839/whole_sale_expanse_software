@@ -141,7 +141,7 @@ class ChequeController extends Controller
         return Customer::query()
             ->when(! auth()->user()->canManageAllShops(), fn ($query) => $query->where('shop_id', auth()->user()->shop_id ?: -1))
             ->orderBy('full_name')
-            ->get(['id', 'shop_id', 'full_name', 'phone']);
+            ->get(['id', 'shop_id', 'full_name', 'phone', 'address']);
     }
 
     private function shops()

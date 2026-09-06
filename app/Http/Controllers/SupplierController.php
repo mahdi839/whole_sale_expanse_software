@@ -124,6 +124,8 @@ class SupplierController extends Controller
 
         if (request('format') === 'pdf') {
             $fileName = 'supplier-'.$supplier->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.pdf';
+            $pdfHeaders = ['Date', 'Reference / Type / Bill No', 'Amount / Qty / Paid / Due', 'Note'];
+            $pdfRows = $logs->map(fn ($log) => $this->supplierPdfRow($log));
             $summary = [
                 ['label' => 'Total Paid', 'value' => number_format((float) $supplier->total_paid, 2)],
                 ['label' => 'Total Due', 'value' => number_format((float) $supplier->due, 2)],
@@ -131,7 +133,7 @@ class SupplierController extends Controller
                 ['label' => 'Total Purchase', 'value' => number_format((float) $supplier->total_purchase, 2)],
             ];
 
-            return Response::make(SimplePdf::table('Inaya Creation - Supplier Transactions - '.$supplier->name, $headers, $rows, null, [
+            return Response::make(SimplePdf::table('Inaya Creation - Supplier Transactions - '.$supplier->name, $pdfHeaders, $pdfRows, [110, 270, 200, 189.89], [
                 'summary' => $summary,
                 'logo_path' => public_path('inaya_creation_logo.jpeg'),
             ]), 200, [
@@ -293,6 +295,38 @@ class SupplierController extends Controller
                 ->orWhere('phone', 'like', "%{$search}%")
                 ->orWhere('address', 'like', "%{$search}%")
             );
+    }
+
+    private function supplierPdfRow(array $log): array
+    {
+        $details = implode("\n", [
+            'Type: '.($log['type'] ?: '-').'  Ref: '.($log['reference'] ?: '-'),
+            'Bill: '.(filled($log['bill_no'] ?? null) ? $log['bill_no'] : '-'),
+        ]);
+
+        $qty = is_null($log['qty']) ? '-' : number_format((float) $log['qty'], 2);
+        $amounts = implode("\n", [
+            'Amt: '.$this->formatSupplierLogMoney($log['amount'] ?? null),
+            'Qty: '.$qty,
+            'Paid: '.$this->formatSupplierLogMoney($log['paid'] ?? null),
+            'Due: '.$this->formatSupplierLogMoney($log['due'] ?? null),
+        ]);
+
+        return [
+            'Date: '.(optional($log['display_at'] ?? $log['date'])->format('d M Y') ?: '-'),
+            $details,
+            $amounts,
+            'Note: '.(filled($log['note'] ?? null) ? $log['note'] : '-'),
+        ];
+    }
+
+    private function formatSupplierLogMoney($value): string
+    {
+        if ($value === '-' || $value === '' || $value === null) {
+            return '-';
+        }
+
+        return number_format((float) $value, 2);
     }
 
     private function logSortAt($date, $createdAt): ?Carbon

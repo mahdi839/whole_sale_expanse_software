@@ -461,7 +461,7 @@
                             <select name="customer_id" id="customer-select" class="form-control" style="flex:1;">
                                 <option value="">Select customer…</option>
                                 @foreach($customers as $customer)
-                                    <option value="{{ $customer->id }}">{{ $customer->full_name }}{{ $customer->phone ? ' · '.$customer->phone : '' }}</option>
+                                    <option value="{{ $customer->id }}">{{ $customer->displayLabel() }}</option>
                                 @endforeach
                             </select>
                             <button type="button" @click="customerOpen = true" class="btn-add-quick" title="New customer">+</button>
@@ -672,7 +672,7 @@
         const customer = await postQuick(this, '{{ route('customers.store') }}');
         if (!customer) return;
         const select = document.getElementById('customer-select');
-        select.add(new Option(customer.full_name + (customer.phone ? ' · ' + customer.phone : ''), customer.id, true, true));
+        select.add(new Option(customer.display_label || (customer.full_name + (customer.address ? ' · ' + customer.address : '')), customer.id, true, true));
         window.dispatchEvent(new CustomEvent('customer-created'));
         this.reset();
     });

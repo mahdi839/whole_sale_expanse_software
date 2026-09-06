@@ -24,7 +24,7 @@
                         value="{{ $search ?? '' }}"
                         autocomplete="off"
                         data-suggestions-url="{{ route('customers.suggestions') }}"
-                        placeholder="Search by name, code or phone…"
+                        placeholder="Search by name, code, phone or address…"
                         class="w-full pl-9 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                     <div id="customer-suggestions"
@@ -139,16 +139,16 @@
                         >
                             {{ $customer->full_name }}
                         </a>
-                        <p class="text-sm text-gray-500 mt-1 break-all">
+                        @if($customer->address)
+                            <p class="text-sm text-gray-500 mt-1 break-words">{{ $customer->address }}</p>
+                        @endif
+                        <p class="text-xs text-gray-400 mt-1 break-all">
                             {{ $customer->phone ?? '—' }}
                         </p>
                         @if($customer->alternative_phone)
                             <p class="text-xs text-gray-400 mt-0.5 break-all">
                                 Alt: {{ $customer->alternative_phone }}
                             </p>
-                        @endif
-                        @if($customer->address)
-                            <p class="text-xs text-gray-400 mt-1 break-words">{{ $customer->address }}</p>
                         @endif
                     </div>
 
@@ -266,7 +266,12 @@
                                         @if($customer->image)
                                             <img src="{{ asset('storage/'.$customer->image) }}" alt="{{ $customer->full_name }}" class="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0">
                                         @endif
-                                        <a href="{{ route('customers.show', $customer) }}" class="font-medium text-gray-800 hover:text-blue-600 transition">{{ $customer->full_name }}</a>
+                                        <div>
+                                            <a href="{{ route('customers.show', $customer) }}" class="font-medium text-gray-800 hover:text-blue-600 transition">{{ $customer->full_name }}</a>
+                                            @if($customer->address)
+                                                <p class="text-xs text-gray-500 mt-0.5 max-w-xs whitespace-normal break-words">{{ $customer->address }}</p>
+                                            @endif
+                                        </div>
                                     </div>
                                 </td>
 
@@ -436,7 +441,7 @@
                         results.innerHTML = customers.map((customer) => `
                             <a href="${customer.url}" class="block px-3 py-2 hover:bg-blue-50 border-b border-gray-100 last:border-0">
                                 <span class="block text-sm font-medium text-gray-800">${escapeHtml(customer.name)}</span>
-                                <span class="block text-xs text-gray-500">${escapeHtml(customer.code)}${customer.phone ? ` · ${escapeHtml(customer.phone)}` : ''}</span>
+                                <span class="block text-xs text-gray-500">${escapeHtml(customer.address || customer.code || '')}</span>
                             </a>
                         `).join('');
                     }

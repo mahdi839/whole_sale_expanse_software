@@ -83,7 +83,7 @@ class CashTransactionController extends Controller
     public function create()
     {
         $transaction = new CashTransaction(['date' => now()->toDateString(), 'direction' => 'in', 'type' => 'manual_add']);
-        $customers = Customer::when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))->orderBy('full_name')->get(['id', 'full_name', 'phone']);
+        $customers = Customer::when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))->orderBy('full_name')->get(['id', 'full_name', 'phone', 'address']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'currency', 'due']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
         $tailors = Tailor::orderBy('name')->get(['id', 'name']);
@@ -111,7 +111,7 @@ class CashTransactionController extends Controller
 
         $transaction = $cashTransaction;
         $this->authorizeShop($cashTransaction);
-        $customers = Customer::when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))->orderBy('full_name')->get(['id', 'full_name', 'phone']);
+        $customers = Customer::when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))->orderBy('full_name')->get(['id', 'full_name', 'phone', 'address']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'currency', 'due']);
         $salesMen = SalesMan::orderBy('name')->get(['id', 'name', 'phone']);
         $tailors = Tailor::orderBy('name')->get(['id', 'name']);

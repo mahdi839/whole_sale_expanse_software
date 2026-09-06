@@ -31,7 +31,7 @@
             <option value="">Select customer</option>
             @foreach($customers as $customer)
                 <option value="{{ $customer->id }}" data-shop-id="{{ $customer->shop_id }}" @selected(old('customer_id', $cheque?->customer_id) == $customer->id)>
-                    {{ $customer->full_name }}{{ $customer->phone ? ' - '.$customer->phone : '' }}
+                    {{ $customer->displayLabel() }}
                 </option>
             @endforeach
         </select>

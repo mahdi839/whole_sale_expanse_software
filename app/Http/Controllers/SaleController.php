@@ -122,7 +122,7 @@ class SaleController extends Controller
         abort_unless(auth()->user()->canManageAllShops() || auth()->user()->shop_id, 403, 'No shop assigned to your user.');
 
         $nextReference = Sale::generateReference();
-        $customers = Customer::when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))->orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
+        $customers = Customer::when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))->orderBy('full_name')->get(['id', 'full_name', 'code', 'phone', 'address']);
         $products = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
             ->orderBy('product_name')
             ->get(['id', 'product_name', 'sku', 'product_code', 'purchase_price', 'selling_price']);
@@ -259,7 +259,7 @@ class SaleController extends Controller
     {
         $this->authorizeSaleShop($sale);
         $sale->load('items.product.stocks', 'appliedReturns.items.product', 'appliedReturns.sale');
-        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone']);
+        $customers = Customer::orderBy('full_name')->get(['id', 'full_name', 'code', 'phone', 'address']);
         $products = Product::with(['stocks', 'purchaseItems.returnItems', 'purchaseItems.saleItems.returnItems'])
             ->orderBy('product_name')
             ->get(['id', 'product_name', 'sku', 'product_code', 'purchase_price', 'selling_price']);
@@ -745,7 +745,7 @@ class SaleController extends Controller
                     'id' => $sale->id,
                     'reference' => $sale->reference,
                     'customer_id' => $sale->customer_id,
-                    'customer_name' => $sale->customer?->full_name ?? 'Walk-in Customer',
+                    'customer_name' => $sale->customer?->displayLabel() ?? 'Walk-in Customer',
                     'created_at' => $sale->created_at?->format('Y-m-d'),
                     'items' => $items,
                 ];
