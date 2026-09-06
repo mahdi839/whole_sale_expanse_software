@@ -72,8 +72,9 @@ class CarryManController extends Controller
     public function exportPdf(CarryMan $carryMan)
     {
         $workLogs = $carryMan->workLogs()->latest('date')->latest()->get();
+        $cashTransactions = $carryMan->cashTransactions()->latest('date')->latest()->get();
 
-        return WorkerProfilePdf::download($carryMan, 'Carry Man Profile and Work Logs', 'carry', $workLogs);
+        return WorkerProfilePdf::download($carryMan, 'Carry Man Profile and Work Logs', 'carry', $workLogs, $cashTransactions);
     }
 
     public function destroy(CarryMan $carryMan)

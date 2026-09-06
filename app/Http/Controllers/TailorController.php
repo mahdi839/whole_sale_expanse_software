@@ -67,8 +67,9 @@ class TailorController extends Controller
     public function exportPdf(Tailor $tailor)
     {
         $workLogs = $tailor->clothSewings()->with('product')->latest('date')->latest()->get();
+        $cashTransactions = $tailor->cashTransactions()->latest('date')->latest()->get();
 
-        return WorkerProfilePdf::download($tailor, 'Tailor Details and Cloth Sewing', 'tailor', $workLogs);
+        return WorkerProfilePdf::download($tailor, 'Tailor Details and Cloth Sewing', 'tailor', $workLogs, $cashTransactions);
     }
 
     public function update(Request $request, Tailor $tailor)

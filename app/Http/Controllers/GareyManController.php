@@ -72,8 +72,9 @@ class GareyManController extends Controller
     public function exportPdf(GareyMan $gareyMan)
     {
         $workLogs = $gareyMan->workLogs()->latest('date')->latest()->get();
+        $cashTransactions = $gareyMan->cashTransactions()->latest('date')->latest()->get();
 
-        return WorkerProfilePdf::download($gareyMan, 'Garey Man Profile and Work Logs', 'garey', $workLogs);
+        return WorkerProfilePdf::download($gareyMan, 'Garey Man Profile and Work Logs', 'garey', $workLogs, $cashTransactions);
     }
 
     public function destroy(GareyMan $gareyMan)

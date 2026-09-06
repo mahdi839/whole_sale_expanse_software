@@ -6,10 +6,11 @@ use Illuminate\Support\Facades\Response;
 
 class WorkerProfilePdf
 {
-    public static function download(object $worker, string $title, string $type, $workLogs)
+    public static function download(object $worker, string $title, string $type, $workLogs, $cashTransactions = null)
     {
         [$headers, $rows] = self::workLogTable($type, $workLogs);
         $totalWork = $workLogs->sum(fn ($log) => (float) $log->total_rate);
+        $transactions = collect($cashTransactions ?? []);
 
         $summary = [
             ['label' => 'Name', 'value' => $worker->name],
@@ -28,7 +29,27 @@ class WorkerProfilePdf
             ['label' => 'Advance', 'value' => number_format((float) ($worker->advance ?? 0), 2)],
         ]);
 
-        return Response::make(SimplePdf::table('Inaya Creation - '.$title.' - '.$worker->name, $headers, $rows, null, [
+        $sections = [
+            [
+                'title' => 'Work Logs',
+                'headers' => $headers,
+                'rows' => $rows,
+            ],
+            [
+                'title' => 'Cash Transactions',
+                'headers' => ['Date', 'Reference', 'Type', 'Amount', 'Payment Method', 'Note'],
+                'rows' => $transactions->map(fn ($transaction) => [
+                    optional($transaction->date)->format('d M Y') ?: '-',
+                    $transaction->reference ?: '-',
+                    ucwords(str_replace('_', ' ', (string) $transaction->type)),
+                    ($transaction->direction === 'in' ? '+' : '-').number_format((float) $transaction->amount, 2),
+                    $transaction->payment_method ?: '-',
+                    $transaction->note ?: '-',
+                ]),
+            ],
+        ];
+
+        return Response::make(SimplePdf::tables('Inaya Creation - '.$title.' - '.$worker->name, $sections, [
             'logo_path' => public_path('inaya_creation_logo.jpeg'),
             'summary' => $summary,
         ]), 200, [

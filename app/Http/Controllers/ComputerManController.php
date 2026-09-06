@@ -72,8 +72,9 @@ class ComputerManController extends Controller
     public function exportPdf(ComputerMan $computerMan)
     {
         $workLogs = $computerMan->workLogs()->with('product')->latest('date')->latest()->get();
+        $cashTransactions = $computerMan->cashTransactions()->latest('date')->latest()->get();
 
-        return WorkerProfilePdf::download($computerMan, 'Computer Man Profile and Work Logs', 'computer', $workLogs);
+        return WorkerProfilePdf::download($computerMan, 'Computer Man Profile and Work Logs', 'computer', $workLogs, $cashTransactions);
     }
 
     public function destroy(ComputerMan $computerMan)
