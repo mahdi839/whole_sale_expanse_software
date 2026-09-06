@@ -35,14 +35,12 @@
                     @if(auth()->user()->canManageAllShops())
                     <select name="shop_id" class="w-full border-gray-300 rounded-lg">
                         @foreach ($shops as $shop)
-                            <option value="{{ $shop->id }}" @selected(old('shop_id') == $shop->id)>{{ $shop->name }}
-                                ({{ $shop->code }})
-                            </option>
+                            <option value="{{ $shop->id }}" @selected(old('shop_id') == $shop->id)>{{ $shop->displayLabel() }}</option>
                         @endforeach
                     </select>
                     @else
                         <input type="hidden" name="shop_id" value="{{ auth()->user()->shop_id }}">
-                        <div class="w-full border border-gray-300 bg-gray-100 rounded-lg px-3 py-2">{{ auth()->user()->shop?->name ?? 'No shop assigned' }}</div>
+                        <div class="w-full border border-gray-300 bg-gray-100 rounded-lg px-3 py-2">{{ auth()->user()->shop?->displayLabel() ?? 'No shop assigned' }}</div>
                     @endif
                 </div>
                 <div>

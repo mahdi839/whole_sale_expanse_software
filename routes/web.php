@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BankTransactionController;
 use App\Http\Controllers\CarryManController;
 use App\Http\Controllers\CarryManWorkLogController;
 use App\Http\Controllers\CashTransactionController;
@@ -189,6 +190,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('permission:manage salary advances|view salary advances|delete salary advances');
 
     $crudResource('cash-transactions', CashTransactionController::class, 'cash', ['parameters' => ['cash-transactions' => 'cashTransaction'], 'except' => ['show']]);
+    $crudResource('bank-transactions', BankTransactionController::class, 'bank', ['parameters' => ['bank-transactions' => 'bankTransaction'], 'except' => ['show']]);
     $crudResource('cheques', ChequeController::class, 'cheques');
     Route::get('dues', [DueManagementController::class, 'index'])->name('dues.index')->middleware('permission:manage dues|view dues');
     Route::get('dues/customer-wise', [DueManagementController::class, 'customer'])->name('dues.customer')->middleware('permission:manage dues|view dues');

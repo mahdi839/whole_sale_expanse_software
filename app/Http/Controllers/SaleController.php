@@ -14,6 +14,7 @@ use App\Models\SaleReturn;
 use App\Models\SaleReturnItem;
 use App\Models\Shop;
 use App\Models\Stock;
+use App\Services\BankLedger;
 use App\Services\CashLedger;
 use App\Support\SimplePdf;
 use Illuminate\Http\Request;
@@ -241,6 +242,7 @@ class SaleController extends Controller
             }
 
             $this->syncCashPayment($sale->fresh());
+            $this->syncBankPayment($sale->fresh());
         });
 
         return redirect()->route('sales.index')
@@ -418,6 +420,7 @@ class SaleController extends Controller
             }
 
             $this->syncCashPayment($sale->fresh());
+            $this->syncBankPayment($sale->fresh());
         });
 
         return redirect()->route('sales.index')
@@ -450,6 +453,7 @@ class SaleController extends Controller
 
             $this->deleteAppliedSaleReturns($sale);
             app(CashLedger::class)->deleteSource('sale', $sale->id);
+            app(BankLedger::class)->deleteSource('sale', $sale->id);
 
             $sale->items()->delete();
             $sale->delete();
@@ -623,6 +627,25 @@ class SaleController extends Controller
         app(CashLedger::class)->syncSource('sale', $sale->id, 'in', 'sale', (float) $sale->paid, [
             'date' => $sale->created_at?->toDateString() ?? now()->toDateString(),
             'payment_method' => $sale->payment_method,
+            'customer_id' => $sale->customer_id,
+            'note' => 'Sale payment: '.$sale->reference,
+            'shop_id' => $sale->shop_id,
+        ]);
+    }
+
+    private function syncBankPayment(Sale $sale): void
+    {
+        if (strtolower((string) $sale->payment_method) !== 'bank' || (float) $sale->paid <= 0) {
+            app(BankLedger::class)->deleteSource('sale', $sale->id);
+
+            return;
+        }
+
+        app(BankLedger::class)->syncSource('sale', $sale->id, 'in', 'sale', (float) $sale->paid, [
+            'date' => $sale->created_at?->toDateString() ?? now()->toDateString(),
+            'entry_type' => $sale->customer_id ? 'customer' : null,
+            'bank_name' => $sale->bank,
+            'bank_details' => $sale->bank_details,
             'customer_id' => $sale->customer_id,
             'note' => 'Sale payment: '.$sale->reference,
             'shop_id' => $sale->shop_id,

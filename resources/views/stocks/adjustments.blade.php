@@ -29,7 +29,7 @@
                         <select name="shop_id" id="adjust-shop-id" class="w-full border-gray-300 rounded-lg">
                             <option value="">Select shop</option>
                             @foreach($shops as $shop)
-                                <option value="{{ $shop->id }}" @selected(old('shop_id') == $shop->id)>{{ $shop->name }}{{ $shop->code ? ' ('.$shop->code.')' : '' }}</option>
+                                <option value="{{ $shop->id }}" @selected(old('shop_id') == $shop->id)>{{ $shop->displayLabel() }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -74,7 +74,7 @@
                         <select name="from_shop_id" class="w-full border-gray-300 rounded-lg">
                             <option value="">Select shop</option>
                             @foreach($shops as $shop)
-                                <option value="{{ $shop->id }}" @selected(old('from_shop_id') == $shop->id)>{{ $shop->name }}{{ $shop->code ? ' ('.$shop->code.')' : '' }}</option>
+                                <option value="{{ $shop->id }}" @selected(old('from_shop_id') == $shop->id)>{{ $shop->displayLabel() }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -92,7 +92,7 @@
                         <select name="to_shop_id" id="transfer-shop-id" class="w-full border-gray-300 rounded-lg">
                             <option value="">Select shop</option>
                             @foreach($shops as $shop)
-                                <option value="{{ $shop->id }}" @selected(old('to_shop_id') == $shop->id)>{{ $shop->name }}{{ $shop->code ? ' ('.$shop->code.')' : '' }}</option>
+                                <option value="{{ $shop->id }}" @selected(old('to_shop_id') == $shop->id)>{{ $shop->displayLabel() }}</option>
                             @endforeach
                         </select>
                     </div>

@@ -648,12 +648,12 @@
                 <select name="shop_id" class="field-input" required>
                     <option value="">Select shop</option>
                     @foreach($shops ?? [] as $shop)
-                        <option value="{{ $shop->id }}" @selected(old('shop_id', $sale?->shop_id ?? null) == $shop->id)>{{ $shop->name }}</option>
+                        <option value="{{ $shop->id }}" @selected(old('shop_id', $sale?->shop_id ?? null) == $shop->id)>{{ $shop->displayLabel() }}</option>
                     @endforeach
                 </select>
             @else
                 <input type="hidden" name="shop_id" value="{{ auth()->user()->shop_id }}">
-                <input type="text" class="field-input" value="{{ auth()->user()->shop?->name ?? 'No shop assigned' }}" readonly>
+                <input type="text" class="field-input" value="{{ auth()->user()->shop?->displayLabel() ?? 'No shop assigned' }}" readonly>
             @endif
         </div>
 

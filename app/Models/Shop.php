@@ -23,6 +23,14 @@ class Shop extends Model
         'is_active' => 'boolean',
     ];
 
+    public function displayLabel(): string
+    {
+        $name = trim((string) $this->name);
+        $code = trim((string) $this->code);
+
+        return $code !== '' ? $name.' - '.$code : $name;
+    }
+
     public function users()
     {
         return $this->hasMany(User::class);

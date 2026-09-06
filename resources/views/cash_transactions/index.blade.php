@@ -29,7 +29,7 @@
             <form method="GET" action="{{ route('cash-transactions.index') }}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 mb-3.5">
                     @if(auth()->user()->canManageAllShops())
-                    <select name="shop_id" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg"><option value="">All shops</option>@foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(($filters['shop_id'] ?? null) == $shop->id)>{{ $shop->name }}</option>@endforeach</select>
+                    <select name="shop_id" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg"><option value="">All shops</option>@foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(($filters['shop_id'] ?? null) == $shop->id)>{{ $shop->displayLabel() }}</option>@endforeach</select>
                     @endif
                     <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Reference, party, note..."
                         class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">

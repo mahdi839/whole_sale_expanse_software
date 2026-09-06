@@ -17,7 +17,7 @@
                     @if(auth()->user()->canManageAllShops())
                         <select name="shop_id" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                             <option value="">All shops</option>
-                            @foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(($filters['shop_id'] ?? '') == $shop->id)>{{ $shop->name }}</option>@endforeach
+                            @foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(($filters['shop_id'] ?? '') == $shop->id)>{{ $shop->displayLabel() }}</option>@endforeach
                         </select>
                     @endif
                 </div>

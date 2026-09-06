@@ -31,6 +31,7 @@
         'Accounts' => [
             'Expenses' => ['manage expenses', 'view expenses', 'create expenses', 'edit expenses', 'delete expenses'],
             'Cash Management' => ['manage cash', 'view cash', 'create cash', 'edit cash', 'delete cash'],
+            'Bank Management' => ['manage bank', 'view bank', 'create bank', 'edit bank', 'delete bank'],
             'Due Management' => ['manage dues', 'view dues', 'create dues', 'edit dues', 'delete dues'],
         ],
         'Access Control' => [

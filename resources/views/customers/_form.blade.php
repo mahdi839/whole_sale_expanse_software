@@ -4,9 +4,9 @@
 <div class="space-y-1.5">
     <label class="block text-sm font-medium text-gray-700">Shop <span class="text-red-500">*</span></label>
     @if(auth()->user()->canManageAllShops())
-        <select name="shop_id" required class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg"><option value="">Select shop</option>@foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(old('shop_id', $customer?->shop_id) == $shop->id)>{{ $shop->name }}</option>@endforeach</select>
+        <select name="shop_id" required class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg"><option value="">Select shop</option>@foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(old('shop_id', $customer?->shop_id) == $shop->id)>{{ $shop->displayLabel() }}</option>@endforeach</select>
     @else
-        <input type="hidden" name="shop_id" value="{{ auth()->user()->shop_id }}"><div class="w-full px-3.5 py-2.5 text-sm bg-gray-100 border border-gray-200 rounded-lg">{{ auth()->user()->shop?->name ?? 'No shop assigned' }}</div>
+        <input type="hidden" name="shop_id" value="{{ auth()->user()->shop_id }}"><div class="w-full px-3.5 py-2.5 text-sm bg-gray-100 border border-gray-200 rounded-lg">{{ auth()->user()->shop?->displayLabel() ?? 'No shop assigned' }}</div>
     @endif
     @error('shop_id')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
 </div>

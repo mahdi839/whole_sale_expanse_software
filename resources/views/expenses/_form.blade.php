@@ -17,9 +17,9 @@
                 <div>
                     <label class="{{ $labelClass }}">Shop</label>
                     @if(auth()->user()->canManageAllShops())
-                        <select name="shop_id" required class="{{ $inputClass }}"><option value="">Select shop</option>@foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(old('shop_id', $expense?->shop_id) == $shop->id)>{{ $shop->name }}</option>@endforeach</select>
+                        <select name="shop_id" required class="{{ $inputClass }}"><option value="">Select shop</option>@foreach($shops as $shop)<option value="{{ $shop->id }}" @selected(old('shop_id', $expense?->shop_id) == $shop->id)>{{ $shop->displayLabel() }}</option>@endforeach</select>
                     @else
-                        <input type="hidden" name="shop_id" value="{{ auth()->user()->shop_id }}"><div class="{{ $inputClass }} flex items-center">{{ auth()->user()->shop?->name ?? 'No shop assigned' }}</div>
+                        <input type="hidden" name="shop_id" value="{{ auth()->user()->shop_id }}"><div class="{{ $inputClass }} flex items-center">{{ auth()->user()->shop?->displayLabel() ?? 'No shop assigned' }}</div>
                     @endif
                     @error('shop_id')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                 </div>

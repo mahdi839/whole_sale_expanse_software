@@ -21,7 +21,7 @@
             <select name="shop_id" class="w-full border-gray-300 rounded-lg">
                 <option value="">No shop</option>
                 @foreach($shops as $shop)
-                    <option value="{{ $shop->id }}" @selected(old('shop_id', $user->shop_id) == $shop->id)>{{ $shop->name }}</option>
+                    <option value="{{ $shop->id }}" @selected(old('shop_id', $user->shop_id) == $shop->id)>{{ $shop->displayLabel() }}</option>
                 @endforeach
             </select>
         </div>
