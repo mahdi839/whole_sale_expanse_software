@@ -186,17 +186,6 @@ class CustomerController extends Controller
         $headers = ['Date & Time', 'Type', 'Reference', 'Amount', 'Qty', 'Paid', 'Due', 'Note'];
 
         if (request('format') === 'pdf') {
-            $rows = $logs->map(fn ($log) => [
-                optional($log['display_at'] ?? $log['date'])->format('Y-m-d h:i A'),
-                $log['type'],
-                $log['reference'],
-                $log['type'] === 'Payment' || $log['type'] === 'Bank Payment' ? '-' : $log['amount'],
-                $log['qty'],
-                $log['paid'],
-                $log['due'],
-                $log['note'],
-            ]);
-
             $returns = $customer->saleReturns()->with('items')->get();
             $totalReturnQty = $returns->sum(fn ($return) => $return->items->sum(fn ($item) => (float) $item->qty));
             $totalReturnAmount = $returns->sum(fn ($return) => (float) $return->return_amount);
@@ -212,8 +201,7 @@ class CustomerController extends Controller
             return $this->streamCustomerTransactionsPdf(
                 'customer-'.$customer->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.pdf',
                 'Inaya Creation - Customer Transactions - '.$customer->full_name,
-                $headers,
-                $rows,
+                $logs,
                 $summary
             );
         }
@@ -498,7 +486,7 @@ class CustomerController extends Controller
         ]);
     }
 
-    private function streamCustomerTransactionsPdf(string $fileName, string $title, array $headers, $rows, array $summary = [])
+    private function streamCustomerTransactionsPdf(string $fileName, string $title, $logs, array $summary = [])
     {
         $tempDir = storage_path('app/mpdf-temp');
         if (! is_dir($tempDir)) {
@@ -514,6 +502,8 @@ class CustomerController extends Controller
             'autoLangToFont' => true,
         ]);
         $mpdf->useSubstitutions = true;
+        $mpdf->keep_table_proportions = true;
+        $mpdf->shrink_tables_to_fit = 0;
         $mpdf->SetTitle($title);
         $mpdf->SetHTMLFooter('<div style="background:#f3f6fb;border-top:1px solid #2260d9;color:#808897;font-size:8pt;padding:6px 8px;">
             <span>Confidential - For internal use only</span>
@@ -548,39 +538,75 @@ class CustomerController extends Controller
             $summaryHtml .= '</tr></table>';
         }
 
-        $headerHtml = collect($headers)->map(fn ($header) => '<th>'.e($header).'</th>')->implode('');
-        $bodyHtml = collect($rows)->map(function ($row) {
-            return '<tr>'.collect($row)->map(fn ($value) => '<td>'.e((string) ($value ?? '-')).'</td>')->implode('').'</tr>';
+        $bodyHtml = collect($logs)->map(function ($log) {
+            $isPayment = in_array($log['type'] ?? '', ['Payment', 'Bank Payment'], true);
+            $amount = $isPayment ? '-' : $this->formatCustomerPdfValue($log['amount'] ?? null);
+            $qty = is_null($log['qty'] ?? null) ? '-' : $this->formatCustomerPdfValue($log['qty']);
+            $note = filled($log['note'] ?? null) ? (string) $log['note'] : '-';
+
+            return '<tr>
+                <td align="center">'.e(optional($log['display_at'] ?? $log['date'])->format('d M Y h:i A') ?: '-').'</td>
+                <td align="center"><strong>Type:</strong> '.e($log['type'] ?: '-').'<br><strong>Ref:</strong> '.e($log['reference'] ?: '-').'</td>
+                <td align="center">'.e($amount).'</td>
+                <td align="center">'.e($qty).'</td>
+                <td align="center"><strong>Paid:</strong> '.e($this->formatCustomerPdfValue($log['paid'] ?? null)).'<br><strong>Due:</strong> '.e($this->formatCustomerPdfValue($log['due'] ?? null)).'</td>
+                <td align="center">'.e($this->limitCustomerPdfNote($note)).'</td>
+            </tr>';
         })->implode('');
 
         if ($bodyHtml === '') {
-            $bodyHtml = '<tr><td colspan="'.count($headers).'" class="empty">No transactions found.</td></tr>';
+            $bodyHtml = '<tr><td colspan="6" class="empty">No transactions found.</td></tr>';
         }
 
         $html = '<html lang="bn"><head><meta charset="UTF-8"><style>
             @page { margin: 12mm 12mm 12mm 12mm; }
             body { font-family: freeserif, sans-serif; color: #333949; font-size: 8.2pt; }
             .report-header { background: #1e3a5f; border-left: 5px solid #2260d9; border-bottom: 2px solid #2260d9; color: #fff; padding: 10px 14px; margin-bottom: 10px; }
-            .logo { width: 34px; height: 34px; object-fit: cover; float: left; margin-right: 12px; }
-            h1 { font-size: 15pt; margin: 0; color: #ffffff; font-weight: bold; }
+            .logo { width: 34px; height: 34px; }
+            h1 { font-size: 13pt; margin: 0; color: #ffffff; font-weight: bold; }
             .date { color: #bfdbfe; font-size: 8pt; margin-top: 5px; }
-            .summary { display: flex; width: 100%; border-spacing: 8px 0; margin: 0 -8px 12px -8px; }
-            .summary-card { display: table-cell; border: 1px solid #d9dde5; background: #f3f6fb; padding: 8px; }
-            .summary-card span { display: block; color: #808897; font-size: 7.5pt; text-transform: uppercase; }
-            .summary-card strong { display: block; margin-top: 4px; font-size: 10pt; color: #333949; font-weight: bold; }
-            table { width: 100%; border-collapse: collapse; }
-            th { background: #1e3a5f; color: #ffffff; font-weight: bold; padding: 6px 5px; border-bottom: 2px solid #2260d9; text-transform: uppercase; font-size: 7.3pt; }
-            td { padding: 5px 4px; border-bottom: 1px solid #d9dde5; vertical-align: top; }
-            tr:nth-child(even) td { background: #f3f6fb; }
-            td { text-align: center; }
+            .summary-table { width: 100%; margin-bottom: 10px; }
+            .summary-cell { border: 1px solid #d9dde5; background: #f3f6fb; padding: 8px; }
+            .summary-label { color: #808897; font-size: 7.5pt; text-transform: uppercase; }
+            .summary-value { margin-top: 4px; font-size: 10pt; color: #333949; font-weight: bold; }
+            table.data { width: 100%; border-collapse: collapse; }
+            table.data th { background: #1e3a5f; color: #ffffff; font-weight: bold; padding: 6px 5px; border: 0.3px solid #1e3a5f; text-transform: uppercase; font-size: 7.3pt; text-align: center; vertical-align: middle; }
+            table.data td { padding: 5px 6px; border: 0.3px solid #d9dde5; vertical-align: middle; text-align: center; }
+            table.data tr:nth-child(even) td { background: #f3f6fb; }
+            table.data td strong { color: #1e3a5f; }
             .empty { text-align: center; color: #64748b; }
         </style></head><body>
-            <div class="report-header">'.$logoHtml.'
-                <h1>'.e($title).'</h1>
-                <div class="date">Generated: '.e(now()->format('d M Y H:i')).'</div>
-            </div>
-            <div class="summary">'.$summaryHtml.'</div>
-            <table><thead><tr>'.$headerHtml.'</tr></thead><tbody>'.$bodyHtml.'</tbody></table>
+            <table width="100%" cellpadding="0" cellspacing="0" class="report-header">
+                <tr>
+                    '.($logoHtml ? '<td width="46" valign="middle">'.$logoHtml.'</td>' : '').'
+                    <td valign="middle">
+                        <h1>'.e($title).'</h1>
+                        <div class="date">Generated: '.e(now()->format('d M Y H:i')).'</div>
+                    </td>
+                </tr>
+            </table>
+            '.$summaryHtml.'
+            <table class="data" width="100%" cellpadding="5" cellspacing="0" autosize="1">
+                <colgroup>
+                    <col width="18%" />
+                    <col width="24%" />
+                    <col width="12%" />
+                    <col width="10%" />
+                    <col width="18%" />
+                    <col width="18%" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th width="18%">Date &amp; Time</th>
+                        <th width="24%">Type / Reference</th>
+                        <th width="12%">Amount</th>
+                        <th width="10%">Qty</th>
+                        <th width="18%">Paid / Due</th>
+                        <th width="18%">Note</th>
+                    </tr>
+                </thead>
+                <tbody>'.$bodyHtml.'</tbody>
+            </table>
         </body></html>';
 
         $mpdf->WriteHTML($html);
@@ -589,5 +615,29 @@ class CustomerController extends Controller
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
+    }
+
+    private function formatCustomerPdfValue($value): string
+    {
+        if ($value === '-' || $value === '' || $value === null) {
+            return '-';
+        }
+
+        if (is_numeric($value)) {
+            return number_format((float) $value, 2);
+        }
+
+        return (string) $value;
+    }
+
+    private function limitCustomerPdfNote(string $note): string
+    {
+        $note = trim(preg_replace('/\s+/u', ' ', $note) ?? $note);
+
+        if (mb_strlen($note) <= 90) {
+            return $note;
+        }
+
+        return rtrim(mb_substr($note, 0, 87)).'...';
     }
 }
