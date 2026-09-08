@@ -516,12 +516,13 @@
 
                 <p :class="drawerOpen ? 'block' : 'hidden xl:block'" class="sidebar-section">Products & Inventory</p>
                 @canany(['manage products', 'view products'])
-                    <x-sidebar-dropdown label="Products" :active="request()->routeIs('products.*')">
+                    <x-sidebar-dropdown label="Products" :active="request()->routeIs('products.*') || request()->routeIs('missing-products.*')">
                         <x-slot name="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="1.75">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                             </svg></x-slot>
                         <x-sidebar-sub-link :href="route('products.index')">All Products</x-sidebar-sub-link>
+                        <x-sidebar-sub-link :href="route('missing-products.index')">Track Missing Products</x-sidebar-sub-link>
                     </x-sidebar-dropdown>
                 @endcanany
 

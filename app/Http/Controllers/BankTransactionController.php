@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankTransaction;
+use App\Models\CarryMan;
+use App\Models\ComputerMan;
 use App\Models\Customer;
+use App\Models\GareyMan;
 use App\Models\Shop;
 use App\Models\Supplier;
+use App\Models\Tailor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -27,7 +31,7 @@ class BankTransactionController extends Controller
         ];
 
         $query = BankTransaction::query()
-            ->with(['shop', 'customer', 'supplier'])
+            ->with(['shop', 'customer', 'supplier', 'tailor', 'carryMan', 'computerMan', 'gareyMan'])
             ->when(! auth()->user()->canManageAllShops(), fn ($q) => $q->where('shop_id', auth()->user()->shop_id ?: -1))
             ->when(auth()->user()->canManageAllShops() && $filters['shop_id'], fn ($q) => $q->where('shop_id', $filters['shop_id']))
             ->when($filters['direction'], fn ($q) => $q->where('direction', $filters['direction']))
@@ -43,7 +47,11 @@ class BankTransactionController extends Controller
                         ->orWhere('bank_details', 'like', "%{$s}%")
                         ->orWhere('note', 'like', "%{$s}%")
                         ->orWhereHas('customer', fn ($c) => $c->where('full_name', 'like', "%{$s}%")->orWhere('address', 'like', "%{$s}%"))
-                        ->orWhereHas('supplier', fn ($sp) => $sp->where('name', 'like', "%{$s}%"));
+                        ->orWhereHas('supplier', fn ($sp) => $sp->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('tailor', fn ($tailor) => $tailor->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('carryMan', fn ($worker) => $worker->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('computerMan', fn ($worker) => $worker->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('gareyMan', fn ($worker) => $worker->where('name', 'like', "%{$s}%"));
                 });
             });
 
@@ -141,6 +149,10 @@ class BankTransactionController extends Controller
                 ->orderBy('full_name')
                 ->get(['id', 'full_name', 'phone', 'address']),
             'suppliers' => Supplier::orderBy('name')->get(['id', 'name', 'phone', 'due']),
+            'tailors' => Tailor::orderBy('name')->get(['id', 'name']),
+            'carryMen' => CarryMan::orderBy('name')->get(['id', 'name', 'phone']),
+            'computerMen' => ComputerMan::orderBy('name')->get(['id', 'name', 'phone']),
+            'gareyMen' => GareyMan::orderBy('name')->get(['id', 'name', 'phone']),
             'shops' => auth()->user()->canManageAllShops()
                 ? Shop::where('is_active', true)->orderBy('name')->get()
                 : collect([auth()->user()->shop]),
@@ -156,9 +168,13 @@ class BankTransactionController extends Controller
             'bank_details' => 'nullable|string|max:255',
             'amount' => 'required|numeric|min:0.01',
             'date' => 'required|date',
-            'entry_type' => ['nullable', Rule::in(['customer', 'supplier'])],
+            'entry_type' => ['nullable', Rule::in(['customer', 'supplier', 'tailor', 'computer', 'carry_man', 'garey_man'])],
             'customer_id' => 'nullable|required_if:entry_type,customer|exists:customers,id',
             'supplier_id' => 'nullable|required_if:entry_type,supplier|exists:suppliers,id',
+            'tailor_id' => 'nullable|required_if:entry_type,tailor|exists:tailors,id',
+            'carry_man_id' => 'nullable|required_if:entry_type,carry_man|exists:carry_men,id',
+            'computer_man_id' => 'nullable|required_if:entry_type,computer|exists:computer_men,id',
+            'garey_man_id' => 'nullable|required_if:entry_type,garey_man|exists:garey_men,id',
             'note' => 'nullable|string|max:2000',
             'document' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
         ]);
@@ -173,12 +189,19 @@ class BankTransactionController extends Controller
         $data['type'] = 'manual';
         $entryType = $data['entry_type'] ?? null;
 
-        if ($entryType !== 'customer') {
-            $data['customer_id'] = null;
-        }
+        foreach (['customer_id', 'supplier_id', 'tailor_id', 'carry_man_id', 'computer_man_id', 'garey_man_id'] as $field) {
+            $typeForField = match ($field) {
+                'customer_id' => 'customer',
+                'supplier_id' => 'supplier',
+                'tailor_id' => 'tailor',
+                'carry_man_id' => 'carry_man',
+                'computer_man_id' => 'computer',
+                'garey_man_id' => 'garey_man',
+            };
 
-        if ($entryType !== 'supplier') {
-            $data['supplier_id'] = null;
+            if ($entryType !== $typeForField) {
+                $data[$field] = null;
+            }
         }
 
         if ($request->hasFile('document')) {
@@ -215,6 +238,30 @@ class BankTransactionController extends Controller
                 $supplier->refresh();
                 $supplier->update(['due' => max(0, (float) $supplier->total_purchase - (float) $supplier->total_paid)]);
             }
+        }
+
+        foreach ([
+            'tailor_id' => Tailor::class,
+            'carry_man_id' => CarryMan::class,
+            'computer_man_id' => ComputerMan::class,
+            'garey_man_id' => GareyMan::class,
+        ] as $field => $modelClass) {
+            if (! $transaction->{$field}) {
+                continue;
+            }
+
+            $worker = $modelClass::find($transaction->{$field});
+
+            if (! $worker) {
+                continue;
+            }
+
+            $paidAmount = $transaction->direction === 'out' ? $amount : -1 * $amount;
+            $worker->update([
+                'total_paid' => max(0, (float) $worker->total_paid + $paidAmount),
+            ]);
+            $worker->refresh();
+            $worker->recalculateFinancials();
         }
     }
 

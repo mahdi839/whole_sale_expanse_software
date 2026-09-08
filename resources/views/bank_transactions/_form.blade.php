@@ -69,6 +69,10 @@
             <option value="">No related party</option>
             <option value="customer" @selected($selectedEntryType === 'customer')>Customer</option>
             <option value="supplier" @selected($selectedEntryType === 'supplier')>Supplier</option>
+            <option value="tailor" @selected($selectedEntryType === 'tailor')>Tailor</option>
+            <option value="computer" @selected($selectedEntryType === 'computer')>Computer Man</option>
+            <option value="carry_man" @selected($selectedEntryType === 'carry_man')>Carry Man</option>
+            <option value="garey_man" @selected($selectedEntryType === 'garey_man')>Garey Man</option>
         </select>
         @error('entry_type')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
@@ -97,6 +101,58 @@
             @endforeach
         </select>
         @error('supplier_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
+
+    <div data-party-field="tailor">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Tailor</label>
+        <select name="tailor_id" class="tom-select w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+            <option value="">Select tailor</option>
+            @foreach($tailors ?? [] as $tailor)
+                <option value="{{ $tailor->id }}" @selected(old('tailor_id', $transaction?->tailor_id) == $tailor->id)>
+                    {{ $tailor->name }}
+                </option>
+            @endforeach
+        </select>
+        @error('tailor_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
+
+    <div data-party-field="computer">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Computer Man</label>
+        <select name="computer_man_id" class="tom-select w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+            <option value="">Select computer man</option>
+            @foreach($computerMen ?? [] as $computerMan)
+                <option value="{{ $computerMan->id }}" @selected(old('computer_man_id', $transaction?->computer_man_id) == $computerMan->id)>
+                    {{ $computerMan->name }}{{ $computerMan->phone ? ' - '.$computerMan->phone : '' }}
+                </option>
+            @endforeach
+        </select>
+        @error('computer_man_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
+
+    <div data-party-field="carry_man">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Carry Man</label>
+        <select name="carry_man_id" class="tom-select w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+            <option value="">Select carry man</option>
+            @foreach($carryMen ?? [] as $carryMan)
+                <option value="{{ $carryMan->id }}" @selected(old('carry_man_id', $transaction?->carry_man_id) == $carryMan->id)>
+                    {{ $carryMan->name }}{{ $carryMan->phone ? ' - '.$carryMan->phone : '' }}
+                </option>
+            @endforeach
+        </select>
+        @error('carry_man_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
+
+    <div data-party-field="garey_man">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Garey Man</label>
+        <select name="garey_man_id" class="tom-select w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+            <option value="">Select garey man</option>
+            @foreach($gareyMen ?? [] as $gareyMan)
+                <option value="{{ $gareyMan->id }}" @selected(old('garey_man_id', $transaction?->garey_man_id) == $gareyMan->id)>
+                    {{ $gareyMan->name }}{{ $gareyMan->phone ? ' - '.$gareyMan->phone : '' }}
+                </option>
+            @endforeach
+        </select>
+        @error('garey_man_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div class="sm:col-span-2">

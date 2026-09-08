@@ -32,6 +32,11 @@ class CarryMan extends Model
         return $this->hasMany(CashTransaction::class);
     }
 
+    public function bankTransactions()
+    {
+        return $this->hasMany(BankTransaction::class);
+    }
+
     public function manualDues()
     {
         return $this->hasMany(ManualDue::class);

@@ -6,11 +6,43 @@ use Illuminate\Support\Facades\Response;
 
 class WorkerProfilePdf
 {
-    public static function download(object $worker, string $title, string $type, $workLogs, $cashTransactions = null)
+    public static function mergeLedgerTransactions($cashTransactions, $bankTransactions = [])
+    {
+        $cashRows = collect($cashTransactions)->map(fn ($transaction) => (object) [
+            'date' => $transaction->date,
+            'created_at' => $transaction->created_at,
+            'reference' => $transaction->reference,
+            'source' => 'Cash',
+            'type' => $transaction->type,
+            'direction' => $transaction->direction,
+            'amount' => $transaction->amount,
+            'payment_method' => $transaction->payment_method ?: '-',
+            'note' => $transaction->note,
+        ]);
+
+        $bankRows = collect($bankTransactions)->map(fn ($transaction) => (object) [
+            'date' => $transaction->date,
+            'created_at' => $transaction->created_at,
+            'reference' => $transaction->reference,
+            'source' => 'Bank',
+            'type' => $transaction->direction === 'out' ? 'Bank Out' : 'Bank In',
+            'direction' => $transaction->direction,
+            'amount' => $transaction->amount,
+            'payment_method' => collect([$transaction->bank_name, $transaction->bank_details])->filter()->implode(' - ') ?: '-',
+            'note' => $transaction->note,
+        ]);
+
+        return $cashRows
+            ->concat($bankRows)
+            ->sortByDesc(fn ($transaction) => optional($transaction->date)->format('Y-m-d').'-'.optional($transaction->created_at)->format('His').'-'.$transaction->reference)
+            ->values();
+    }
+
+    public static function download(object $worker, string $title, string $type, $workLogs, $cashTransactions = null, $bankTransactions = null)
     {
         [$headers, $rows] = self::workLogTable($type, $workLogs);
         $totalWork = $workLogs->sum(fn ($log) => (float) $log->total_rate);
-        $transactions = collect($cashTransactions ?? []);
+        $transactions = self::mergeLedgerTransactions($cashTransactions ?? [], $bankTransactions ?? []);
 
         $summary = [
             ['label' => 'Name', 'value' => $worker->name],
@@ -36,11 +68,12 @@ class WorkerProfilePdf
                 'rows' => $rows,
             ],
             [
-                'title' => 'Cash Transactions',
-                'headers' => ['Date', 'Reference', 'Type', 'Amount', 'Payment Method', 'Note'],
+                'title' => 'Transactions',
+                'headers' => ['Date', 'Reference', 'Source', 'Type', 'Amount', 'Method / Bank', 'Note'],
                 'rows' => $transactions->map(fn ($transaction) => [
                     optional($transaction->date)->format('d M Y') ?: '-',
                     $transaction->reference ?: '-',
+                    $transaction->source ?: '-',
                     ucwords(str_replace('_', ' ', (string) $transaction->type)),
                     ($transaction->direction === 'in' ? '+' : '-').number_format((float) $transaction->amount, 2),
                     $transaction->payment_method ?: '-',

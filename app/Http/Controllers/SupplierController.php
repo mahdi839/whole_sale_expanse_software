@@ -255,6 +255,21 @@ class SupplierController extends Controller
                 'note' => $cash->note,
                 'url' => route('cash-transactions.index', ['search' => $cash->reference]),
             ]))
+            ->merge($supplier->bankTransactions()->whereNull('source_type')->get()->map(fn ($bank) => [
+                'date' => $bank->date,
+                'sort_at' => $this->logSortAt($bank->date, $bank->created_at),
+                'type' => 'Bank Payment',
+                'reference' => $bank->reference,
+                'amount' => $bank->direction === 'out' ? (float) $bank->amount : -1 * (float) $bank->amount,
+                'qty' => null,
+                'paid' => (float) $bank->amount,
+                'due' => '-',
+                'products' => '',
+                'store_name' => '',
+                'bill_no' => '',
+                'note' => collect([$bank->bank_name, $bank->bank_details, $bank->note])->filter()->implode(' - '),
+                'url' => route('bank-transactions.index', ['search' => $bank->reference]),
+            ]))
             ->merge($supplier->manualDues()->get()->map(fn ($due) => [
                 'date' => $due->date,
                 'sort_at' => $this->logSortAt($due->date, $due->created_at),

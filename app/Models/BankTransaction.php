@@ -23,6 +23,10 @@ class BankTransaction extends Model
         'source_id',
         'customer_id',
         'supplier_id',
+        'tailor_id',
+        'carry_man_id',
+        'computer_man_id',
+        'garey_man_id',
         'note',
         'document',
     ];
@@ -56,10 +60,34 @@ class BankTransaction extends Model
         return $this->belongsTo(Supplier::class);
     }
 
+    public function tailor()
+    {
+        return $this->belongsTo(Tailor::class);
+    }
+
+    public function carryMan()
+    {
+        return $this->belongsTo(CarryMan::class);
+    }
+
+    public function computerMan()
+    {
+        return $this->belongsTo(ComputerMan::class);
+    }
+
+    public function gareyMan()
+    {
+        return $this->belongsTo(GareyMan::class);
+    }
+
     public function partyName(): string
     {
         return $this->customer?->full_name
             ?? $this->supplier?->name
+            ?? $this->tailor?->name
+            ?? $this->computerMan?->name
+            ?? $this->carryMan?->name
+            ?? $this->gareyMan?->name
             ?? '—';
     }
 

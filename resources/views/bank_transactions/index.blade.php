@@ -107,6 +107,10 @@
                         <option value="">All entry types</option>
                         <option value="customer" @selected(($filters['entry_type'] ?? '') === 'customer')>Customer</option>
                         <option value="supplier" @selected(($filters['entry_type'] ?? '') === 'supplier')>Supplier</option>
+                        <option value="tailor" @selected(($filters['entry_type'] ?? '') === 'tailor')>Tailor</option>
+                        <option value="computer" @selected(($filters['entry_type'] ?? '') === 'computer')>Computer Man</option>
+                        <option value="carry_man" @selected(($filters['entry_type'] ?? '') === 'carry_man')>Carry Man</option>
+                        <option value="garey_man" @selected(($filters['entry_type'] ?? '') === 'garey_man')>Garey Man</option>
                     </select>
                     <select name="direction" class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                         <option value="">All directions</option>
@@ -163,6 +167,14 @@
                                         <span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded ml-1">Customer</span>
                                     @elseif($transaction->entry_type === 'supplier')
                                         <span class="text-xs bg-sky-100 text-sky-800 px-2 py-0.5 rounded ml-1">Supplier</span>
+                                    @elseif($transaction->entry_type === 'tailor')
+                                        <span class="text-xs bg-violet-100 text-violet-800 px-2 py-0.5 rounded ml-1">Tailor</span>
+                                    @elseif($transaction->entry_type === 'computer')
+                                        <span class="text-xs bg-fuchsia-100 text-fuchsia-800 px-2 py-0.5 rounded ml-1">Computer Man</span>
+                                    @elseif($transaction->entry_type === 'carry_man')
+                                        <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded ml-1">Carry Man</span>
+                                    @elseif($transaction->entry_type === 'garey_man')
+                                        <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded ml-1">Garey Man</span>
                                     @endif
                                 </td>
                                 <td class="px-5 py-3 text-right font-semibold {{ $transaction->direction === 'in' ? 'text-emerald-600' : 'text-rose-600' }}">

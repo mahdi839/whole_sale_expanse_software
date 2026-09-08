@@ -53,4 +53,16 @@ class Product extends Model
     {
         return $this->belongsToMany(Sale::class, 'sale_items');
     }
+
+    public function missingProducts()
+    {
+        return $this->hasMany(MissingProduct::class);
+    }
+
+    public function displayLabel(): string
+    {
+        $code = $this->sku ?: $this->product_code;
+
+        return $code ? $this->product_name.' - '.$code : $this->product_name;
+    }
 }

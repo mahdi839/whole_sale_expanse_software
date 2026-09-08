@@ -45,6 +45,7 @@ class TailorController extends Controller
     {
         $tailor->load([
             'cashTransactions' => fn ($query) => $query->latest('date')->latest(),
+            'bankTransactions' => fn ($query) => $query->latest('date')->latest(),
         ]);
         $workLogs = $tailor->clothSewings()->with('product')->latest('date')->latest()->get();
 
@@ -54,7 +55,7 @@ class TailorController extends Controller
             'routeBase' => 'tailors',
             'workLogType' => 'tailor',
             'workLogs' => $workLogs,
-            'cashTransactions' => $tailor->cashTransactions,
+            'cashTransactions' => WorkerProfilePdf::mergeLedgerTransactions($tailor->cashTransactions, $tailor->bankTransactions),
             'totalWorkAmount' => $workLogs->sum(fn ($log) => (float) $log->total_rate),
         ]);
     }
@@ -68,8 +69,9 @@ class TailorController extends Controller
     {
         $workLogs = $tailor->clothSewings()->with('product')->latest('date')->latest()->get();
         $cashTransactions = $tailor->cashTransactions()->latest('date')->latest()->get();
+        $bankTransactions = $tailor->bankTransactions()->latest('date')->latest()->get();
 
-        return WorkerProfilePdf::download($tailor, 'Tailor Details and Cloth Sewing', 'tailor', $workLogs, $cashTransactions);
+        return WorkerProfilePdf::download($tailor, 'Tailor Details and Cloth Sewing', 'tailor', $workLogs, $cashTransactions, $bankTransactions);
     }
 
     public function update(Request $request, Tailor $tailor)

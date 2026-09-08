@@ -16,6 +16,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\GareyManController;
 use App\Http\Controllers\GareyManWorkLogController;
+use App\Http\Controllers\MissingProductController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -75,6 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     };
 
     $crudResource('/products', ProductController::class, 'products', ['except' => ['show']]);
+    $crudResource('/missing-products', MissingProductController::class, 'products', ['parameters' => ['missing-products' => 'missingProduct'], 'except' => ['show']]);
     Route::get('/products-export/pdf', [ProductController::class, 'exportPdf'])->name('products.export.pdf')->middleware('permission:manage products|view products');
     Route::get('/products/{product}/barcode', [ProductController::class, 'barcode'])->name('products.barcode')->middleware('permission:manage products|view products');
     Route::get('/customers/suggestions', [CustomerController::class, 'suggestions'])->name('customers.suggestions')->middleware('permission:manage customers|view customers');

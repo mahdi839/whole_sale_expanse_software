@@ -88,7 +88,7 @@
                                     <a href="{{ $log['url'] }}" class="font-mono text-xs text-blue-700 hover:underline">{{ $log['reference'] }}</a>
                                 </td>
                                 <td class="px-5 py-3 text-right {{ $log['amount'] < 0 ? 'text-red-600' : 'text-gray-700' }}">
-                                    @if($log['type'] !== 'Payment')
+                                    @if(! in_array($log['type'], ['Payment', 'Bank Payment']))
                                         {{ number_format($log['amount'], 2) }}
                                     @endif
                                 </td>

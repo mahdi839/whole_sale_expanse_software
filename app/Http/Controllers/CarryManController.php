@@ -49,6 +49,7 @@ class CarryManController extends Controller
         $carryMan->load([
             'workLogs' => fn ($query) => $query->latest('date')->latest(),
             'cashTransactions' => fn ($query) => $query->latest('date')->latest(),
+            'bankTransactions' => fn ($query) => $query->latest('date')->latest(),
         ]);
 
         return view('shared._worker_profile_show', [
@@ -57,7 +58,7 @@ class CarryManController extends Controller
             'routeBase' => 'carry-men',
             'workLogType' => 'carry',
             'workLogs' => $carryMan->workLogs,
-            'cashTransactions' => $carryMan->cashTransactions,
+            'cashTransactions' => WorkerProfilePdf::mergeLedgerTransactions($carryMan->cashTransactions, $carryMan->bankTransactions),
             'totalWorkAmount' => $carryMan->workLogs->sum(fn ($log) => (float) $log->total_rate),
         ]);
     }
@@ -73,8 +74,9 @@ class CarryManController extends Controller
     {
         $workLogs = $carryMan->workLogs()->latest('date')->latest()->get();
         $cashTransactions = $carryMan->cashTransactions()->latest('date')->latest()->get();
+        $bankTransactions = $carryMan->bankTransactions()->latest('date')->latest()->get();
 
-        return WorkerProfilePdf::download($carryMan, 'Carry Man Profile and Work Logs', 'carry', $workLogs, $cashTransactions);
+        return WorkerProfilePdf::download($carryMan, 'Carry Man Profile and Work Logs', 'carry', $workLogs, $cashTransactions, $bankTransactions);
     }
 
     public function destroy(CarryMan $carryMan)

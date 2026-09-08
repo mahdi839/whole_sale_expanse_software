@@ -48,6 +48,7 @@ class ComputerManController extends Controller
         $computerMan->load([
             'workLogs.product' => fn ($query) => $query->orderBy('product_name'),
             'cashTransactions' => fn ($query) => $query->latest('date')->latest(),
+            'bankTransactions' => fn ($query) => $query->latest('date')->latest(),
         ]);
         $workLogs = $computerMan->workLogs()->with('product')->latest('date')->latest()->get();
 
@@ -57,7 +58,7 @@ class ComputerManController extends Controller
             'routeBase' => 'computer-men',
             'workLogType' => 'computer',
             'workLogs' => $workLogs,
-            'cashTransactions' => $computerMan->cashTransactions,
+            'cashTransactions' => WorkerProfilePdf::mergeLedgerTransactions($computerMan->cashTransactions, $computerMan->bankTransactions),
             'totalWorkAmount' => $workLogs->sum(fn ($log) => (float) $log->total_rate),
         ]);
     }
@@ -73,8 +74,9 @@ class ComputerManController extends Controller
     {
         $workLogs = $computerMan->workLogs()->with('product')->latest('date')->latest()->get();
         $cashTransactions = $computerMan->cashTransactions()->latest('date')->latest()->get();
+        $bankTransactions = $computerMan->bankTransactions()->latest('date')->latest()->get();
 
-        return WorkerProfilePdf::download($computerMan, 'Computer Man Profile and Work Logs', 'computer', $workLogs, $cashTransactions);
+        return WorkerProfilePdf::download($computerMan, 'Computer Man Profile and Work Logs', 'computer', $workLogs, $cashTransactions, $bankTransactions);
     }
 
     public function destroy(ComputerMan $computerMan)

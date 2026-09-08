@@ -190,7 +190,7 @@ class CustomerController extends Controller
                 optional($log['display_at'] ?? $log['date'])->format('Y-m-d h:i A'),
                 $log['type'],
                 $log['reference'],
-                $log['type'] === 'Payment' ? '-' : $log['amount'],
+                $log['type'] === 'Payment' || $log['type'] === 'Bank Payment' ? '-' : $log['amount'],
                 $log['qty'],
                 $log['paid'],
                 $log['due'],
@@ -356,6 +356,19 @@ class CustomerController extends Controller
                 'products' => '',
                 'note' => $cash->note,
                 'url' => route('cash-transactions.index', ['search' => $cash->reference]),
+            ]))
+            ->merge($customer->bankTransactions()->whereNull('source_type')->get()->map(fn ($bank) => [
+                'date' => $bank->date,
+                'sort_at' => $this->logSortAt($bank->date, $bank->created_at),
+                'type' => 'Bank Payment',
+                'reference' => $bank->reference,
+                'amount' => $bank->direction === 'in' ? $bank->amount : -1 * $bank->amount,
+                'qty' => null,
+                'paid' => $bank->amount,
+                'due' => '-',
+                'products' => '',
+                'note' => collect([$bank->bank_name, $bank->bank_details, $bank->note])->filter()->implode(' - '),
+                'url' => route('bank-transactions.index', ['search' => $bank->reference]),
             ]))
             ->merge($customer->manualDues()->get()->map(fn ($due) => [
                 'date' => $due->date,

@@ -40,7 +40,7 @@
 
         <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div class="px-5 py-4 border-b border-gray-100">
-                <h3 class="text-sm font-semibold text-gray-800">Cash Transactions</h3>
+                <h3 class="text-sm font-semibold text-gray-800">Transactions</h3>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -48,9 +48,10 @@
                         <tr class="bg-gray-50 border-b">
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Date</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Reference</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Source</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Type</th>
                             <th class="px-5 py-3 text-right text-xs font-medium text-gray-400">Amount</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Payment Method</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Method / Bank</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Note</th>
                         </tr>
                     </thead>
@@ -59,6 +60,11 @@
                             <tr>
                                 <td class="px-5 py-3 whitespace-nowrap">{{ optional($transaction->date)->format('d M Y') }}</td>
                                 <td class="px-5 py-3 font-mono text-xs text-violet-700">{{ $transaction->reference }}</td>
+                                <td class="px-5 py-3">
+                                    <span class="text-xs px-2 py-0.5 rounded {{ ($transaction->source ?? 'Cash') === 'Bank' ? 'bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700' }}">
+                                        {{ $transaction->source ?? 'Cash' }}
+                                    </span>
+                                </td>
                                 <td class="px-5 py-3">{{ ucwords(str_replace('_', ' ', $transaction->type)) }}</td>
                                 <td class="px-5 py-3 text-right font-semibold {{ $transaction->direction === 'in' ? 'text-emerald-600' : 'text-red-600' }}">
                                     {{ $transaction->direction === 'in' ? '+' : '-' }}{{ number_format($transaction->amount, 2) }}
@@ -67,7 +73,7 @@
                                 <td class="px-5 py-3 text-gray-500">{{ $transaction->note ?? '-' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-5 py-10 text-center text-gray-400">No cash transactions found.</td></tr>
+                            <tr><td colspan="7" class="px-5 py-10 text-center text-gray-400">No transactions found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
