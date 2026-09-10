@@ -236,11 +236,7 @@ class SimplePdf
         $this->equalColumns = (bool) ($options['equal_columns'] ?? false);
         $this->summary = $options['summary'] ?? [];
         $this->logoPath = isset($options['logo_path']) && is_file($options['logo_path']) ? $options['logo_path'] : null;
-        $this->headerH = match (true) {
-            $this->heading !== '' => 90.0,
-            $this->headerAlign === 'center' && $this->logoPath => 72.0,
-            default => self::HEADER_H,
-        };
+        $this->headerH = self::HEADER_H;
     }
 
     private function drawPageHeader(): void
@@ -249,72 +245,34 @@ class SimplePdf
         $w  = self::PW - self::ML - self::MR;
         $h  = $this->headerH;
         $py = self::PH - self::MT - $h;   // PDF Y (bottom-up)
-        $center = $this->headerAlign === 'center';
-        $hasHeading = $this->heading !== '';
-        $logoSize = 34.0;
-        $logoGap = 8.0;
-        $logoBottomPad = 16.0;
 
-        // Header background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)
         $this->fillHeaderGradient($x, $py, $w, $h);
-
-        // Accent left bar (5 pt)
         $this->em(self::ACCENT . " rg {$x} {$py} 5 {$h} re f\n");
-
-        // Accent bottom border (2 pt)
         $lineY = $py - 1.5;
         $endX  = $x + $w;
         $this->em("q 2 w " . self::ACCENT . " RG {$x} {$lineY} m {$endX} {$lineY} l S Q\n");
 
-        $titleW = $this->textW($this->docTitle, self::FS_TITLE);
-        $groupW = $titleW + ($this->logoPath ? $logoSize + $logoGap : 0);
-        $groupX = $center
-            ? $x + max(8, ($w - $groupW) / 2)
-            : $x + 14;
-        if ($center && $this->logoPath) {
-            $belowBaseline = $hasHeading ? 22.0 : 8.0;
-            $belowSize = $hasHeading ? 11.0 : self::FS_SUBTITLE;
-            $logoY = $py + $belowBaseline + $belowSize + $logoBottomPad;
-        } else {
-            $logoY = $py + ($h - $logoSize) / 2;
-        }
+        $titleX = $x + ($this->logoPath ? 54 : 14);
 
         if ($this->logoPath) {
-            $this->em("q {$logoSize} 0 0 {$logoSize} {$groupX} {$logoY} cm /Logo Do Q\n");
-            $titleX = $groupX + $logoSize + $logoGap;
-        } else {
-            $titleX = $groupX;
+            $logoSize = 34;
+            $logoX = $x + 14;
+            $logoY = $py + ($h - $logoSize) / 2;
+            $this->em("q {$logoSize} 0 0 {$logoSize} {$logoX} {$logoY} cm /Logo Do Q\n");
         }
 
-        $titleY = $this->logoPath
-            ? $logoY + ($logoSize / 2) - (self::FS_TITLE * 0.32)
-            : ($hasHeading ? $py + $h - 22 : $py + $h - 26);
+        $titleY = $py + $h - 26;
         $this->em("BT /F2 " . self::FS_TITLE . " Tf " . self::HDR_FG . " rg {$titleX} {$titleY} Td (" . $this->esc($this->docTitle) . ") Tj ET\n");
 
-        if ($hasHeading) {
-            $this->drawHeaderText($this->heading, 11, true, self::HDR_FG, $x, $w, $py + 22, $center);
-        }
-
+        $subY = $py + 10;
         $sub  = 'Generated: ' . date('d M Y   H:i');
+        if ($this->heading !== '') {
+            $sub .= '   |   ' . $this->heading;
+        }
         if ($this->subtitle !== '') {
             $sub .= '   |   ' . $this->subtitle;
         }
-        $this->drawHeaderText($sub, self::FS_SUBTITLE, false, self::SUB_FG, $x, $w, $py + 8, $center);
-    }
-
-    private function drawHeaderText(string $text, float $fs, bool $bold, string $color, float $x, float $w, float $y, bool $center): void
-    {
-        if ($text === '') {
-            return;
-        }
-
-        $font = $bold ? 'F2' : 'F1';
-        $tx = $x + ($this->logoPath ? 54 : 14);
-        if ($center) {
-            $tx = $x + max(8, ($w - $this->textW($text, $fs)) / 2);
-        }
-
-        $this->em("BT /{$font} {$fs} Tf {$color} rg {$tx} {$y} Td (" . $this->esc($text) . ") Tj ET\n");
+        $this->em("BT /F1 " . self::FS_SUBTITLE . " Tf " . self::SUB_FG . " rg {$titleX} {$subY} Td (" . $this->esc($sub) . ") Tj ET\n");
     }
 
     private function drawSummary(): void
@@ -523,7 +481,7 @@ class SimplePdf
             }
 
             $labelW = $label !== '' ? $this->textW($label, $fs) * $boldExtra : 0.0;
-            $gap = ($label !== '' && $body !== '') ? 2.0 : 0.0;
+            $gap = ($label !== '' && $body !== '') ? 10.0 : 0.0;
             $bodyW = $this->textW($body, $fs);
             $totalW = $labelW + $gap + $bodyW;
 
@@ -714,7 +672,7 @@ class SimplePdf
                 $label = $match[1];
                 $value = ltrim($match[2]);
                 $labelW = $this->textW($label, $fs) * 1.08;
-                $wrapped = $this->wrapText($value === '' ? '-' : $value, $fs, max(20.0, $maxW - $labelW - 2));
+                $wrapped = $this->wrapText($value === '' ? '-' : $value, $fs, max(20.0, $maxW - $labelW - 10));
 
                 foreach ($wrapped as $index => $chunk) {
                     $lines[] = [

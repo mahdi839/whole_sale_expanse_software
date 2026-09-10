@@ -106,10 +106,17 @@ class MissingProductController extends Controller
             ? ['Date', 'Bill No', 'Product / Design Code', 'Qty', 'Rate / Value', 'Note']
             : ['Date', 'Bill No', 'Supplier', 'Product / Design Code', 'Qty', 'Rate / Value', 'Note'];
         $colAlign = $supplier
-            ? ['L', 'L', 'L', 'R', 'L', 'L']
-            : ['L', 'L', 'L', 'L', 'R', 'L', 'L'];
+            ? ['L', 'L', 'L', 'L', 'L', 'L']
+            : ['L', 'L', 'L', 'L', 'L', 'L', 'L'];
+        $usable = 841.89 - 36.0 - 36.0;
+        $widths = $supplier
+            ? [90, 85, 245, 72, 145, $usable - 90 - 85 - 245 - 72 - 145]
+            : [80, 72, 110, 210, 68, 130, $usable - 80 - 72 - 110 - 210 - 68 - 130];
 
         $subtitleParts = [];
+        if ($supplier) {
+            $subtitleParts[] = 'Supplier: '.$supplier->name;
+        }
         if ($filters['search']) {
             $subtitleParts[] = 'Search: '.$filters['search'];
         }
@@ -122,13 +129,10 @@ class MissingProductController extends Controller
 
         $fileName = 'missing-products-'.now()->format('Y-m-d-H-i-s').'.pdf';
 
-        return Response::make(SimplePdf::table('Missing Products', $headers, $rows, null, [
+        return Response::make(SimplePdf::table('Inaya Creation - Missing Products', $headers, $rows, $widths, [
             'logo_path' => public_path('inaya_creation_logo.jpeg'),
-            'header_align' => 'center',
-            'equal_columns' => true,
             'col_align' => $colAlign,
-            'heading' => $supplier ? 'Supplier: '.$supplier->name : '',
-            'subtitle' => $subtitleParts ? implode(' | ', $subtitleParts) : ($supplier ? '' : 'All missing product entries'),
+            'subtitle' => $subtitleParts ? implode(' | ', $subtitleParts) : 'All missing product entries',
             'summary' => [
                 ['label' => 'Entries', 'value' => (string) $entries->count(), 'tone' => 'indigo'],
                 ['label' => 'Missing Qty', 'value' => number_format((float) $entries->sum('missing_qty'), 2), 'tone' => 'rose'],
