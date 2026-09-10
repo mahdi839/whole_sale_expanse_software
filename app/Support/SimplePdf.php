@@ -78,6 +78,10 @@ class SimplePdf
     private float  $tableW    = 0.0;
     private string $docTitle  = '';
     private string $subtitle  = '';
+    private string $heading   = '';
+    private string $headerAlign = 'left';
+    private bool   $equalColumns = false;
+    private float  $headerH   = self::HEADER_H;
     private array  $summary   = [];
     private ?string $logoPath = null;
 
@@ -121,15 +125,21 @@ class SimplePdf
     {
         $this->docTitle  = $title;
         $this->headers   = $headers;
-        $this->subtitle  = (string) ($options['subtitle'] ?? '');
-        $this->summary   = $options['summary'] ?? [];
-        $this->logoPath  = isset($options['logo_path']) && is_file($options['logo_path']) ? $options['logo_path'] : null;
+        $this->applyLayoutOptions($options);
         $rowArr          = is_array($rows) ? $rows : iterator_to_array($rows);
 
         $this->colAlign  = $this->detectAlignment($headers, $rowArr);
+        if (! empty($options['col_align']) && is_array($options['col_align'])) {
+            foreach ($options['col_align'] as $index => $align) {
+                if (isset($this->colAlign[$index]) && in_array($align, ['L', 'C', 'R'], true)) {
+                    $this->colAlign[$index] = $align;
+                }
+            }
+        }
 
         $usable = self::PW - self::ML - self::MR;
-        $this->colWidths = $widths ?? $this->autoWidths($headers, $rowArr, $usable);
+        $this->colWidths = $widths
+            ?? ($this->equalColumns ? $this->equalWidths(count($headers), $usable) : $this->autoWidths($headers, $rowArr, $usable));
         $this->tableW    = array_sum($this->colWidths);
 
         $this->newPage();
@@ -147,9 +157,7 @@ class SimplePdf
     private function runTables(string $title, array $sections, array $options): string
     {
         $this->docTitle = $title;
-        $this->subtitle = (string) ($options['subtitle'] ?? '');
-        $this->summary = $options['summary'] ?? [];
-        $this->logoPath = isset($options['logo_path']) && is_file($options['logo_path']) ? $options['logo_path'] : null;
+        $this->applyLayoutOptions($options);
 
         foreach (array_values($sections) as $index => $section) {
             $headers = array_values($section['headers'] ?? []);
@@ -203,7 +211,7 @@ class SimplePdf
     {
         $this->curPage++;
         $this->pages[$this->curPage] = '';
-        $this->curY = self::MT + self::HEADER_H + 6;
+        $this->curY = self::MT + $this->headerH + 6;
     }
 
     private function ensureSpace(float $needed): void
@@ -220,12 +228,32 @@ class SimplePdf
     // PAGE CHROME
     // ════════════════════════════════════════════════════════════════════════
 
+    private function applyLayoutOptions(array $options): void
+    {
+        $this->subtitle = (string) ($options['subtitle'] ?? '');
+        $this->heading = trim((string) ($options['heading'] ?? ''));
+        $this->headerAlign = ($options['header_align'] ?? 'left') === 'center' ? 'center' : 'left';
+        $this->equalColumns = (bool) ($options['equal_columns'] ?? false);
+        $this->summary = $options['summary'] ?? [];
+        $this->logoPath = isset($options['logo_path']) && is_file($options['logo_path']) ? $options['logo_path'] : null;
+        $this->headerH = match (true) {
+            $this->heading !== '' => 90.0,
+            $this->headerAlign === 'center' && $this->logoPath => 72.0,
+            default => self::HEADER_H,
+        };
+    }
+
     private function drawPageHeader(): void
     {
         $x  = self::ML;
         $w  = self::PW - self::ML - self::MR;
-        $h  = self::HEADER_H;
+        $h  = $this->headerH;
         $py = self::PH - self::MT - $h;   // PDF Y (bottom-up)
+        $center = $this->headerAlign === 'center';
+        $hasHeading = $this->heading !== '';
+        $logoSize = 34.0;
+        $logoGap = 8.0;
+        $logoBottomPad = 16.0;
 
         // Header background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)
         $this->fillHeaderGradient($x, $py, $w, $h);
@@ -238,26 +266,55 @@ class SimplePdf
         $endX  = $x + $w;
         $this->em("q 2 w " . self::ACCENT . " RG {$x} {$lineY} m {$endX} {$lineY} l S Q\n");
 
-        $titleX = $x + ($this->logoPath ? 54 : 14);
-
-        if ($this->logoPath) {
-            $logoSize = 34;
-            $logoX = $x + 14;
+        $titleW = $this->textW($this->docTitle, self::FS_TITLE);
+        $groupW = $titleW + ($this->logoPath ? $logoSize + $logoGap : 0);
+        $groupX = $center
+            ? $x + max(8, ($w - $groupW) / 2)
+            : $x + 14;
+        if ($center && $this->logoPath) {
+            $belowBaseline = $hasHeading ? 22.0 : 8.0;
+            $belowSize = $hasHeading ? 11.0 : self::FS_SUBTITLE;
+            $logoY = $py + $belowBaseline + $belowSize + $logoBottomPad;
+        } else {
             $logoY = $py + ($h - $logoSize) / 2;
-            $this->em("q {$logoSize} 0 0 {$logoSize} {$logoX} {$logoY} cm /Logo Do Q\n");
         }
 
-        // Title
-        $titleY = $py + $h - 26;
+        if ($this->logoPath) {
+            $this->em("q {$logoSize} 0 0 {$logoSize} {$groupX} {$logoY} cm /Logo Do Q\n");
+            $titleX = $groupX + $logoSize + $logoGap;
+        } else {
+            $titleX = $groupX;
+        }
+
+        $titleY = $this->logoPath
+            ? $logoY + ($logoSize / 2) - (self::FS_TITLE * 0.32)
+            : ($hasHeading ? $py + $h - 22 : $py + $h - 26);
         $this->em("BT /F2 " . self::FS_TITLE . " Tf " . self::HDR_FG . " rg {$titleX} {$titleY} Td (" . $this->esc($this->docTitle) . ") Tj ET\n");
 
-        // Generated date + optional period subtitle
-        $subY = $py + 10;
+        if ($hasHeading) {
+            $this->drawHeaderText($this->heading, 11, true, self::HDR_FG, $x, $w, $py + 22, $center);
+        }
+
         $sub  = 'Generated: ' . date('d M Y   H:i');
         if ($this->subtitle !== '') {
             $sub .= '   |   ' . $this->subtitle;
         }
-        $this->em("BT /F1 " . self::FS_SUBTITLE . " Tf " . self::SUB_FG . " rg {$titleX} {$subY} Td (" . $this->esc($sub) . ") Tj ET\n");
+        $this->drawHeaderText($sub, self::FS_SUBTITLE, false, self::SUB_FG, $x, $w, $py + 8, $center);
+    }
+
+    private function drawHeaderText(string $text, float $fs, bool $bold, string $color, float $x, float $w, float $y, bool $center): void
+    {
+        if ($text === '') {
+            return;
+        }
+
+        $font = $bold ? 'F2' : 'F1';
+        $tx = $x + ($this->logoPath ? 54 : 14);
+        if ($center) {
+            $tx = $x + max(8, ($w - $this->textW($text, $fs)) / 2);
+        }
+
+        $this->em("BT /{$font} {$fs} Tf {$color} rg {$tx} {$y} Td (" . $this->esc($text) . ") Tj ET\n");
     }
 
     private function drawSummary(): void
@@ -362,7 +419,8 @@ class SimplePdf
         $cx = $x;
         foreach ($this->headers as $i => $label) {
             $cw = $this->colWidths[$i];
-            $this->drawCell($cx, $y, $cw, $h, strtoupper($label), self::FS_TH, true, $this->colAlign[$i] ?? 'L', self::HDR_FG, 5);
+            $align = $this->colAlign[$i] ?? 'L';
+            $this->drawCell($cx, $y, $cw, $h, strtoupper($label), self::FS_TH, true, $align, self::HDR_FG, 5);
             $cx += $cw;
         }
 
@@ -375,8 +433,8 @@ class SimplePdf
         $maxLines = 1;
 
         foreach ($this->headers as $i => $hdr) {
-            $value = (string)($row[$i] ?? '');
-            $lines = $this->wrapText($value, self::FS_TD, ($this->colWidths[$i] ?? 0) - 6);
+            $value = (string) ($row[$i] ?? '');
+            $lines = $this->labeledLines($value, self::FS_TD, ($this->colWidths[$i] ?? 0) - 6);
             $lineMaps[$i] = $lines;
             $maxLines = max($maxLines, count($lines));
         }
@@ -452,30 +510,40 @@ class SimplePdf
         $maxW = $w - $pad * 2;
         if ($maxW <= 0) return;
 
-        $font     = $bold ? 'F2' : 'F1';
-        $lines = $this->wrapText($text, $fs, $maxW);
+        $lines = $this->labeledLines($text, $fs, $maxW);
         $lineHeight = $fs + 1.2;
-        $multiLine = count($lines) > 1;
-        $startBaseline = $multiLine
-            ? self::PH - $topY - 10
-            : self::PH - $topY - $h + $h * 0.32;
+        $startBaseline = self::PH - $topY - ($bold ? 7 : 10);
+        $boldExtra = 1.08;
 
-        foreach ($lines as $idx => $line) {
-            if ($this->textW($line, $fs) > $maxW) {
-                $line = $this->truncate($line, $fs, $maxW);
+        foreach ($lines as $idx => $seg) {
+            $label = $seg['label'];
+            $body = $seg['text'];
+            if ($label === '' && $body === '') {
+                continue;
             }
 
-            $tW = $this->textW($line, $fs);
+            $labelW = $label !== '' ? $this->textW($label, $fs) * $boldExtra : 0.0;
+            $gap = ($label !== '' && $body !== '') ? 2.0 : 0.0;
+            $bodyW = $this->textW($body, $fs);
+            $totalW = $labelW + $gap + $bodyW;
 
             $tx = match ($align) {
-                'R'     => $x + $w - $pad - $tW,
-                'C'     => $x + ($w - $tW) / 2,
+                'R'     => $x + $w - $pad - $totalW,
+                'C'     => $x + ($w - $totalW) / 2,
                 default => $x + $pad,
             };
 
             $baseline = $startBaseline - ($idx * $lineHeight);
 
-            $this->em("BT /{$font} {$fs} Tf {$color} rg {$tx} {$baseline} Td (" . $this->esc($line) . ") Tj ET\n");
+            if ($label !== '') {
+                $this->em("BT /F2 {$fs} Tf {$color} rg {$tx} {$baseline} Td (" . $this->esc($label) . ") Tj ET\n");
+                $tx += $labelW + $gap;
+            }
+
+            if ($body !== '') {
+                $font = ($bold && $label === '') ? 'F2' : 'F1';
+                $this->em("BT /{$font} {$fs} Tf {$color} rg {$tx} {$baseline} Td (" . $this->esc($body) . ") Tj ET\n");
+            }
         }
     }
 
@@ -634,6 +702,45 @@ class SimplePdf
             $align[$i] = $isNum ? 'R' : 'L';
         }
         return $align;
+    }
+
+    private function labeledLines(string $text, float $fs, float $maxW): array
+    {
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+        $lines = [];
+
+        foreach (explode("\n", $text) as $part) {
+            if (preg_match('/^\*\*(.+?)\*\*(.*)$/', $part, $match)) {
+                $label = $match[1];
+                $value = ltrim($match[2]);
+                $labelW = $this->textW($label, $fs) * 1.08;
+                $wrapped = $this->wrapText($value === '' ? '-' : $value, $fs, max(20.0, $maxW - $labelW - 2));
+
+                foreach ($wrapped as $index => $chunk) {
+                    $lines[] = [
+                        'label' => $index === 0 ? $label : '',
+                        'text' => $chunk,
+                    ];
+                }
+                continue;
+            }
+
+            foreach ($this->wrapText($part, $fs, $maxW) as $chunk) {
+                $lines[] = ['label' => '', 'text' => $chunk];
+            }
+        }
+
+        return $lines ?: [['label' => '', 'text' => '']];
+    }
+
+    private function equalWidths(int $count, float $usable): array
+    {
+        $count = max(1, $count);
+        $each = round($usable / $count, 2);
+        $cols = array_fill(0, $count, $each);
+        $cols[$count - 1] = round($usable - ($each * ($count - 1)), 2);
+
+        return $cols;
     }
 
     private function autoWidths(array $headers, array $rows, float $usable): array

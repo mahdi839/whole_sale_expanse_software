@@ -9,6 +9,7 @@ class MissingProduct extends Model
     protected $fillable = [
         'product_id',
         'supplier_id',
+        'bill_no',
         'missing_qty',
         'purchase_rate',
         'purchase_value',

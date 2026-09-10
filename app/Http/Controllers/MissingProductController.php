@@ -78,23 +78,40 @@ class MissingProductController extends Controller
         $filters = $this->filters($request);
         $entries = $this->filteredQuery($filters)->latest('date')->latest('id')->get();
 
-        $rows = $entries->map(fn (MissingProduct $entry) => [
-            optional($entry->date)->format('Y-m-d'),
-            $entry->supplier?->name ?? '-',
-            $entry->product?->product_name ?? '-',
-            $entry->product?->sku ?: ($entry->product?->product_code ?: '-'),
-            number_format((float) $entry->missing_qty, 2),
-            number_format((float) $entry->purchase_rate, 2),
-            number_format((float) $entry->purchase_value, 2),
-            $entry->note ?: '-',
-        ]);
+        $supplier = $filters['supplier_id'] ? Supplier::find($filters['supplier_id']) : null;
+
+        $rows = $entries->map(function (MissingProduct $entry) use ($supplier) {
+            $design = $entry->product?->sku ?: ($entry->product?->product_code ?: '-');
+            $product = '**Product:** '.($entry->product?->product_name ?? '-')."\n".'**Design Code:** '.$design;
+            $purchase = '**Rate:** '.number_format((float) $entry->purchase_rate, 2)."\n".'**Value:** '.number_format((float) $entry->purchase_value, 2);
+
+            $row = [
+                optional($entry->date)->format('d M Y'),
+                $entry->bill_no ?: '-',
+            ];
+
+            if (! $supplier) {
+                $row[] = $entry->supplier?->name ?? '-';
+            }
+
+            $row[] = $product;
+            $row[] = number_format((float) $entry->missing_qty, 2);
+            $row[] = $purchase;
+            $row[] = $entry->note ?: '-';
+
+            return $row;
+        });
+
+        $headers = $supplier
+            ? ['Date', 'Bill No', 'Product / Design Code', 'Qty', 'Rate / Value', 'Note']
+            : ['Date', 'Bill No', 'Supplier', 'Product / Design Code', 'Qty', 'Rate / Value', 'Note'];
+        $colAlign = $supplier
+            ? ['L', 'L', 'L', 'R', 'L', 'L']
+            : ['L', 'L', 'L', 'L', 'R', 'L', 'L'];
 
         $subtitleParts = [];
         if ($filters['search']) {
             $subtitleParts[] = 'Search: '.$filters['search'];
-        }
-        if ($filters['supplier_id']) {
-            $subtitleParts[] = 'Supplier: '.(Supplier::find($filters['supplier_id'])?->name ?? $filters['supplier_id']);
         }
         if ($filters['product_id']) {
             $subtitleParts[] = 'Product: '.(Product::find($filters['product_id'])?->displayLabel() ?? $filters['product_id']);
@@ -105,11 +122,13 @@ class MissingProductController extends Controller
 
         $fileName = 'missing-products-'.now()->format('Y-m-d-H-i-s').'.pdf';
 
-        return Response::make(SimplePdf::table('Inaya Creation - Missing Products', [
-            'Date', 'Supplier', 'Product', 'Design Code', 'Missing Qty', 'Purchase Rate', 'Purchase Value', 'Note',
-        ], $rows, null, [
+        return Response::make(SimplePdf::table('Missing Products', $headers, $rows, null, [
             'logo_path' => public_path('inaya_creation_logo.jpeg'),
-            'subtitle' => $subtitleParts ? implode(' | ', $subtitleParts) : 'All missing product entries',
+            'header_align' => 'center',
+            'equal_columns' => true,
+            'col_align' => $colAlign,
+            'heading' => $supplier ? 'Supplier: '.$supplier->name : '',
+            'subtitle' => $subtitleParts ? implode(' | ', $subtitleParts) : ($supplier ? '' : 'All missing product entries'),
             'summary' => [
                 ['label' => 'Entries', 'value' => (string) $entries->count(), 'tone' => 'indigo'],
                 ['label' => 'Missing Qty', 'value' => number_format((float) $entries->sum('missing_qty'), 2), 'tone' => 'rose'],
@@ -144,6 +163,7 @@ class MissingProductController extends Controller
                 $search = $filters['search'];
                 $q->where(function ($sub) use ($search) {
                     $sub->where('note', 'like', "%{$search}%")
+                        ->orWhere('bill_no', 'like', "%{$search}%")
                         ->orWhereHas('product', fn ($product) => $product
                             ->where('product_name', 'like', "%{$search}%")
                             ->orWhere('sku', 'like', "%{$search}%")
@@ -169,6 +189,7 @@ class MissingProductController extends Controller
         $data = $request->validate([
             'product_id' => 'required|exists:products,id',
             'supplier_id' => 'required|exists:suppliers,id',
+            'bill_no' => 'nullable|string|max:100',
             'missing_qty' => 'required|numeric|min:0.01',
             'purchase_rate' => 'required|numeric|min:0',
             'purchase_value' => 'nullable|numeric|min:0',

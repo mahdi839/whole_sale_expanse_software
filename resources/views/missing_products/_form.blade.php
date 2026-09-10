@@ -24,6 +24,13 @@
     </div>
 
     <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Bill No</label>
+        <input type="text" name="bill_no" value="{{ old('bill_no', $record?->bill_no) }}" placeholder="Supplier bill / invoice number"
+            class="w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+        @error('bill_no')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
+
+    <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Product</label>
         <select name="product_id" id="missing-product-select" class="tom-select w-full h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
             <option value="">Select product</option>

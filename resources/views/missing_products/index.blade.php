@@ -9,7 +9,7 @@
         <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
             <form method="GET" action="{{ route('missing-products.index') }}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 mb-3.5">
-                    <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search product, supplier, design code, note..."
+                    <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search product, supplier, bill no, design code, note..."
                         class="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                     <select name="supplier_id" class="tom-select h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-lg">
                         <option value="">All suppliers</option>
@@ -60,6 +60,7 @@
                     <thead>
                         <tr class="bg-gray-50 border-b">
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Date</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Bill No</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Supplier</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Product</th>
                             <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Design Code</th>
@@ -75,6 +76,7 @@
                         @forelse($missingProducts as $entry)
                             <tr>
                                 <td class="px-5 py-3 whitespace-nowrap">{{ optional($entry->date)->format('d M Y') }}</td>
+                                <td class="px-5 py-3 text-gray-700">{{ $entry->bill_no ?: '-' }}</td>
                                 <td class="px-5 py-3 text-gray-700">{{ $entry->supplier?->name ?? '-' }}</td>
                                 <td class="px-5 py-3 font-medium text-gray-800">{{ $entry->product?->product_name ?? '-' }}</td>
                                 <td class="px-5 py-3 font-mono text-xs text-gray-500">{{ $entry->product?->sku ?: ($entry->product?->product_code ?: '-') }}</td>
@@ -106,7 +108,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="px-5 py-12 text-center text-gray-400">No missing product entries found.</td>
+                                <td colspan="11" class="px-5 py-12 text-center text-gray-400">No missing product entries found.</td>
                             </tr>
                         @endforelse
                     </tbody>
