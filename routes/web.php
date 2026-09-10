@@ -77,6 +77,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     $crudResource('/products', ProductController::class, 'products', ['except' => ['show']]);
     $crudResource('/missing-products', MissingProductController::class, 'products', ['parameters' => ['missing-products' => 'missingProduct'], 'except' => ['show']]);
+    Route::get('/missing-products-export/pdf', [MissingProductController::class, 'exportPdf'])->name('missing-products.export.pdf')->middleware('permission:manage products|view products');
     Route::get('/products-export/pdf', [ProductController::class, 'exportPdf'])->name('products.export.pdf')->middleware('permission:manage products|view products');
     Route::get('/products/{product}/barcode', [ProductController::class, 'barcode'])->name('products.barcode')->middleware('permission:manage products|view products');
     Route::get('/customers/suggestions', [CustomerController::class, 'suggestions'])->name('customers.suggestions')->middleware('permission:manage customers|view customers');
