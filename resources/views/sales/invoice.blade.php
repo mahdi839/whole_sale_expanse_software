@@ -344,22 +344,48 @@
         /* ---- Print styles ---- */
         @media print {
             @page {
-                margin: 0;
+                margin: 10mm 8mm;
             }
 
             html,
             body {
                 background: #fff !important;
+                height: auto !important;
+                overflow: visible !important;
             }
 
             body {
-                padding: 7mm;
+                padding: 0;
             }
 
             .invoice-wrap {
                 box-shadow: none;
                 border-radius: 0;
-                overflow: hidden;
+                overflow: visible;
+                max-width: none;
+            }
+
+            .inv-header,
+            .inv-info,
+            .inv-totals,
+            .inv-footer {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            table.items {
+                page-break-inside: auto;
+                break-inside: auto;
+            }
+
+            table.items thead {
+                display: table-header-group;
+            }
+
+            table.items tr,
+            table.items tbody tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
 
             .inv-header {
