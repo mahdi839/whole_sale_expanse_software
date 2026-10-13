@@ -616,13 +616,13 @@
             <div style="display:flex;align-items:end;gap:10px;flex-wrap:wrap">
                 <div style="flex:1;min-width:220px">
                     <div class="field-label">Return Product From Sale</div>
-                    <select id="return-sale-select" class="field-input">
+                    <select id="return-sale-select" class="tom-select field-input" data-no-tom-select="1">
                         <option value="">Select sale code</option>
                     </select>
                 </div>
                 <div style="flex:1;min-width:220px">
                     <div class="field-label">Product</div>
-                    <select id="return-product-select" class="field-input" disabled>
+                    <select id="return-product-select" class="tom-select field-input" data-no-tom-select="1" disabled>
                         <option value="">Select product</option>
                     </select>
                 </div>
@@ -1018,37 +1018,88 @@ function removeItem(idx) {
 // ============================================================
 //  Sale returns applied to this invoice
 // ============================================================
+function returnSaleLabel(sale) {
+    const customer = sale.customer_name ? ` - ${sale.customer_name}` : '';
+    const date = sale.created_at ? ` (${sale.created_at})` : '';
+
+    return `${sale.reference}${customer}${date}`;
+}
+
+function returnProductLabel(item) {
+    return `${item.product_name || 'Unknown'}${item.sku ? ' - ' + item.sku : ''} | Qty: ${formatQty(item.available_qty)} | ${formatMoney(item.price_on_sale)}`;
+}
+
+function bindTomSelect(select, options, placeholder) {
+    if (select.tomselect) {
+        const ts = select.tomselect;
+        ts.clear(true);
+        ts.clearOptions();
+        ts.addOptions(options);
+        ts.refreshOptions(false);
+        return ts;
+    }
+
+    select.innerHTML = options.map(option => (
+        `<option value="${escHtml(option.value)}">${escHtml(option.text)}</option>`
+    )).join('');
+
+    if (!window.TomSelect) {
+        return null;
+    }
+
+    return new TomSelect(select, {
+        create: false,
+        allowEmptyOption: true,
+        maxOptions: 500,
+        dropdownParent: 'body',
+        placeholder,
+        render: {
+            no_results: () => '<div class="no-results">No results found</div>',
+        },
+    });
+}
+
 function initReturnSelectors() {
     const customerId = customerSelect?.value || '';
     const sales = RETURNABLE_SALES.filter(sale => !customerId || !sale.customer_id || String(sale.customer_id) === String(customerId));
+    const options = [{ value: '', text: 'Select sale code' }].concat(
+        sales.map(sale => ({ value: String(sale.id), text: returnSaleLabel(sale) }))
+    );
 
-    returnSaleSelect.innerHTML = '<option value="">Select sale code</option>' + sales.map(sale => {
-        const customer = sale.customer_name ? ` - ${escHtml(sale.customer_name)}` : '';
-        const date = sale.created_at ? ` (${escHtml(sale.created_at)})` : '';
-        return `<option value="${sale.id}">${escHtml(sale.reference)}${customer}${date}</option>`;
-    }).join('');
+    bindTomSelect(returnSaleSelect, options, 'Search sale code...');
+    bindTomSelect(returnProductSelect, [{ value: '', text: 'Select product' }], 'Search product...');
+    returnProductSelect.tomselect?.disable();
+}
+
+function loadReturnProducts(sale) {
+    const options = [{ value: '', text: 'Select product' }].concat(
+        (sale?.items || []).map(item => ({ value: String(item.id), text: returnProductLabel(item) }))
+    );
+    const ts = bindTomSelect(returnProductSelect, options, 'Search product...');
+
+    if (!sale) {
+        ts?.disable();
+        returnProductSelect.disabled = true;
+        return;
+    }
+
+    ts?.enable();
+    returnProductSelect.disabled = false;
 }
 
 customerSelect?.addEventListener('change', () => {
-    returnSaleSelect.value = '';
-    returnProductSelect.innerHTML = '<option value="">Select product</option>';
-    returnProductSelect.disabled = true;
+    if (returnSaleSelect.tomselect) {
+        returnSaleSelect.tomselect.clear(true);
+    } else {
+        returnSaleSelect.value = '';
+    }
     returnItems = [];
     renderReturns();
     initReturnSelectors();
 });
 
 returnSaleSelect.addEventListener('change', () => {
-    const sale = getReturnSale(returnSaleSelect.value);
-    returnProductSelect.disabled = !sale;
-    returnProductSelect.innerHTML = '<option value="">Select product</option>';
-
-    if (!sale) return;
-
-    returnProductSelect.innerHTML += sale.items.map(item => {
-        const label = `${escHtml(item.product_name)}${item.sku ? ' - ' + escHtml(item.sku) : ''} | Qty: ${formatQty(item.available_qty)} | ${formatMoney(item.price_on_sale)}`;
-        return `<option value="${item.id}">${label}</option>`;
-    }).join('');
+    loadReturnProducts(getReturnSale(returnSaleSelect.value));
 });
 
 addReturnBtn.addEventListener('click', () => {

@@ -11,7 +11,7 @@
             <span class="text-gray-600">Add Return</span>
         </nav>
 
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="bg-white border border-gray-200 rounded-xl overflow-visible">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/60">
                 <div class="min-w-0">
                     <h2 class="text-sm font-semibold text-gray-800">New Return</h2>

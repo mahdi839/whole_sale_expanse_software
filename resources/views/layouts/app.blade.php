@@ -69,11 +69,16 @@
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
         }
 
-        .ts-wrapper .ts-dropdown {
-            z-index: 80;
+        .ts-wrapper .ts-dropdown,
+        .ts-dropdown {
+            z-index: 9999;
             border-color: #e5e7eb;
             border-radius: 8px;
             overflow: hidden;
+        }
+
+        .ts-dropdown .ts-dropdown-content {
+            max-height: 280px;
         }
 
         select.border:not([multiple]) {
@@ -1024,6 +1029,7 @@
                     create: false,
                     allowEmptyOption: true,
                     maxOptions: 500,
+                    dropdownParent: 'body',
                     plugins: select.multiple ? ['remove_button'] : [],
                     render: {
                         no_results: () => '<div class="no-results">No results found</div>',

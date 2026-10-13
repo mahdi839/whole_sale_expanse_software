@@ -2,7 +2,7 @@
     $saleReturn = $saleReturn ?? null;
     $prefillSale = $sale ?? null;
 
-    $sectionClass  = 'bg-white border border-gray-200 rounded-xl overflow-hidden';
+    $sectionClass  = 'bg-white border border-gray-200 rounded-xl overflow-visible';
     $headerClass   = 'flex flex-wrap sm:flex-nowrap items-center gap-2.5 px-4 sm:px-5 py-3 border-b border-gray-100 bg-gray-50/60';
     $bodyClass     = 'p-4 sm:p-5';
     $labelClass    = 'block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5';
@@ -119,7 +119,7 @@
                     <div>
                         <label for="sale_id" class="{{ $labelClass }}">Original Sale</label>
                         <select id="sale_id" name="sale_id"
-                                class="{{ $errors->has('sale_id') ? $inputErrClass : $inputClass }}">
+                                class="tom-select {{ $errors->has('sale_id') ? $inputErrClass : $inputClass }}">
                             <option value="">— No linked sale —</option>
                             @foreach($allSales as $s)
                                 <option value="{{ $s->id }}" {{ (string) $selectedSaleId === (string) $s->id ? 'selected' : '' }}>
@@ -738,7 +738,11 @@
             const sale = getSelectedSale();
 
             if (sale && sale.customer_id && customerSelect) {
-                customerSelect.value = sale.customer_id;
+                if (customerSelect.tomselect) {
+                    customerSelect.tomselect.setValue(String(sale.customer_id), true);
+                } else {
+                    customerSelect.value = sale.customer_id;
+                }
             }
 
             rebuildRowsFromSelectedSale();
