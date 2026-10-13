@@ -378,7 +378,7 @@ class SimplePdf
         foreach ($this->headers as $i => $label) {
             $cw = $this->colWidths[$i];
             $align = $this->colAlign[$i] ?? 'L';
-            $this->drawCell($cx, $y, $cw, $h, strtoupper($label), self::FS_TH, true, $align, self::HDR_FG, 5);
+            $this->drawCell($cx, $y, $cw, $h, strtoupper($label), self::FS_TH, true, $align, self::HDR_FG, 6);
             $cx += $cw;
         }
 
@@ -426,7 +426,7 @@ class SimplePdf
                 }
             }
 
-            $this->drawCell($cx, $y, $cw, $h, $value, self::FS_TD, false, $align, $color, 3);
+            $this->drawCell($cx, $y, $cw, $h, $value, self::FS_TD, false, $align, $color, 6);
             $cx += $cw;
         }
 
@@ -470,7 +470,10 @@ class SimplePdf
 
         $lines = $this->labeledLines($text, $fs, $maxW);
         $lineHeight = $fs + 1.2;
-        $startBaseline = self::PH - $topY - ($bold ? 7 : 10);
+        $lineCount = max(1, count($lines));
+        $startBaseline = $lineCount > 1
+            ? self::PH - $topY - ($bold ? 7 : 10)
+            : self::PH - $topY - ($h / 2) - ($fs * 0.28);
         $boldExtra = 1.08;
 
         foreach ($lines as $idx => $seg) {

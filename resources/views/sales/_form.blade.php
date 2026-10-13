@@ -1120,9 +1120,9 @@ addReturnBtn.addEventListener('click', () => {
             product_name: item.product_name,
             sku: item.sku || '',
             available_qty: item.available_qty,
-            qty: 1,
+            qty: toNumber(item.available_qty) || 1,
             price_on_sale: item.price_on_sale,
-            line_total: toNumber(item.price_on_sale),
+            line_total: (toNumber(item.available_qty) || 1) * toNumber(item.price_on_sale),
         });
     }
 

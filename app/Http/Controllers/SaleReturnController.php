@@ -321,15 +321,16 @@ class SaleReturnController extends Controller
 
     private function applyReturnEffects(SaleReturn $ret): void
     {
-        $ret->loadMissing(['items', 'sale']);
+        $ret->loadMissing(['items', 'sale', 'appliedSale']);
+        $shopId = $ret->restockShopId();
 
         foreach ($ret->items as $item) {
-            $stock = Stock::firstOrCreate(
-                ['product_id' => $item->product_id, 'shop_id' => $ret->sale?->shop_id],
-                ['stock_qty'  => 0]
-            );
+            if (! $shopId) {
+                continue;
+            }
 
-            $stock->increment('stock_qty', (float) $item->qty);
+            Stock::forShopProduct((int) $item->product_id, $shopId)
+                ->increment('stock_qty', (float) $item->qty);
         }
 
         if ($ret->customer_id) {
@@ -357,11 +358,16 @@ class SaleReturnController extends Controller
 
     private function reverseReturnEffects(SaleReturn $ret): void
     {
-        $ret->loadMissing(['items', 'sale']);
+        $ret->loadMissing(['items', 'sale', 'appliedSale']);
+        $shopId = $ret->restockShopId();
 
         foreach ($ret->items as $item) {
+            if (! $shopId) {
+                continue;
+            }
+
             $stock = Stock::where('product_id', $item->product_id)
-                ->where('shop_id', $ret->sale?->shop_id)
+                ->where('shop_id', $shopId)
                 ->first();
 
             if ($stock) {

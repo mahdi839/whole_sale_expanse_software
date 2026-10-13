@@ -22,6 +22,17 @@ class Stock extends Model
         return $this->belongsTo(Shop::class);
     }
 
+    public static function forShopProduct(int $productId, int $shopId): self
+    {
+        return static::firstOrCreate(
+            [
+                'product_id' => $productId,
+                'shop_id' => $shopId,
+            ],
+            ['stock_qty' => 0]
+        );
+    }
+
     public function scopeCentral($query)
     {
         return $query->whereNull('shop_id');

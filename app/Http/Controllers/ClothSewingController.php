@@ -174,7 +174,7 @@ class ClothSewingController extends Controller
     {
         $logs = $this->tailorLogs($tailor);
         $summary = $this->tailorProductSummary($tailor);
-        $headers = ['Date', 'Type', 'Product', 'Design Code', 'Qty', 'Note'];
+        $headers = ['Date', 'Type', 'Product', 'Design Code', 'Qty', 'Note', 'Rate', 'Total'];
         $totalSewing = (float) $summary->sum('sewing_qty');
         $totalRate = (float) $logs->where('type', 'Sewing')->sum('total_rate');
         $totalReceived = (float) $summary->sum('received_qty');
@@ -183,16 +183,19 @@ class ClothSewingController extends Controller
             $log['type'],
             $log['product'],
             $log['design_code'],
-            $log['qty'],
-            $log['type'] === 'Sewing'
-                ? 'Rate: '.number_format($log['per_piece_rate'], 2).' | Total: '.number_format($log['total_rate'], 2)
-                : $log['note'],
+            number_format((float) $log['qty'], 2),
+            $log['note'] ?: '-',
+            $log['type'] === 'Sewing' ? number_format((float) $log['per_piece_rate'], 2) : '-',
+            $log['type'] === 'Sewing' ? number_format((float) $log['total_rate'], 2) : '-',
         ]);
 
         $fileName = 'tailor-'.$tailor->id.'-cloth-sewing-logs-'.now()->format('Y-m-d-H-i-s').'.pdf';
 
-        return Response::make(SimplePdf::table('Inaya Creation - Cloth Sewing Logs - '.$tailor->name, $headers, $rows, null, [
+        return Response::make(SimplePdf::table('Inaya Creation - Cloth Sewing Logs - '.$tailor->name, $headers, $rows, [
+            70, 65, 118, 92, 88, 150, 93, 93.89,
+        ], [
             'logo_path' => public_path('inaya_creation_logo.jpeg'),
+            'col_align' => ['L', 'L', 'L', 'L', 'R', 'L', 'R', 'R'],
             'summary' => [
                 ['label' => 'Total Sewing Qty', 'value' => number_format($totalSewing, 2)],
                 ['label' => 'Total Sewing Rate', 'value' => number_format($totalRate, 2)],
@@ -233,7 +236,7 @@ class ClothSewingController extends Controller
             'Inaya Creation - Cloth Sewing',
             ['Date', 'Tailor', 'Product', 'Design Code', 'Qty', 'Rate/Piece', 'Total'],
             $rows,
-            null,
+            [80, 120, 160, 110, 70, 110, 119.89],
             [
                 'logo_path' => public_path('inaya_creation_logo.jpeg'),
                 'summary' => [

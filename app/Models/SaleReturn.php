@@ -50,6 +50,23 @@ class SaleReturn extends Model
         return $this->hasMany(SaleReturnItem::class);
     }
 
+    public function restockShopId(): ?int
+    {
+        $this->loadMissing(['sale', 'appliedSale']);
+
+        foreach ([
+            $this->sale?->shop_id,
+            $this->appliedSale?->shop_id,
+            auth()->user()?->shop_id,
+        ] as $shopId) {
+            if (! empty($shopId)) {
+                return (int) $shopId;
+            }
+        }
+
+        return null;
+    }
+
     public static function generateReference(): string
     {
         $last = static::orderByDesc('id')->value('reference');
