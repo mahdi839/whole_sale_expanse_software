@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class EmployeeController extends Controller
@@ -52,7 +53,30 @@ class EmployeeController extends Controller
             ->groupBy(fn ($advance) => $advance->advance_month?->format('Y-m'))
             ->map(fn ($advances) => (float) $advances->sum('amount'));
 
-        return view('employees.show', compact('employee', 'advanceAmounts'));
+        $salaryByMonth = $employee->salaries->keyBy(fn ($salary) => $salary->salary_month?->format('Y-m'));
+
+        $monthRows = $salaryByMonth->keys()
+            ->merge($advanceAmounts->keys())
+            ->filter()
+            ->unique()
+            ->sortDesc()
+            ->values()
+            ->map(function (string $month) use ($salaryByMonth, $advanceAmounts) {
+                $salary = $salaryByMonth->get($month);
+                $advanceAmount = (float) ($advanceAmounts[$month] ?? 0);
+                $salaryAmount = (float) ($salary->amount ?? 0);
+
+                return [
+                    'label' => Carbon::createFromFormat('Y-m', $month)->format('F Y'),
+                    'salary_amount' => $salaryAmount,
+                    'advance_amount' => $advanceAmount,
+                    'total_paid' => $salaryAmount + $advanceAmount,
+                    'submitted_at' => $salary?->created_at,
+                    'note' => $salary?->note,
+                ];
+            });
+
+        return view('employees.show', compact('employee', 'monthRows'));
     }
 
     public function edit(Employee $employee)

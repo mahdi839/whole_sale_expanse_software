@@ -128,6 +128,7 @@ class SalesReportController extends Controller
                 number_format((float) $row->return_amount, 2),
                 number_format((float) $row->net_amount, 2),
                 number_format((float) $row->return_rate, 1).'%',
+                number_format((float) $row->stock_qty, 2),
             ];
         });
 
@@ -143,6 +144,7 @@ class SalesReportController extends Controller
             number_format($totals->return_amount, 2),
             number_format($totals->net_amount, 2),
             number_format($totals->return_rate, 1).'%',
+            number_format((float) $rows->sum('stock_qty'), 2),
         ]);
 
         $subtitle = 'Period: '.$this->report->periodLabel($filters)
@@ -151,9 +153,9 @@ class SalesReportController extends Controller
 
         return Response::make(SimplePdf::table(
             'Inaya Creation - Product Sales Report',
-            ['#', 'Product', 'Code', 'Sales Count', 'Sold Qty', 'Return Qty', 'Net Qty', 'Sales Amount', 'Return Amount', 'Net Amount', 'Return %'],
+            ['#', 'Product', 'Code', 'Sales Count', 'Sold Qty', 'Return Qty', 'Net Qty', 'Sales Amount', 'Return Amount', 'Net Amount', 'Return %', 'Stock Qty'],
             $pdfRows,
-            [28, 168, 78, 52, 58, 62, 54, 78, 78, 78, 56],
+            [24, 128, 68, 46, 50, 52, 46, 68, 68, 68, 46, 48],
             [
                 'logo_path' => public_path('inaya_creation_logo.jpeg'),
                 'subtitle' => $subtitle,

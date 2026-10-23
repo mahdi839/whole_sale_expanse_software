@@ -31,20 +31,17 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        @forelse($employee->salaries as $salary)
-                            @php
-                                $advanceAmount = $advanceAmounts[$salary->salary_month?->format('Y-m')] ?? 0;
-                            @endphp
+                        @forelse($monthRows as $row)
                             <tr>
-                                <td class="px-5 py-3">{{ $salary->salary_month?->format('F Y') }}</td>
-                                <td class="px-5 py-3 text-right font-semibold text-red-600">৳{{ number_format($salary->amount, 2) }}</td>
-                                <td class="px-5 py-3 text-right font-semibold text-amber-600">৳{{ number_format($advanceAmount, 2) }}</td>
-                                <td class="px-5 py-3 text-right font-semibold text-indigo-600">৳{{ number_format((float) $salary->amount + (float) $advanceAmount, 2) }}</td>
-                                <td class="px-5 py-3 text-gray-500">{{ $salary->created_at?->format('d M Y, h:i A') }}</td>
-                                <td class="px-5 py-3 text-gray-500">{{ $salary->note ?: '-' }}</td>
+                                <td class="px-5 py-3">{{ $row['label'] }}</td>
+                                <td class="px-5 py-3 text-right font-semibold text-red-600">৳{{ number_format($row['salary_amount'], 2) }}</td>
+                                <td class="px-5 py-3 text-right font-semibold text-amber-600">৳{{ number_format($row['advance_amount'], 2) }}</td>
+                                <td class="px-5 py-3 text-right font-semibold text-indigo-600">৳{{ number_format($row['total_paid'], 2) }}</td>
+                                <td class="px-5 py-3 text-gray-500">{{ $row['submitted_at']?->format('d M Y, h:i A') ?: '—' }}</td>
+                                <td class="px-5 py-3 text-gray-500">{{ $row['note'] ?: '—' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-5 py-12 text-center text-gray-400">No salary submitted yet.</td></tr>
+                            <tr><td colspan="6" class="px-5 py-12 text-center text-gray-400">No salary or advance recorded yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

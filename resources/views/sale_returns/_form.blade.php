@@ -131,8 +131,8 @@
 
             <div class="{{ $bodyClass }}">
                 <div class="mb-4 pb-4 border-b border-gray-100">
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                        <div class="md:col-span-12">
+                    <div class="flex flex-col md:flex-row md:items-end gap-3">
+                        <div class="md:flex-[1.4] md:min-w-0">
                             <label for="sale_filter_customer" class="{{ $labelClass }}">Customer</label>
                             <select id="sale_filter_customer" class="tom-select {{ $inputClass }}">
                                 <option value="">All customers</option>
@@ -142,14 +142,14 @@
                             </select>
                         </div>
 
-                        <div class="md:col-span-4">
+                        <div class="md:w-40 md:shrink-0">
                             <label for="sale_filter_date" class="{{ $labelClass }}">Sale Date</label>
                             <input type="date"
                                    id="sale_filter_date"
                                    class="{{ $inputClass }}">
                         </div>
 
-                        <div class="md:col-span-5">
+                        <div class="md:flex-1 md:min-w-0">
                             <label for="sale_filter_design_code" class="{{ $labelClass }}">Product Design Code</label>
                             <input type="text"
                                    id="sale_filter_design_code"
@@ -158,7 +158,7 @@
                                    class="{{ $inputClass }}">
                         </div>
 
-                        <div class="md:col-span-3">
+                        <div class="md:w-28 md:shrink-0">
                             <button type="button"
                                     id="filter-original-sales"
                                     class="h-10 sm:h-9 w-full px-4 inline-flex items-center justify-center text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-900 transition">
