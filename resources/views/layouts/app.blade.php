@@ -553,6 +553,7 @@
                         @endcanany
                         @canany(['manage stock', 'view stock'])
                             <x-sidebar-sub-link :href="route('stocks.index')">Inventory</x-sidebar-sub-link>
+                            <x-sidebar-sub-link :href="route('stocks.history')" :active="request()->routeIs('stocks.history')">Stock History</x-sidebar-sub-link>
                         @endcanany
                         @can('distribute stock')
                             <x-sidebar-sub-link :href="route('stocks.distribute')">Distribute Stock</x-sidebar-sub-link>

@@ -7,6 +7,8 @@ use App\Models\Shop;
 use App\Models\Stock;
 use App\Models\StockDistribution;
 use App\Models\StockDistributionItem;
+use App\Models\StockMovement;
+use App\Services\StockLedger;
 use App\Support\SimplePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +29,79 @@ class StockController extends Controller
         $shopStockValue = $shopStocks->sum(fn ($stock) => (float) $stock->stock_qty * (float) ($stock->product?->purchase_price ?? 0));
 
         return view('stocks.index', compact('centralStocks', 'shopStocks', 'distributions', 'centralStockValue', 'shopStockValue'));
+    }
+
+    public function history(Request $request)
+    {
+        $filters = [
+            'search' => trim((string) $request->input('search', '')),
+            'type' => (string) $request->input('type', ''),
+            'shop_id' => (string) $request->input('shop_id', ''),
+            'range' => (string) $request->input('range', 'all'),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+        ];
+
+        if (! array_key_exists($filters['range'], ['today' => 1, '7d' => 1, 'month' => 1, 'all' => 1, 'custom' => 1])) {
+            $filters['range'] = 'all';
+        }
+
+        if ($filters['range'] !== 'custom') {
+            [$filters['date_from'], $filters['date_to']] = $this->historyRange($filters['range']);
+        }
+
+        if (! array_key_exists($filters['type'], StockMovement::filterOptions())) {
+            $filters['type'] = '';
+        }
+
+        $query = StockMovement::query()->with(['product', 'shop', 'user']);
+
+        if (! auth()->user()->canManageAllShops()) {
+            $query->where('shop_id', auth()->user()->shop_id ?: -1);
+        } elseif ($filters['shop_id'] === 'central') {
+            $query->whereNull('shop_id');
+        } elseif ($filters['shop_id'] !== '') {
+            $query->where('shop_id', $filters['shop_id']);
+        }
+
+        if ($filters['type'] !== '') {
+            $query->whereIn('movement_type', StockMovement::typesForFilter($filters['type']));
+        }
+
+        if ($filters['date_from']) {
+            $query->where('occurred_at', '>=', $filters['date_from'].' 00:00:00');
+        }
+
+        if ($filters['date_to']) {
+            $query->where('occurred_at', '<=', $filters['date_to'].' 23:59:59');
+        }
+
+        if ($filters['search'] !== '') {
+            $search = $filters['search'];
+            $query->where(function ($inner) use ($search) {
+                $inner->where('reference', 'like', "%{$search}%")
+                    ->orWhere('note', 'like', "%{$search}%")
+                    ->orWhereHas('product', function ($product) use ($search) {
+                        $product->where('product_name', 'like', "%{$search}%")
+                            ->orWhere('sku', 'like', "%{$search}%")
+                            ->orWhere('product_code', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $summary = [
+            'count' => (clone $query)->count(),
+            'in' => (float) (clone $query)->where('direction', 'in')->sum('qty'),
+            'out' => (float) (clone $query)->where('direction', 'out')->sum('qty'),
+        ];
+        $summary['net'] = $summary['in'] - $summary['out'];
+
+        $movements = $query->orderByDesc('occurred_at')->orderByDesc('id')->paginate(20)->withQueryString();
+        $shops = auth()->user()->canManageAllShops()
+            ? Shop::orderBy('name')->get(['id', 'name', 'code'])
+            : collect();
+
+        return view('stocks.history', compact('movements', 'filters', 'summary', 'shops'));
     }
 
     public function exportPdf()
@@ -128,10 +203,20 @@ class StockController extends Controller
             'stock_qty' => 'required|numeric|min:0',
         ]);
 
+        $productId = (int) $request->product_id;
+        $newQty = (float) $request->stock_qty;
+        $existing = Stock::where('product_id', $productId)->whereNull('shop_id')->first();
+
         Stock::updateOrCreate(
-            ['product_id' => $request->product_id, 'shop_id' => null],
-            ['stock_qty' => $request->stock_qty]
+            ['product_id' => $productId, 'shop_id' => null],
+            ['stock_qty' => $newQty]
         );
+
+        app(StockLedger::class)->recordQuantityChange($productId, null, (float) ($existing->stock_qty ?? 0), $newQty, [
+            'note' => 'Central stock updated',
+            'source_type' => 'stock',
+            'source_id' => $existing?->id,
+        ]);
 
         return redirect()->route('stocks.index')
             ->with('success', 'Stock created successfully');
@@ -188,6 +273,12 @@ class StockController extends Controller
             }
 
             $qty = (float) $validated['qty'];
+            $ledger = app(StockLedger::class);
+            $meta = [
+                'note' => 'Manual stock adjustment',
+                'source_type' => 'stock',
+                'source_id' => $stock->id,
+            ];
 
             if ($validated['adjustment_type'] === 'minus') {
                 if ((float) $stock->stock_qty < $qty) {
@@ -197,11 +288,13 @@ class StockController extends Controller
                 }
 
                 $stock->decrement('stock_qty', $qty);
+                $ledger->record((int) $validated['product_id'], $shopId, 'adjustment', 'out', $qty, $meta);
 
                 return;
             }
 
             $stock->increment('stock_qty', $qty);
+            $ledger->record((int) $validated['product_id'], $shopId, 'adjustment', 'in', $qty, $meta);
         });
 
         return redirect()->route('stocks.adjustments')->with('success', 'Stock adjusted successfully.');
@@ -247,6 +340,30 @@ class StockController extends Controller
 
             $fromStock->decrement('stock_qty', $qty);
             $toStock->increment('stock_qty', $qty);
+
+            $fromShop = Shop::whereKey($validated['from_shop_id'])->value('name') ?: 'shop';
+            $toLabel = $destinationType === 'central'
+                ? 'Central'
+                : (Shop::whereKey($validated['to_shop_id'])->value('name') ?: 'shop');
+            $note = 'From '.$fromShop.' to '.$toLabel;
+            $ledger = app(StockLedger::class);
+            $ledger->record((int) $validated['product_id'], (int) $validated['from_shop_id'], 'transfer', 'out', $qty, [
+                'note' => $note,
+                'source_type' => 'stock',
+                'source_id' => $fromStock->id,
+            ]);
+            $ledger->record(
+                (int) $validated['product_id'],
+                $destinationType === 'central' ? null : (int) $validated['to_shop_id'],
+                'transfer',
+                'in',
+                $qty,
+                [
+                    'note' => $note,
+                    'source_type' => 'stock',
+                    'source_id' => $toStock->id,
+                ]
+            );
         });
 
         return redirect()->route('stocks.adjustments')->with('success', 'Stock transferred successfully.');
@@ -294,6 +411,10 @@ class StockController extends Controller
                 'status' => 'pending',
             ]);
 
+            $shopName = Shop::whereKey($validated['shop_id'])->value('name') ?: 'shop';
+            $reference = 'DST-'.str_pad((string) $distribution->id, 6, '0', STR_PAD_LEFT);
+            $ledger = app(StockLedger::class);
+
             foreach ($validated['items'] as $item) {
                 $qty = (float) $item['qty'];
                 $central = Stock::where('product_id', $item['product_id'])
@@ -309,10 +430,19 @@ class StockController extends Controller
 
                 $central->decrement('stock_qty', $qty);
 
-                StockDistributionItem::create([
+                $distributionItem = StockDistributionItem::create([
                     'stock_distribution_id' => $distribution->id,
                     'product_id' => $item['product_id'],
                     'qty' => $qty,
+                ]);
+
+                $ledger->record((int) $item['product_id'], null, 'distribution', 'out', $qty, [
+                    'reference' => $reference,
+                    'note' => 'Sent to '.$shopName,
+                    'source_type' => 'stock_distribution_item',
+                    'source_id' => $distributionItem->id,
+                    'link_type' => 'stock_distribution',
+                    'link_id' => $distribution->id,
                 ]);
             }
         });
@@ -343,7 +473,10 @@ class StockController extends Controller
         ]);
 
         DB::transaction(function () use ($distribution, $validated) {
-            $distribution->load('items');
+            $distribution->load(['items', 'shop']);
+            $reference = 'DST-'.str_pad((string) $distribution->id, 6, '0', STR_PAD_LEFT);
+            $shopName = $distribution->shop?->name ?: 'shop';
+            $ledger = app(StockLedger::class);
 
             foreach ($distribution->items as $item) {
                 $shopStock = Stock::firstOrCreate(
@@ -351,6 +484,14 @@ class StockController extends Controller
                     ['stock_qty' => 0]
                 );
                 $shopStock->increment('stock_qty', (float) $item->qty);
+                $ledger->record((int) $item->product_id, (int) $distribution->shop_id, 'distribution_receive', 'in', (float) $item->qty, [
+                    'reference' => $reference,
+                    'note' => 'Received into '.$shopName,
+                    'source_type' => 'stock_distribution_item',
+                    'source_id' => $item->id,
+                    'link_type' => 'stock_distribution',
+                    'link_id' => $distribution->id,
+                ]);
             }
 
             $distribution->update([
@@ -378,6 +519,8 @@ class StockController extends Controller
 
         DB::transaction(function () use ($distribution, $validated) {
             $distribution->load('items');
+            $reference = 'DST-'.str_pad((string) $distribution->id, 6, '0', STR_PAD_LEFT);
+            $ledger = app(StockLedger::class);
 
             foreach ($distribution->items as $item) {
                 $central = Stock::firstOrCreate(
@@ -385,6 +528,14 @@ class StockController extends Controller
                     ['stock_qty' => 0]
                 );
                 $central->increment('stock_qty', (float) $item->qty);
+                $ledger->record((int) $item->product_id, null, 'distribution_cancel', 'in', (float) $item->qty, [
+                    'reference' => $reference,
+                    'note' => 'Returned to central inventory',
+                    'source_type' => 'stock_distribution_item',
+                    'source_id' => $item->id,
+                    'link_type' => 'stock_distribution',
+                    'link_id' => $distribution->id,
+                ]);
             }
 
             $distribution->update([
@@ -431,10 +582,35 @@ class StockController extends Controller
             'stock_qty' => 'required|numeric|min:0',
         ]);
 
+        $oldProductId = (int) $stock->product_id;
+        $oldQty = (float) $stock->stock_qty;
+        $newProductId = (int) $request->product_id;
+        $newQty = (float) $request->stock_qty;
+
         $stock->update([
-            'product_id' => $request->product_id,
-            'stock_qty' => $request->stock_qty,
+            'product_id' => $newProductId,
+            'stock_qty' => $newQty,
         ]);
+
+        $ledger = app(StockLedger::class);
+        if ($oldProductId === $newProductId) {
+            $ledger->recordQuantityChange($newProductId, null, $oldQty, $newQty, [
+                'note' => 'Central stock updated',
+                'source_type' => 'stock',
+                'source_id' => $stock->id,
+            ]);
+        } else {
+            $ledger->record($oldProductId, null, 'adjustment', 'out', $oldQty, [
+                'note' => 'Central stock moved to another product',
+                'source_type' => 'stock',
+                'source_id' => $stock->id,
+            ]);
+            $ledger->record($newProductId, null, 'add_stock', 'in', $newQty, [
+                'note' => 'Central stock set from inventory',
+                'source_type' => 'stock',
+                'source_id' => $stock->id,
+            ]);
+        }
 
         return redirect()->route('stocks.index')
             ->with('success', 'Stock updated successfully');
@@ -446,9 +622,30 @@ class StockController extends Controller
     public function destroy(string $id)
     {
         $stock = Stock::central()->findOrFail($id);
+        $qty = (float) $stock->stock_qty;
+        $productId = (int) $stock->product_id;
+        $stockId = (int) $stock->id;
         $stock->delete();
+
+        app(StockLedger::class)->record($productId, null, 'adjustment', 'out', $qty, [
+            'note' => 'Central stock removed',
+            'source_type' => 'stock',
+            'source_id' => $stockId,
+        ]);
 
         return redirect()->route('stocks.index')
             ->with('success', 'Stock deleted successfully');
+    }
+
+    private function historyRange(string $range): array
+    {
+        $today = now();
+
+        return match ($range) {
+            'today' => [$today->toDateString(), $today->toDateString()],
+            '7d' => [$today->copy()->subDays(6)->toDateString(), $today->toDateString()],
+            'month' => [$today->copy()->startOfMonth()->toDateString(), $today->toDateString()],
+            default => [null, null],
+        };
     }
 }

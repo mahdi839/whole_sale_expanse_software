@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Shop;
+use App\Services\StockLedger;
 use App\Support\SimplePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
@@ -94,9 +95,14 @@ class ProductController extends Controller
 
         $product = Product::create($validated);
 
-        // Create the stock record
         $product->stock()->create([
             'stock_qty' => $validated['stock_qty'],
+        ]);
+
+        app(StockLedger::class)->recordQuantityChange((int) $product->id, null, 0, (float) $validated['stock_qty'], [
+            'note' => 'Opening stock added with product',
+            'source_type' => 'product',
+            'source_id' => $product->id,
         ]);
 
         if ($request->expectsJson() || $request->wantsJson()) {
@@ -137,13 +143,20 @@ class ProductController extends Controller
             unset($validated['image']);
         }
 
+        $oldQty = (float) ($product->stock?->stock_qty ?? 0);
+
         $product->update($validated);
 
-        // Update or create the stock record
         $product->stock()->updateOrCreate(
             ['product_id' => $product->id],
             ['stock_qty' => $validated['stock_qty']]
         );
+
+        app(StockLedger::class)->recordQuantityChange((int) $product->id, null, $oldQty, (float) $validated['stock_qty'], [
+            'note' => 'Central stock updated from product',
+            'source_type' => 'product',
+            'source_id' => $product->id,
+        ]);
 
         return redirect()->route('products.index')
             ->with('success', 'Product updated successfully.');

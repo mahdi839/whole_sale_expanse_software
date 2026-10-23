@@ -16,6 +16,7 @@ use App\Models\Shop;
 use App\Models\Stock;
 use App\Services\BankLedger;
 use App\Services\CashLedger;
+use App\Services\StockLedger;
 use App\Support\SimplePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -202,7 +203,7 @@ class SaleController extends Controller
                 $profit = $price - $costPrice;
                 $lineProfit = $profit * $qty;
 
-                SaleItem::create([
+                $saleItem = SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
                     'purchase_item_id' => $purchaseItem?->id,
@@ -225,6 +226,15 @@ class SaleController extends Controller
                     ]);
                 }
                 $stock->decrement('stock_qty', $qty);
+                app(StockLedger::class)->record((int) $product->id, $shopId ? (int) $shopId : null, 'sale', 'out', $qty, [
+                    'reference' => $sale->reference,
+                    'source_type' => 'sale_item',
+                    'source_id' => $saleItem->id,
+                    'link_type' => 'sale',
+                    'link_id' => $sale->id,
+                    'user_id' => $sale->user_id,
+                    'occurred_at' => $sale->created_at,
+                ]);
             }
 
             if ($customer) {
@@ -289,6 +299,14 @@ class SaleController extends Controller
                     ->first();
                 if ($stock) {
                     $stock->increment('stock_qty', (float) $oldItem->qty);
+                    app(StockLedger::class)->record((int) $oldItem->product_id, $sale->shop_id ? (int) $sale->shop_id : null, 'sale_reversal', 'in', (float) $oldItem->qty, [
+                        'reference' => $sale->reference,
+                        'note' => 'Sale edited, stock restored',
+                        'source_type' => 'sale_item',
+                        'source_id' => $oldItem->id,
+                        'link_type' => 'sale',
+                        'link_id' => $sale->id,
+                    ]);
                 }
             }
 
@@ -372,7 +390,7 @@ class SaleController extends Controller
                 $profit = $price - $costPrice;
                 $lineProfit = $profit * $qty;
 
-                SaleItem::create([
+                $saleItem = SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
                     'purchase_item_id' => $purchaseItem?->id,
@@ -394,6 +412,14 @@ class SaleController extends Controller
                     ]);
                 }
                 $stock->decrement('stock_qty', $qty);
+                app(StockLedger::class)->record((int) $product->id, $shopId ? (int) $shopId : null, 'sale', 'out', $qty, [
+                    'reference' => $sale->reference,
+                    'source_type' => 'sale_item',
+                    'source_id' => $saleItem->id,
+                    'link_type' => 'sale',
+                    'link_id' => $sale->id,
+                    'user_id' => $sale->user_id,
+                ]);
             }
 
             if (! empty($validated['customer_id'])) {
@@ -439,6 +465,14 @@ class SaleController extends Controller
                     ->first();
                 if ($stock) {
                     $stock->increment('stock_qty', (float) $item->qty);
+                    app(StockLedger::class)->record((int) $item->product_id, $sale->shop_id ? (int) $sale->shop_id : null, 'sale_reversal', 'in', (float) $item->qty, [
+                        'reference' => $sale->reference,
+                        'note' => 'Sale deleted, stock restored',
+                        'source_type' => 'sale_item',
+                        'source_id' => $item->id,
+                        'link_type' => 'sale',
+                        'link_id' => $sale->id,
+                    ]);
                 }
             }
 
@@ -893,6 +927,15 @@ class SaleController extends Controller
 
             Stock::forShopProduct((int) $item->product_id, $shopId)
                 ->increment('stock_qty', (float) $item->qty);
+
+            app(StockLedger::class)->record((int) $item->product_id, $shopId, 'sale_return', 'in', (float) $item->qty, [
+                'reference' => $ret->reference,
+                'note' => 'Return sale',
+                'source_type' => 'sale_return_item',
+                'source_id' => $item->id,
+                'link_type' => 'sale_return',
+                'link_id' => $ret->id,
+            ]);
         }
 
         if ($ret->customer_id) {
@@ -922,6 +965,14 @@ class SaleController extends Controller
 
             if ($stock) {
                 $stock->decrement('stock_qty', (float) $item->qty);
+                app(StockLedger::class)->record((int) $item->product_id, $shopId, 'sale_return_reversal', 'out', (float) $item->qty, [
+                    'reference' => $ret->reference,
+                    'note' => 'Return reversed',
+                    'source_type' => 'sale_return_item',
+                    'source_id' => $item->id,
+                    'link_type' => 'sale_return',
+                    'link_id' => $ret->id,
+                ]);
             }
         }
 

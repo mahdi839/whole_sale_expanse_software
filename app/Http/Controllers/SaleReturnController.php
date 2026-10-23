@@ -9,6 +9,7 @@ use App\Models\SaleItem;
 use App\Models\SaleReturn;
 use App\Models\SaleReturnItem;
 use App\Models\Stock;
+use App\Services\StockLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -335,6 +336,15 @@ class SaleReturnController extends Controller
 
             Stock::forShopProduct((int) $item->product_id, $shopId)
                 ->increment('stock_qty', (float) $item->qty);
+
+            app(StockLedger::class)->record((int) $item->product_id, $shopId, 'sale_return', 'in', (float) $item->qty, [
+                'reference' => $ret->reference,
+                'note' => 'Return sale',
+                'source_type' => 'sale_return_item',
+                'source_id' => $item->id,
+                'link_type' => 'sale_return',
+                'link_id' => $ret->id,
+            ]);
         }
 
         if ($ret->customer_id) {
@@ -376,6 +386,14 @@ class SaleReturnController extends Controller
 
             if ($stock) {
                 $stock->decrement('stock_qty', (float) $item->qty);
+                app(StockLedger::class)->record((int) $item->product_id, $shopId, 'sale_return_reversal', 'out', (float) $item->qty, [
+                    'reference' => $ret->reference,
+                    'note' => 'Return reversed',
+                    'source_type' => 'sale_return_item',
+                    'source_id' => $item->id,
+                    'link_type' => 'sale_return',
+                    'link_id' => $ret->id,
+                ]);
             }
         }
 
