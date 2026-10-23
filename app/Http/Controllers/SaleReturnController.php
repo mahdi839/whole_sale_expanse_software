@@ -135,7 +135,7 @@ class SaleReturnController extends Controller
     public function show(SaleReturn $saleReturn)
     {
         $this->authorizeReturnShop($saleReturn);
-        $saleReturn->load(['sale', 'customer', 'items.product', 'items.saleItem']);
+        $saleReturn->load(['sale.shop', 'appliedSale', 'customer', 'items.product']);
 
         return view('sale_returns.show', compact('saleReturn'));
     }

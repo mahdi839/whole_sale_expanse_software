@@ -103,7 +103,7 @@
                         </p>
 
                         <p class="text-xs text-gray-400 mt-0.5">
-                            Net sales - COGS - expenses - salaries - advances
+                            Sales - cost - return profit - expenses - salaries - advances
                         </p>
                     </div>
                 </div>

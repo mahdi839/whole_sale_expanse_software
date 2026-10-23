@@ -116,24 +116,28 @@ class DashboardController extends Controller
         ];
 
         if ($canViewProfit) {
-            $returnedQtySub = DB::table('sale_return_items')
-                ->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
-                ->where('sale_returns.return_status', 'approved')
-                ->selectRaw('sale_return_items.sale_item_id, COALESCE(SUM(sale_return_items.qty), 0) as returned_qty')
-                ->groupBy('sale_return_items.sale_item_id');
-
             $cogs = DB::table('sale_items')
                 ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-                ->leftJoinSub($returnedQtySub, 'returned_items', 'returned_items.sale_item_id', '=', 'sale_items.id')
                 ->when($shopId, fn ($q) => $q->where('sales.shop_id', $shopId))
                 ->when($dateFrom, fn ($q) => $q->whereDate('sales.created_at', '>=', $dateFrom))
                 ->when($dateTo, fn ($q) => $q->whereDate('sales.created_at', '<=', $dateTo))
                 ->when($paymentStatus, fn ($q) => $q->where('sales.payment_status', $paymentStatus))
-                ->selectRaw('COALESCE(SUM((sale_items.qty - COALESCE(returned_items.returned_qty, 0)) * sale_items.cost_price), 0) as cogs')
+                ->selectRaw('COALESCE(SUM(sale_items.qty * sale_items.cost_price), 0) as cogs')
                 ->value('cogs');
 
-            $netSales = (float) $stats['total_sales'] - (float) $stats['total_sale_returns'];
-            $stats['total_item_profit'] = $netSales - (float) $cogs;
+            $returnProfit = DB::table('sale_return_items')
+                ->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
+                ->leftJoin('sale_items', 'sale_items.id', '=', 'sale_return_items.sale_item_id')
+                ->leftJoin('products', 'products.id', '=', 'sale_return_items.product_id')
+                ->leftJoin('sales as origin_sales', 'origin_sales.id', '=', 'sale_returns.sale_id')
+                ->where('sale_returns.return_status', 'approved')
+                ->when($shopId, fn ($q) => $q->where('origin_sales.shop_id', $shopId))
+                ->when($dateFrom, fn ($q) => $q->whereDate('sale_returns.created_at', '>=', $dateFrom))
+                ->when($dateTo, fn ($q) => $q->whereDate('sale_returns.created_at', '<=', $dateTo))
+                ->selectRaw('COALESCE(SUM(sale_return_items.line_total - (sale_return_items.qty * COALESCE(sale_items.cost_price, products.purchase_price, 0))), 0) as profit')
+                ->value('profit');
+
+            $stats['total_item_profit'] = (float) $stats['total_sales'] - (float) $cogs - (float) $returnProfit;
 
             $stats['net_profit'] =
                 (float) $stats['total_item_profit']

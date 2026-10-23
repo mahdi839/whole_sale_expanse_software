@@ -81,6 +81,7 @@ class SimplePdf
     private string $heading   = '';
     private string $headerAlign = 'left';
     private bool   $equalColumns = false;
+    private bool   $showGenerated = true;
     private float  $headerH   = self::HEADER_H;
     private array  $summary   = [];
     private ?string $logoPath = null;
@@ -234,6 +235,7 @@ class SimplePdf
         $this->heading = trim((string) ($options['heading'] ?? ''));
         $this->headerAlign = ($options['header_align'] ?? 'left') === 'center' ? 'center' : 'left';
         $this->equalColumns = (bool) ($options['equal_columns'] ?? false);
+        $this->showGenerated = (bool) ($options['show_generated'] ?? true);
         $this->summary = $options['summary'] ?? [];
         $this->logoPath = isset($options['logo_path']) && is_file($options['logo_path']) ? $options['logo_path'] : null;
         $this->headerH = self::HEADER_H;
@@ -264,15 +266,20 @@ class SimplePdf
         $titleY = $py + $h - 26;
         $this->em("BT /F2 " . self::FS_TITLE . " Tf " . self::HDR_FG . " rg {$titleX} {$titleY} Td (" . $this->esc($this->docTitle) . ") Tj ET\n");
 
-        $subY = $py + 10;
-        $sub  = 'Generated: ' . date('d M Y   H:i');
+        $subParts = [];
+        if ($this->showGenerated) {
+            $subParts[] = 'Generated: '.date('d M Y   H:i');
+        }
         if ($this->heading !== '') {
-            $sub .= '   |   ' . $this->heading;
+            $subParts[] = $this->heading;
         }
         if ($this->subtitle !== '') {
-            $sub .= '   |   ' . $this->subtitle;
+            $subParts[] = $this->subtitle;
         }
-        $this->em("BT /F1 " . self::FS_SUBTITLE . " Tf " . self::SUB_FG . " rg {$titleX} {$subY} Td (" . $this->esc($sub) . ") Tj ET\n");
+        if ($subParts !== []) {
+            $subY = $py + 10;
+            $this->em("BT /F1 " . self::FS_SUBTITLE . " Tf " . self::SUB_FG . " rg {$titleX} {$subY} Td (" . $this->esc(implode('   |   ', $subParts)) . ") Tj ET\n");
+        }
     }
 
     private function drawSummary(): void

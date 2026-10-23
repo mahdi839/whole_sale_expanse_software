@@ -124,7 +124,7 @@ class SupplierController extends Controller
 
         if (request('format') === 'pdf') {
             $fileName = 'supplier-'.$supplier->code.'-transactions-'.now()->format('Y-m-d-H-i-s').'.pdf';
-            $pdfHeaders = ['Date', 'Reference / Type / Bill No', 'Amount / Qty / Paid / Due', 'Note'];
+            $pdfHeaders = ['Type', 'Reference', 'Product Name', 'Store Name', 'Bill No', 'Amount', 'Qty', 'Paid', 'Due', 'Note'];
             $pdfRows = $logs->map(fn ($log) => $this->supplierPdfRow($log));
             $summary = [
                 ['label' => 'Total Paid', 'value' => number_format((float) $supplier->total_paid, 2)],
@@ -133,9 +133,22 @@ class SupplierController extends Controller
                 ['label' => 'Total Purchase', 'value' => number_format((float) $supplier->total_purchase, 2)],
             ];
 
-            return Response::make(SimplePdf::table('Inaya Creation - Supplier Transactions - '.$supplier->name, $pdfHeaders, $pdfRows, [110, 270, 200, 189.89], [
+            return Response::make(SimplePdf::table('Inaya Creation - Supplier Transactions - '.$supplier->name, $pdfHeaders, $pdfRows, [72, 78, 188, 100, 46, 64, 42, 60, 56, 63.89], [
                 'summary' => $summary,
                 'logo_path' => public_path('inaya_creation_logo.jpeg'),
+                'show_generated' => false,
+                'col_align' => [
+                    0 => 'L',
+                    1 => 'L',
+                    2 => 'L',
+                    3 => 'L',
+                    4 => 'C',
+                    5 => 'R',
+                    6 => 'R',
+                    7 => 'R',
+                    8 => 'R',
+                    9 => 'L',
+                ],
             ]), 200, [
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
@@ -213,14 +226,14 @@ class SupplierController extends Controller
                 'qty' => $purchase->items->sum(fn ($item) => (float) $item->qty),
                 'paid' => (float) $purchase->paid_amount,
                 'due' => (float) $purchase->due_amount,
-                'products' => $purchase->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', '),
+                'products' => $purchase->items->map(fn ($item) => $item->product?->product_name.' x'.number_format((float) $item->qty, 2))->filter()->implode(', '),
                 'store_name' => $purchase->seller_store_name,
                 'bill_no' => $purchase->bill_no,
                 'note' => $purchase->note,
                 'url' => route('purchases.edit', $purchase),
             ]))
             ->merge($supplier->purchaseReturns()->with(['items.product', 'purchase'])->get()->map(function ($return) {
-                $products = $return->items->map(fn ($item) => $item->product?->product_name.' x'.$item->qty)->filter()->implode(', ');
+                $products = $return->items->map(fn ($item) => $item->product?->product_name.' x'.number_format((float) $item->qty, 2))->filter()->implode(', ');
 
                 return [
                     'date' => $return->date,
@@ -314,25 +327,19 @@ class SupplierController extends Controller
 
     private function supplierPdfRow(array $log): array
     {
-        $details = implode("\n", [
-            'Type: '.($log['type'] ?: '-'),
-            'Ref: '.($log['reference'] ?: '-'),
-            'Bill: '.(filled($log['bill_no'] ?? null) ? $log['bill_no'] : '-'),
-        ]);
-
-        $qty = is_null($log['qty']) ? '-' : number_format((float) $log['qty'], 2);
-        $amounts = implode("\n", [
-            'Amt: '.$this->formatSupplierLogMoney($log['amount'] ?? null),
-            'Qty: '.$qty,
-            'Paid: '.$this->formatSupplierLogMoney($log['paid'] ?? null),
-            'Due: '.$this->formatSupplierLogMoney($log['due'] ?? null),
-        ]);
+        $qty = is_null($log['qty']) ? '' : number_format((float) $log['qty'], 2);
 
         return [
-            'Date: '.(optional($log['display_at'] ?? $log['date'])->format('d M Y') ?: '-'),
-            $details,
-            $amounts,
-            'Note: '.(filled($log['note'] ?? null) ? $log['note'] : '-'),
+            $log['type'] ?: '',
+            $log['reference'] ?: '',
+            filled($log['products'] ?? null) ? $log['products'] : '',
+            filled($log['store_name'] ?? null) ? $log['store_name'] : '',
+            filled($log['bill_no'] ?? null) ? $log['bill_no'] : '',
+            $this->formatSupplierLogMoney($log['amount'] ?? null),
+            $qty,
+            $this->formatSupplierLogMoney($log['paid'] ?? null),
+            $this->formatSupplierLogMoney($log['due'] ?? null),
+            filled($log['note'] ?? null) ? $log['note'] : '',
         ];
     }
 
