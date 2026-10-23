@@ -44,8 +44,11 @@
 
                     <input
                         type="date"
+                        id="return-entry-date"
                         name="date"
                         value="{{ $filters['date'] ?? '' }}"
+                        title="Entry date"
+                        aria-label="Entry date"
                         class="w-full px-3 h-10 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition"
                     />
 
@@ -142,7 +145,7 @@
                             >
                                 {{ $return->reference }}
                             </a>
-                            <p class="text-xs text-gray-400 mt-1">{{ $return->created_at->format('d M Y') }}</p>
+                            <p class="text-xs text-gray-400 mt-1">Entry {{ optional($return->entry_date)->format('d M Y') ?: $return->created_at->format('d M Y') }}</p>
                         </div>
 
                         <div class="text-right shrink-0">
@@ -315,7 +318,7 @@
                                     >
                                         {{ $return->reference }}
                                     </a>
-                                    <p class="text-xs text-gray-400 mt-1">{{ $return->created_at->format('d M Y') }}</p>
+                                    <p class="text-xs text-gray-400 mt-1">Entry {{ optional($return->entry_date)->format('d M Y') ?: $return->created_at->format('d M Y') }}</p>
                                 </td>
 
                                 <td class="px-5 py-3.5 align-top hidden md:table-cell">

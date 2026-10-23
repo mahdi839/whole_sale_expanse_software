@@ -30,7 +30,7 @@ class SaleReturnController extends Controller
             ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->whereHas('sale', fn($sale) => $sale->where('shop_id', auth()->user()->shop_id)))
             ->when($filters['return_status'], fn($q) => $q->where('return_status', $filters['return_status']))
             ->when($filters['return_type'], fn($q) => $q->where('return_type', $filters['return_type']))
-            ->when($filters['date'], fn($q) => $q->whereDate('created_at', $filters['date']))
+            ->when($filters['date'], fn($q) => $q->whereDate('entry_date', $filters['date']))
             ->when($filters['search'], function ($q) use ($filters) {
                 $s = $filters['search'];
 
@@ -49,7 +49,7 @@ class SaleReturnController extends Controller
             ->when(! auth()->user()->canManageAllShops(), fn($q) => $q->whereHas('sale', fn($sale) => $sale->where('shop_id', auth()->user()->shop_id)))
             ->when($filters['return_status'], fn($q) => $q->where('return_status', $filters['return_status']))
             ->when($filters['return_type'], fn($q) => $q->where('return_type', $filters['return_type']))
-            ->when($filters['date'], fn($q) => $q->whereDate('created_at', $filters['date']))
+            ->when($filters['date'], fn($q) => $q->whereDate('entry_date', $filters['date']))
             ->selectRaw('
             count(*)               as total_returns,
             sum(subtotal)          as total_subtotal,
@@ -95,6 +95,7 @@ class SaleReturnController extends Controller
                 'reference'      => $reference,
                 'sale_id'        => $validated['sale_id'] ?? null,
                 'customer_id'    => $validated['customer_id'] ?? null,
+                'entry_date'     => $validated['entry_date'],
                 'discount'       => $discount,
                 'subtotal'       => $subtotal,
                 'return_amount'  => $returnAmount,
@@ -173,6 +174,7 @@ class SaleReturnController extends Controller
             $saleReturn->update([
                 'sale_id'        => $validated['sale_id'] ?? null,
                 'customer_id'    => $validated['customer_id'] ?? null,
+                'entry_date'     => $validated['entry_date'],
                 'discount'       => $discount,
                 'subtotal'       => $subtotal,
                 'return_amount'  => $returnAmount,
@@ -282,6 +284,7 @@ class SaleReturnController extends Controller
                 'Return Status',
                 'Payment Method',
                 'Cash Memo',
+                'Entry Date',
                 'Created At',
                 'Note',
             ]);
@@ -305,6 +308,7 @@ class SaleReturnController extends Controller
                     $row->return_status,
                     $row->payment_method,
                     $row->cash_memo,
+                    optional($row->entry_date)->toDateString(),
                     $row->created_at?->format('Y-m-d'),
                     $row->note,
                 ]);
@@ -418,6 +422,7 @@ class SaleReturnController extends Controller
             'reference'             => 'nullable|string|max:50|unique:sale_returns,reference,' . $returnId,
             'sale_id'               => 'nullable|exists:sales,id',
             'customer_id'           => 'nullable|exists:customers,id',
+            'entry_date'            => 'required|date',
             'discount'              => 'nullable|numeric|min:0',
             'return_type'           => 'required|in:refund,exchange,credit',
             'return_status'         => 'required|in:pending,approved,rejected',

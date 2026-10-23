@@ -14,6 +14,7 @@ class SaleReturn extends Model
         'sale_id',
         'applied_sale_id',
         'customer_id',
+        'entry_date',
         'discount',
         'subtotal',
         'return_amount',
@@ -25,6 +26,7 @@ class SaleReturn extends Model
     ];
 
     protected $casts = [
+        'entry_date'    => 'date',
         'discount'      => 'decimal:2',
         'subtotal'      => 'decimal:2',
         'return_amount' => 'decimal:2',

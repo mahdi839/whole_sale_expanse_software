@@ -614,6 +614,26 @@
         {{-- Return products from previous sales --}}
         <div class="return-panel">
             <div style="display:flex;align-items:end;gap:10px;flex-wrap:wrap">
+                <div style="flex:1.2;min-width:200px">
+                    <div class="field-label">Customer</div>
+                    <select id="return-filter-customer" class="tom-select field-input" data-no-tom-select="1">
+                        <option value="">All customers</option>
+                        @foreach ($customers as $customer)
+                            <option value="{{ $customer->id }}">{{ $customer->displayLabel() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div style="flex:1;min-width:160px">
+                    <div class="field-label">Design Code</div>
+                    <input type="text" id="return-filter-design-code" class="field-input" placeholder="Design code" autocomplete="off">
+                </div>
+                <button type="button" id="filter-return-sales"
+                        style="height:38px;padding:0 14px;border:none;border-radius:8px;background:#1f2937;color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+                    Filter
+                </button>
+            </div>
+            <p id="return-filter-result" style="margin:0;font-size:12px;color:#94a3b8">Filter previous sales by customer and design code. Both can be used together.</p>
+            <div style="display:flex;align-items:end;gap:10px;flex-wrap:wrap">
                 <div style="flex:1;min-width:220px">
                     <div class="field-label">Return Product From Sale</div>
                     <select id="return-sale-select" class="tom-select field-input" data-no-tom-select="1">
@@ -1059,9 +1079,39 @@ function bindTomSelect(select, options, placeholder) {
     });
 }
 
+function returnFilterCustomerId() {
+    const select = document.getElementById('return-filter-customer');
+    if (!select) return '';
+    return String(select.tomselect ? (select.tomselect.getValue() || '') : (select.value || ''));
+}
+
+function initReturnFilterCustomer() {
+    const select = document.getElementById('return-filter-customer');
+    if (!select || select.tomselect) return;
+
+    const options = Array.from(select.options).map(option => ({
+        value: option.value,
+        text: option.textContent.trim(),
+    }));
+
+    bindTomSelect(select, options, 'Search customer...');
+}
+
 function initReturnSelectors() {
-    const customerId = customerSelect?.value || '';
-    const sales = RETURNABLE_SALES.filter(sale => !customerId || !sale.customer_id || String(sale.customer_id) === String(customerId));
+    const invoiceCustomerId = customerSelect?.value || '';
+    const filterCustomerId = returnFilterCustomerId();
+    const code = (document.getElementById('return-filter-design-code')?.value || '').trim().toLowerCase();
+    const sales = RETURNABLE_SALES.filter(sale => {
+        if (filterCustomerId && String(sale.customer_id || '') !== String(filterCustomerId)) return false;
+        if (!filterCustomerId && invoiceCustomerId && sale.customer_id && String(sale.customer_id) !== String(invoiceCustomerId)) return false;
+        if (!code) return true;
+
+        return (sale.items || []).some(item => {
+            const sku = String(item.sku || '').toLowerCase();
+            const productCode = String(item.product_code || '').toLowerCase();
+            return sku.includes(code) || productCode.includes(code);
+        });
+    });
     const options = [{ value: '', text: 'Select sale code' }].concat(
         sales.map(sale => ({ value: String(sale.id), text: returnSaleLabel(sale) }))
     );
@@ -1069,6 +1119,19 @@ function initReturnSelectors() {
     bindTomSelect(returnSaleSelect, options, 'Search sale code...');
     bindTomSelect(returnProductSelect, [{ value: '', text: 'Select product' }], 'Search product...');
     returnProductSelect.tomselect?.disable();
+
+    const resultEl = document.getElementById('return-filter-result');
+    if (!resultEl) return;
+    if (!filterCustomerId && !code) {
+        resultEl.textContent = 'Filter previous sales by customer and design code. Both can be used together.';
+        resultEl.style.color = '#94a3b8';
+    } else if (!sales.length) {
+        resultEl.textContent = 'No sales found for the selected filters.';
+        resultEl.style.color = '#b45309';
+    } else {
+        resultEl.textContent = `${sales.length} sale${sales.length === 1 ? '' : 's'} found. Choose one below.`;
+        resultEl.style.color = '#047857';
+    }
 }
 
 function loadReturnProducts(sale) {
@@ -1096,6 +1159,22 @@ customerSelect?.addEventListener('change', () => {
     returnItems = [];
     renderReturns();
     initReturnSelectors();
+});
+
+document.getElementById('filter-return-sales')?.addEventListener('click', () => {
+    if (returnSaleSelect.tomselect) {
+        returnSaleSelect.tomselect.clear(true);
+    } else if (returnSaleSelect) {
+        returnSaleSelect.value = '';
+    }
+    loadReturnProducts(null);
+    initReturnSelectors();
+});
+
+document.getElementById('return-filter-design-code')?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    document.getElementById('filter-return-sales')?.click();
 });
 
 returnSaleSelect.addEventListener('change', () => {
@@ -1385,6 +1464,7 @@ function formatQty(qty) {
 // ============================================================
 //  Init
 // ============================================================
+initReturnFilterCustomer();
 initReturnSelectors();
 renderCart();
 renderReturns();

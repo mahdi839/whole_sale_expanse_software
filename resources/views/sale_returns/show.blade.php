@@ -26,7 +26,7 @@
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/60">
                 <div>
                     <h2 class="text-sm font-semibold text-gray-800">Return Detail</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">{{ optional($saleReturn->date)->format('d M Y') }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ optional($saleReturn->entry_date)->format('d M Y') ?: optional($saleReturn->created_at)->format('d M Y') }}</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-orange-50 border border-orange-200
@@ -122,7 +122,7 @@
                         ['label' => 'Discount',        'value' => '৳'.number_format($saleReturn->discount, 2)],
                         ['label' => 'Payment Method',  'value' => $saleReturn->payment_method ?: '—'],
                         ['label' => 'Cash Memo',       'value' => $saleReturn->cash_memo ?: '—'],
-                        ['label' => 'Date',            'value' => optional($saleReturn->date)->format('d M Y')],
+                        ['label' => 'Entry Date',      'value' => optional($saleReturn->entry_date)->format('d M Y') ?: optional($saleReturn->created_at)->format('d M Y') ?: '—'],
                     ] as $row)
                     <div class="flex items-center justify-between py-2.5 border-b border-gray-100">
                         <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">{{ $row['label'] }}</span>

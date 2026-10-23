@@ -132,6 +132,16 @@
             <div class="{{ $bodyClass }}">
                 <div class="mb-4 pb-4 border-b border-gray-100">
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                        <div class="md:col-span-12">
+                            <label for="sale_filter_customer" class="{{ $labelClass }}">Customer</label>
+                            <select id="sale_filter_customer" class="tom-select {{ $inputClass }}">
+                                <option value="">All customers</option>
+                                @foreach($customers as $customer)
+                                    <option value="{{ $customer->id }}">{{ $customer->displayLabel() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <div class="md:col-span-4">
                             <label for="sale_filter_date" class="{{ $labelClass }}">Sale Date</label>
                             <input type="date"
@@ -157,7 +167,7 @@
                         </div>
                     </div>
                     <p id="sale-filter-result" class="mt-2 text-xs text-gray-400">
-                        Filter the original sale list by date and design code. Leave both empty and click Filter to show every sale.
+                        Filter by customer, sale date, and design code together. Leave them empty and click Filter to show every sale.
                     </p>
                 </div>
 
@@ -194,6 +204,18 @@
                             @endforeach
                         </select>
                         @error('customer_id')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="entry_date" class="{{ $labelClass }}">Entry Date</label>
+                        <input type="date"
+                               id="entry_date"
+                               name="entry_date"
+                               value="{{ old('entry_date', optional($saleReturn?->entry_date)->toDateString() ?? now()->toDateString()) }}"
+                               class="{{ $errors->has('entry_date') ? $inputErrClass : $inputClass }}">
+                        @error('entry_date')
                             <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                         @enderror
                     </div>
@@ -620,13 +642,18 @@
     }
 
     function applySaleFilter() {
+        const customerSelect = document.getElementById('sale_filter_customer');
+        const customerId = customerSelect?.tomselect
+            ? String(customerSelect.tomselect.getValue() || '')
+            : String(customerSelect?.value || '');
         const date = document.getElementById('sale_filter_date')?.value || '';
         const code = (document.getElementById('sale_filter_design_code')?.value || '').trim().toLowerCase();
         const resultEl = document.getElementById('sale-filter-result');
-        const hasFilter = Boolean(date || code);
+        const hasFilter = Boolean(customerId || date || code);
         const saleSelect = document.getElementById('sale_id');
 
         const matched = returnSales.filter((sale) => {
+            if (customerId && String(sale.customer_id || '') !== customerId) return false;
             if (date && sale.date !== date) return false;
             if (!code) return true;
 
@@ -669,7 +696,7 @@
             resultEl.textContent = `Showing all sales (${returnSales.length}).`;
             resultEl.className = 'mt-2 text-xs text-gray-400';
         } else if (matched.length === 0) {
-            resultEl.textContent = 'No sales found for this date and design code.';
+            resultEl.textContent = 'No sales found for the selected filters.';
             resultEl.className = 'mt-2 text-xs text-amber-600';
         } else if (matched.length === 1) {
             resultEl.textContent = '1 sale found and selected.';

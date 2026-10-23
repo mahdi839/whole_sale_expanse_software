@@ -105,7 +105,7 @@
                         <div class="shrink-0">
                             @if ($product->image)
                                 <img src="{{ Storage::url($product->image) }}" alt="{{ $product->product_name }}"
-                                    class="w-14 h-14 rounded-lg object-cover border border-gray-100" />
+                                    class="product-zoom w-14 h-14 rounded-lg object-cover border border-gray-100 cursor-zoom-in" />
                             @else
                                 <div
                                     class="w-14 h-14 rounded-lg bg-gray-100 border border-gray-100 flex items-center justify-center text-gray-300">
@@ -270,7 +270,7 @@
                                     @if ($product->image)
                                         <img src="{{ Storage::url($product->image) }}"
                                             alt="{{ $product->product_name }}"
-                                            class="w-10 h-10 rounded-lg object-cover border border-gray-100" />
+                                            class="product-zoom w-10 h-10 rounded-lg object-cover border border-gray-100 cursor-zoom-in" />
                                     @else
                                         <div
                                             class="w-10 h-10 rounded-lg bg-gray-100 border border-gray-100 flex items-center justify-center text-gray-300">
@@ -461,4 +461,22 @@
         </div>
 
     </div>
+@push('scripts')
+<style>
+    .medium-zoom-overlay { z-index: 80 !important; }
+    .medium-zoom-image--opened { z-index: 81 !important; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!window.mediumZoom) return;
+
+        mediumZoom('.product-zoom', {
+            margin: 24,
+            background: 'rgba(15, 23, 42, 0.92)',
+            scrollOffset: 40,
+        });
+    });
+</script>
+@endpush
 </x-app-layout>
