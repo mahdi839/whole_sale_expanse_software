@@ -87,7 +87,24 @@ class StockMovement extends Model
 
     public function locationLabel(): string
     {
-        return $this->shop?->name ?: 'Central';
+        return $this->shop?->displayLabel() ?: 'Central';
+    }
+
+    public function detailNote(): ?string
+    {
+        $shop = $this->relationLoaded('linkedDistribution')
+            ? $this->getRelation('linkedDistribution')?->shop
+            : null;
+
+        if ($shop && $this->movement_type === 'distribution') {
+            return 'Sent to '.$shop->displayLabel();
+        }
+
+        if ($shop && $this->movement_type === 'distribution_receive') {
+            return 'Received into '.$shop->displayLabel();
+        }
+
+        return $this->note;
     }
 
     public function linkUrl(): ?string

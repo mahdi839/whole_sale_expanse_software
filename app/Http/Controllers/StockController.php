@@ -97,6 +97,22 @@ class StockController extends Controller
         $summary['net'] = $summary['in'] - $summary['out'];
 
         $movements = $query->orderByDesc('occurred_at')->orderByDesc('id')->paginate(20)->withQueryString();
+        $distributionIds = $movements->getCollection()
+            ->where('link_type', 'stock_distribution')
+            ->pluck('link_id')
+            ->filter()
+            ->unique()
+            ->values();
+        $distributions = $distributionIds->isEmpty()
+            ? collect()
+            : StockDistribution::with('shop')->whereIn('id', $distributionIds)->get()->keyBy('id');
+
+        $movements->getCollection()->each(function (StockMovement $movement) use ($distributions) {
+            if ($movement->link_type === 'stock_distribution') {
+                $movement->setRelation('linkedDistribution', $distributions->get($movement->link_id));
+            }
+        });
+
         $shops = auth()->user()->canManageAllShops()
             ? Shop::orderBy('name')->get(['id', 'name', 'code'])
             : collect();
@@ -341,10 +357,12 @@ class StockController extends Controller
             $fromStock->decrement('stock_qty', $qty);
             $toStock->increment('stock_qty', $qty);
 
-            $fromShop = Shop::whereKey($validated['from_shop_id'])->value('name') ?: 'shop';
+            $fromShop = Shop::find($validated['from_shop_id']);
+            $toShop = $destinationType === 'central' ? null : Shop::find($validated['to_shop_id']);
             $toLabel = $destinationType === 'central'
                 ? 'Central'
-                : (Shop::whereKey($validated['to_shop_id'])->value('name') ?: 'shop');
+                : ($toShop?->displayLabel() ?: 'shop');
+            $fromShop = $fromShop?->displayLabel() ?: 'shop';
             $note = 'From '.$fromShop.' to '.$toLabel;
             $ledger = app(StockLedger::class);
             $ledger->record((int) $validated['product_id'], (int) $validated['from_shop_id'], 'transfer', 'out', $qty, [
@@ -411,7 +429,7 @@ class StockController extends Controller
                 'status' => 'pending',
             ]);
 
-            $shopName = Shop::whereKey($validated['shop_id'])->value('name') ?: 'shop';
+            $shopName = Shop::find($validated['shop_id'])?->displayLabel() ?: 'shop';
             $reference = 'DST-'.str_pad((string) $distribution->id, 6, '0', STR_PAD_LEFT);
             $ledger = app(StockLedger::class);
 
@@ -475,7 +493,7 @@ class StockController extends Controller
         DB::transaction(function () use ($distribution, $validated) {
             $distribution->load(['items', 'shop']);
             $reference = 'DST-'.str_pad((string) $distribution->id, 6, '0', STR_PAD_LEFT);
-            $shopName = $distribution->shop?->name ?: 'shop';
+            $shopName = $distribution->shop?->displayLabel() ?: 'shop';
             $ledger = app(StockLedger::class);
 
             foreach ($distribution->items as $item) {

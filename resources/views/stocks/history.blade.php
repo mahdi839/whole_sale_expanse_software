@@ -171,8 +171,8 @@
                         <p>{{ $movement->reference ?: '—' }}</p>
                         <p class="text-right">{{ $movement->user?->name ?: '—' }}</p>
                     </div>
-                    @if($movement->note)
-                        <p class="mt-2 text-xs text-gray-400">{{ $movement->note }}</p>
+                    @if($movement->detailNote())
+                        <p class="mt-2 text-xs text-gray-400">{{ $movement->detailNote() }}</p>
                     @endif
                 </div>
             @empty
@@ -213,8 +213,8 @@
                                     <span class="inline-flex items-center h-6 px-2 rounded-full border text-[11px] font-semibold {{ $badgeClass($movement) }}">
                                         {{ $movement->label() }}
                                     </span>
-                                    @if($movement->note)
-                                        <p class="mt-1 text-xs text-gray-400 max-w-[220px]">{{ $movement->note }}</p>
+                                    @if($movement->detailNote())
+                                        <p class="mt-1 text-xs text-gray-400 max-w-[220px]">{{ $movement->detailNote() }}</p>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3.5">
