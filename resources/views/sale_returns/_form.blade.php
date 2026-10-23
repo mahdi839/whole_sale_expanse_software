@@ -11,6 +11,18 @@
 
     $allSales = \App\Models\Sale::with(['customer', 'items.product'])->orderByDesc('id')->get();
 
+    $saleLabel = function ($sale) {
+        $label = $sale->reference;
+        if ($sale->customer) {
+            $label .= ' — '.$sale->customer->displayLabel();
+        }
+        if ($sale->created_at) {
+            $label .= ' · '.$sale->created_at->format('d M Y');
+        }
+
+        return $label;
+    };
+
     $selectedSaleId = old('sale_id', $saleReturn?->sale_id ?? $prefillSale?->id);
     $selectedSale = $selectedSaleId
         ? $allSales->firstWhere('id', (int) $selectedSaleId)
@@ -71,17 +83,20 @@
         ];
     })->values();
 
-    $salesJson = $allSales->map(function ($sale) {
+    $salesJson = $allSales->map(function ($sale) use ($saleLabel) {
         return [
             'id' => $sale->id,
             'reference' => $sale->reference,
             'customer_id' => $sale->customer_id,
+            'date' => optional($sale->created_at)->toDateString(),
+            'label' => $saleLabel($sale),
             'items' => $sale->items->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'product_id' => $item->product_id,
                     'product_name' => $item->product?->product_name,
                     'sku' => $item->product?->sku,
+                    'product_code' => $item->product?->product_code,
                     'qty' => (float) $item->qty,
                     'price_on_sale' => (float) $item->price_on_sale,
                     'line_total' => (float) $item->line_total,
@@ -115,6 +130,37 @@
             </div>
 
             <div class="{{ $bodyClass }}">
+                <div class="mb-4 pb-4 border-b border-gray-100">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                        <div class="md:col-span-4">
+                            <label for="sale_filter_date" class="{{ $labelClass }}">Sale Date</label>
+                            <input type="date"
+                                   id="sale_filter_date"
+                                   class="{{ $inputClass }}">
+                        </div>
+
+                        <div class="md:col-span-5">
+                            <label for="sale_filter_design_code" class="{{ $labelClass }}">Product Design Code</label>
+                            <input type="text"
+                                   id="sale_filter_design_code"
+                                   placeholder="Enter design code"
+                                   autocomplete="off"
+                                   class="{{ $inputClass }}">
+                        </div>
+
+                        <div class="md:col-span-3">
+                            <button type="button"
+                                    id="filter-original-sales"
+                                    class="h-10 sm:h-9 w-full px-4 inline-flex items-center justify-center text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-900 transition">
+                                Filter
+                            </button>
+                        </div>
+                    </div>
+                    <p id="sale-filter-result" class="mt-2 text-xs text-gray-400">
+                        Filter the original sale list by date and design code. Leave both empty and click Filter to show every sale.
+                    </p>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="sale_id" class="{{ $labelClass }}">Original Sale</label>
@@ -123,10 +169,7 @@
                             <option value="">— No linked sale —</option>
                             @foreach($allSales as $s)
                                 <option value="{{ $s->id }}" {{ (string) $selectedSaleId === (string) $s->id ? 'selected' : '' }}>
-                                    {{ $s->reference }}
-                                    @if($s->customer)
-                                        — {{ $s->customer->displayLabel() }}
-                                    @endif
+                                    {{ $saleLabel($s) }}
                                 </option>
                             @endforeach
                         </select>
@@ -509,6 +552,134 @@
         return returnProducts.find(p => String(p.id) === String(productId)) || null;
     }
 
+    function initReturnProductSelect(select) {
+        if (!select || select.tomselect || select.dataset.noTomSelect === '1' || !window.TomSelect) {
+            return;
+        }
+
+        new TomSelect(select, {
+            create: false,
+            allowEmptyOption: true,
+            maxOptions: 500,
+            dropdownParent: 'body',
+            plugins: [],
+            render: {
+                no_results: () => '<div class="no-results">No results found</div>',
+            },
+        });
+    }
+
+    function setSelectValue(select, value, silent = false) {
+        if (!select) return;
+
+        const next = value === null || value === undefined ? '' : String(value);
+
+        if (select.tomselect) {
+            select.tomselect.setValue(next, silent);
+            return;
+        }
+
+        select.value = next;
+    }
+
+    function destroyRowWidgets(itemRow) {
+        itemRow.querySelectorAll('select').forEach((select) => {
+            if (select.tomselect) {
+                select.tomselect.destroy();
+            }
+        });
+    }
+
+    function replaceSaleOptions(sales) {
+        const saleSelect = document.getElementById('sale_id');
+        if (!saleSelect) return;
+
+        const options = [{ value: '', text: '— No linked sale —' }].concat(
+            sales.map((sale) => ({
+                value: String(sale.id),
+                text: sale.label || sale.reference,
+            }))
+        );
+
+        if (saleSelect.tomselect) {
+            const ts = saleSelect.tomselect;
+            ts.clear(true);
+            ts.clearOptions();
+            ts.addOptions(options);
+            ts.refreshOptions(false);
+            return;
+        }
+
+        saleSelect.innerHTML = '';
+        options.forEach((option) => {
+            const el = document.createElement('option');
+            el.value = option.value;
+            el.textContent = option.text;
+            saleSelect.appendChild(el);
+        });
+    }
+
+    function applySaleFilter() {
+        const date = document.getElementById('sale_filter_date')?.value || '';
+        const code = (document.getElementById('sale_filter_design_code')?.value || '').trim().toLowerCase();
+        const resultEl = document.getElementById('sale-filter-result');
+        const hasFilter = Boolean(date || code);
+        const saleSelect = document.getElementById('sale_id');
+
+        const matched = returnSales.filter((sale) => {
+            if (date && sale.date !== date) return false;
+            if (!code) return true;
+
+            return (sale.items || []).some((item) => {
+                const sku = String(item.sku || '').toLowerCase();
+                const productCode = String(item.product_code || '').toLowerCase();
+                return sku.includes(code) || productCode.includes(code);
+            });
+        });
+
+        const previous = saleSelect?.tomselect
+            ? String(saleSelect.tomselect.getValue() || '')
+            : String(saleSelect?.value || '');
+        const previousStillMatches = matched.some((sale) => String(sale.id) === previous);
+        const next = previousStillMatches
+            ? previous
+            : (matched.length === 1 ? String(matched[0].id) : '');
+
+        replaceSaleOptions(matched);
+
+        if (saleSelect?.tomselect) {
+            if (next && next !== previous) {
+                saleSelect.tomselect.setValue(next);
+            } else if (next) {
+                saleSelect.tomselect.setValue(next, true);
+            } else if (previous) {
+                saleSelect.tomselect.clear(true);
+                saleSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        } else if (saleSelect) {
+            saleSelect.value = next;
+            if (next !== previous) {
+                saleSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        if (!resultEl) return;
+
+        if (!hasFilter) {
+            resultEl.textContent = `Showing all sales (${returnSales.length}).`;
+            resultEl.className = 'mt-2 text-xs text-gray-400';
+        } else if (matched.length === 0) {
+            resultEl.textContent = 'No sales found for this date and design code.';
+            resultEl.className = 'mt-2 text-xs text-amber-600';
+        } else if (matched.length === 1) {
+            resultEl.textContent = '1 sale found and selected.';
+            resultEl.className = 'mt-2 text-xs text-green-600';
+        } else {
+            resultEl.textContent = `${matched.length} sales found. Choose one from Original Sale.`;
+            resultEl.className = 'mt-2 text-xs text-gray-500';
+        }
+    }
+
     function fillSaleItemOptions(itemRow) {
         const saleItemSelect = itemRow.querySelector('.return-sale-item');
         const productSelect = itemRow.querySelector('.return-product');
@@ -602,7 +773,7 @@
 
         if (option && option.value) {
             if (option.dataset.productId) {
-                productSelect.value = option.dataset.productId;
+                setSelectValue(productSelect, option.dataset.productId, true);
             }
 
             if (option.dataset.qty && (!qtyInput.value || parseFloat(qtyInput.value) <= 0)) {
@@ -630,6 +801,17 @@
         const priceInput = itemRow.querySelector('.return-price');
         const removeBtn = itemRow.querySelector('.remove-return-item');
 
+        initReturnProductSelect(productSelect);
+
+        if (itemRow.dataset.bound === '1') {
+            fillSaleItemOptions(itemRow);
+            updateItemMeta(itemRow);
+            updateItemLine(itemRow);
+            return;
+        }
+
+        itemRow.dataset.bound = '1';
+
         productSelect?.addEventListener('change', () => {
             fillSaleItemOptions(itemRow);
             updateItemMeta(itemRow);
@@ -654,6 +836,7 @@
         removeBtn?.addEventListener('click', () => {
             const rows = document.querySelectorAll('.return-item');
             if (rows.length <= 1) return;
+            destroyRowWidgets(itemRow);
             itemRow.remove();
             updateSummary();
         });
@@ -709,6 +892,7 @@
             return;
         }
 
+        currentRows.forEach(destroyRowWidgets);
         wrapper.innerHTML = '';
 
         if (selectedSale && selectedSale.items.length) {
@@ -733,6 +917,16 @@
 
         document.querySelectorAll('.return-item').forEach(bindRowEvents);
         updateSummary();
+
+        document.getElementById('filter-original-sales')?.addEventListener('click', applySaleFilter);
+
+        ['sale_filter_date', 'sale_filter_design_code'].forEach((id) => {
+            document.getElementById(id)?.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                applySaleFilter();
+            });
+        });
 
         saleSelect?.addEventListener('change', () => {
             const sale = getSelectedSale();
